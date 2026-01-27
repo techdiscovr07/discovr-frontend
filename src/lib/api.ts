@@ -1,5 +1,4 @@
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_BASE_URL ?? "https://discovr-backend.onrender.com"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? ""
 
 export type AuthRole = "brand" | "creator"
 
@@ -58,19 +57,39 @@ const requestJson = async <T>(
   return (data ?? ({} as T)) as T
 }
 
-const pickString = (...values: unknown[]) =>
-  values.find((value) => typeof value === "string" && value.length > 0) ?? null
+const pickString = (...values: unknown[]): string | null => {
+  const found = values.find(
+    (value): value is string => typeof value === "string" && value.length > 0,
+  )
+  return found ?? null
+}
 
 export const extractIdToken = (payload: unknown) => {
+  if (typeof payload === "string" && payload.length > 0) {
+    return payload
+  }
+
   if (!isRecord(payload)) return null
 
   return pickString(
     payload.idToken,
     payload.token,
     payload.accessToken,
+    payload.id_token,
+    payload.access_token,
+    payload.firebaseIdToken,
+    payload.firebase_id_token,
+    isRecord(payload.token) ? payload.token.idToken : null,
     isRecord(payload.data) ? payload.data.idToken : null,
     isRecord(payload.data) ? payload.data.token : null,
     isRecord(payload.data) ? payload.data.accessToken : null,
+    isRecord(payload.data) ? payload.data.id_token : null,
+    isRecord(payload.data) ? payload.data.access_token : null,
+    isRecord(payload.data) ? payload.data.firebaseIdToken : null,
+    isRecord(payload.data) ? payload.data.firebase_id_token : null,
+    isRecord(payload.data) && isRecord(payload.data.token)
+      ? payload.data.token.idToken
+      : null,
   )
 }
 

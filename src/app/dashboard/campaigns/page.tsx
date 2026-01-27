@@ -46,8 +46,26 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 
+type CampaignStatus = "active" | "completed" | "draft" | "scheduled"
+
+type Campaign = {
+  id: string
+  title: string
+  status: CampaignStatus
+  budget: number
+  spent: number
+  reach: number
+  targetReach: number
+  engagement: number
+  creators: number
+  startDate: string
+  endDate: string
+  platform: string
+  niche: string
+}
+
 // Mock campaigns data
-const campaignsData = [
+const campaignsData: Campaign[] = [
   {
     id: "1",
     title: "Summer Collection Launch",
@@ -140,7 +158,7 @@ const campaignsData = [
   },
 ]
 
-const statusColors = {
+const statusColors: Record<CampaignStatus, string> = {
   active: "bg-[hsl(var(--foreground))] text-white",
   completed: "bg-[hsl(var(--muted))]",
   draft: "bg-[hsl(var(--muted))]",
@@ -149,7 +167,9 @@ const statusColors = {
 
 export default function CampaignsPage() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [statusFilter, setStatusFilter] = useState<CampaignStatus | "all">(
+    "all",
+  )
   const [searchQuery, setSearchQuery] = useState("")
 
   const filteredCampaigns = campaignsData.filter((campaign) => {
@@ -247,7 +267,9 @@ export default function CampaignsPage() {
                 {/* Status Filter */}
                 <Tabs
                   value={statusFilter}
-                  onValueChange={setStatusFilter}
+                  onValueChange={(value) =>
+                    setStatusFilter(value as CampaignStatus | "all")
+                  }
                   className="w-auto"
                 >
                   <TabsList>
