@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState, type ChangeEvent } from "react"
 import Link from "next/link"
 import {
   Youtube,
@@ -25,6 +25,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import {
   Table,
   TableBody,
@@ -36,6 +37,26 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import {
+  fetchYouTubeAnalytics,
+  fetchYouTubeData,
+  getErrorMessage,
+  getYouTubeConnectUrl,
+} from "@/lib/api"
+import { getCachedIdToken } from "@/lib/auth"
+import type { AnalyticsSection, YouTubeAnalyticsResponse } from "@/lib/models"
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts"
 
 // Mock data
 const creatorStats = {
@@ -46,30 +67,6 @@ const creatorStats = {
   pendingEarnings: 3200,
   lifetimeEarnings: 67890,
 }
-
-const platformStatus = [
-  {
-    name: "YouTube",
-    connected: true,
-    icon: Youtube,
-    handle: "@johndoe",
-    followers: 125000,
-  },
-  {
-    name: "Instagram",
-    connected: false,
-    icon: Instagram,
-    handle: "",
-    followers: 0,
-  },
-  {
-    name: "Twitter",
-    connected: false,
-    icon: Twitter,
-    handle: "",
-    followers: 0,
-  },
-]
 
 const activeCampaigns = [
   {
@@ -132,7 +129,172 @@ const recentEarnings = [
 ]
 
 export default function CreatorDashboardPage() {
-  const [selectedPlatform, setSelectedPlatform] = useState<string | null>(null)
+  const [authToken, setAuthToken] = useState<string | null>(null)
+  const [tokenError, setTokenError] = useState("")
+  const [youtubeData, setYoutubeData] = useState<{
+    channel?: {
+      title?: string
+      customUrl?: string
+      handle?: string
+      subscriberCount?: number
+      viewCount?: number
+      videoCount?: number
+    }
+    uploads?: Array<{
+      id?: string
+      title?: string
+      publishedAt?: string
+      viewCount?: number
+    }>
+  } | null>(null)
+  const [analytics, setAnalytics] = useState<YouTubeAnalyticsResponse | null>(
+    null,
+  )
+  const [isLoadingData, setIsLoadingData] = useState(false)
+  const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false)
+  const [dataError, setDataError] = useState("")
+  const [analyticsError, setAnalyticsError] = useState("")
+  const [startDate, setStartDate] = useState(() => {
+    const today = new Date()
+    const start = new Date(today)
+    start.setDate(today.getDate() - 28)
+    return start.toISOString().slice(0, 10)
+  })
+  const [endDate, setEndDate] = useState(() =>
+    new Date().toISOString().slice(0, 10),
+  )
+
+  useEffect(() => {
+    const token = getCachedIdToken()
+    if (!token) {
+      setTokenError("No auth token found. Please log in.")
+      return
+    }
+    setAuthToken(token)
+  }, [])
+
+  const platformStatus = useMemo(
+    () => [
+      {
+        name: "YouTube",
+        connected: Boolean(youtubeData?.channel),
+        icon: Youtube,
+        handle:
+          youtubeData?.channel?.handle ??
+          youtubeData?.channel?.customUrl ??
+          "",
+        followers: youtubeData?.channel?.subscriberCount ?? 0,
+      },
+      {
+        name: "Instagram",
+        connected: false,
+        icon: Instagram,
+        handle: "",
+        followers: 0,
+      },
+      {
+        name: "Twitter",
+        connected: false,
+        icon: Twitter,
+        handle: "",
+        followers: 0,
+      },
+    ],
+    [youtubeData],
+  )
+
+  const loadYouTubeData = async (token: string) => {
+    setIsLoadingData(true)
+    setDataError("")
+    try {
+      const data = await fetchYouTubeData(token)
+      setYoutubeData(data)
+    } catch (error) {
+      setDataError(getErrorMessage(error))
+    } finally {
+      setIsLoadingData(false)
+    }
+  }
+
+  const loadAnalytics = async (token: string) => {
+    setIsLoadingAnalytics(true)
+    setAnalyticsError("")
+    try {
+      const data = await fetchYouTubeAnalytics(token, startDate, endDate)
+      setAnalytics(data)
+    } catch (error) {
+      setAnalyticsError(getErrorMessage(error))
+    } finally {
+      setIsLoadingAnalytics(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!authToken) return
+    loadYouTubeData(authToken)
+    loadAnalytics(authToken)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [authToken])
+
+  const handleConnect = async () => {
+    if (!authToken) {
+      setTokenError("Please log in to connect YouTube.")
+      return
+    }
+    try {
+      const response = await getYouTubeConnectUrl(authToken)
+      if (!response.auth_url) {
+        throw new Error("No auth URL returned from server.")
+      }
+      window.location.href = response.auth_url
+    } catch (error) {
+      setTokenError(getErrorMessage(error))
+    }
+  }
+
+  const renderTable = (rows: AnalyticsSection | undefined) => {
+    if (!rows || rows.length === 0) {
+      return (
+        <p className="text-sm text-[hsl(var(--muted-foreground))]">
+          No data available.
+        </p>
+      )
+    }
+
+    const columns = Object.keys(rows[0] ?? {})
+
+    return (
+      <Table>
+        <TableHeader>
+          <TableRow>
+            {columns.map((column) => (
+              <TableHead key={column}>{column}</TableHead>
+            ))}
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.slice(0, 10).map((row, idx) => (
+            <TableRow key={idx}>
+              {columns.map((column) => (
+                <TableCell key={column}>
+                  {row[column] !== null && row[column] !== undefined
+                    ? String(row[column])
+                    : "—"}
+                </TableCell>
+              ))}
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    )
+  }
+
+  const formatDate = (value?: string) => {
+    if (!value) return "—"
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return value
+    return date.toISOString().slice(0, 10)
+  }
 
   return (
     <div className="min-h-screen bg-white">
@@ -157,6 +319,16 @@ export default function CreatorDashboardPage() {
         {/* Platform Connection Status */}
         <section>
           <h2 className="text-2xl font-semibold mb-4">Connected Platforms</h2>
+          <div className="mb-4">
+            <Badge variant={authToken ? "default" : "secondary"}>
+              {authToken ? "Token loaded" : "No token"}
+            </Badge>
+            {tokenError && (
+              <p className="text-sm text-[hsl(var(--destructive))] mt-2">
+                {tokenError}
+              </p>
+            )}
+          </div>
           <div className="grid md:grid-cols-3 gap-4">
             {platformStatus.map((platform) => (
               <Card
@@ -210,15 +382,345 @@ export default function CreatorDashboardPage() {
                       </Link>
                     </div>
                   ) : (
-                    <Link href="/dashboard/creator/connect-youtube">
-                      <Button className="w-full" variant="outline">
-                        Connect {platform.name}
-                      </Button>
-                    </Link>
+                    <Button
+                      className="w-full"
+                      variant="outline"
+                      onClick={platform.name === "YouTube" ? handleConnect : undefined}
+                      disabled={platform.name === "YouTube" ? isLoadingData : true}
+                    >
+                      {platform.name === "YouTube"
+                        ? "Connect YouTube"
+                        : `Connect ${platform.name}`}
+                    </Button>
                   )}
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </section>
+
+        {/* YouTube Channel Data */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-semibold">YouTube Channel Data</h2>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => authToken && loadYouTubeData(authToken)}
+                disabled={!authToken || isLoadingData}
+              >
+                {isLoadingData ? "Refreshing..." : "Refresh Data"}
+              </Button>
+              <Link href="/dashboard/creator/connect-youtube">
+                <Button variant="outline" size="sm">
+                  Manage Connection
+                </Button>
+              </Link>
+            </div>
+          </div>
+          {dataError && (
+            <p className="text-sm text-[hsl(var(--destructive))] mb-4">
+              {dataError}
+            </p>
+          )}
+          <div className="grid lg:grid-cols-3 gap-4">
+            <Card className="lg:col-span-1">
+              <CardHeader>
+                <CardTitle>Channel Info</CardTitle>
+                <CardDescription>Overview of your channel</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-[hsl(var(--muted-foreground))]">
+                    Title
+                  </span>
+                  <span className="font-medium">
+                    {youtubeData?.channel?.title ?? "—"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-[hsl(var(--muted-foreground))]">
+                    Handle
+                  </span>
+                  <span className="font-medium">
+                    {youtubeData?.channel?.handle ??
+                      youtubeData?.channel?.customUrl ??
+                      "—"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-[hsl(var(--muted-foreground))]">
+                    Subscribers
+                  </span>
+                  <span className="font-medium">
+                    {youtubeData?.channel?.subscriberCount ?? "—"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-[hsl(var(--muted-foreground))]">
+                    Views
+                  </span>
+                  <span className="font-medium">
+                    {youtubeData?.channel?.viewCount ?? "—"}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-[hsl(var(--muted-foreground))]">
+                    Videos
+                  </span>
+                  <span className="font-medium">
+                    {youtubeData?.channel?.videoCount ?? "—"}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle>Latest Uploads</CardTitle>
+                <CardDescription>Recent videos from your channel</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {youtubeData?.uploads?.length ? (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Title</TableHead>
+                        <TableHead>Published</TableHead>
+                        <TableHead className="text-right">Views</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {youtubeData.uploads.slice(0, 8).map((upload) => (
+                        <TableRow key={upload.id ?? upload.title}>
+                          <TableCell>{upload.title ?? "Untitled"}</TableCell>
+                          <TableCell>
+                            {formatDate(upload.publishedAt)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {upload.viewCount ?? "—"}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                ) : (
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                    No uploads data available.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </section>
+
+        {/* YouTube Analytics */}
+        <section>
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between mb-4">
+            <div>
+              <h2 className="text-2xl font-semibold">YouTube Analytics</h2>
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                Analytics from {startDate} to {endDate}
+              </p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex items-center gap-2 text-sm">
+                <label htmlFor="startDate" className="text-[hsl(var(--muted-foreground))]">
+                  Start
+                </label>
+                <Input
+                  id="startDate"
+                  type="date"
+                  value={startDate}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                    setStartDate(event.target.value)
+                  }
+                  className="w-[140px]"
+                />
+              </div>
+              <div className="flex items-center gap-2 text-sm">
+                <label htmlFor="endDate" className="text-[hsl(var(--muted-foreground))]">
+                  End
+                </label>
+                <Input
+                  id="endDate"
+                  type="date"
+                  value={endDate}
+                  onChange={(event: ChangeEvent<HTMLInputElement>) =>
+                    setEndDate(event.target.value)
+                  }
+                  className="w-[140px]"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => authToken && loadAnalytics(authToken)}
+                disabled={!authToken || isLoadingAnalytics}
+              >
+                {isLoadingAnalytics ? "Loading..." : "Refresh Analytics"}
+              </Button>
+            </div>
+          </div>
+
+          {analyticsError && (
+            <p className="text-sm text-[hsl(var(--destructive))] mb-4">
+              {analyticsError}
+            </p>
+          )}
+
+          <div className="grid lg:grid-cols-2 gap-4 mb-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Summary</CardTitle>
+                <CardDescription>Key metrics overview</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {analytics?.summary ? (
+                  Array.isArray(analytics.summary) ? (
+                    renderTable(analytics.summary)
+                  ) : (
+                    renderTable([analytics.summary])
+                  )
+                ) : (
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                    No summary data available.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Views by Day</CardTitle>
+                <CardDescription>Daily performance trend</CardDescription>
+              </CardHeader>
+              <CardContent className="h-[240px]">
+                {analytics?.by_day?.length ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={analytics.by_day}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Line type="monotone" dataKey="views" stroke="#111" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                    No daily data available.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>By Country</CardTitle>
+                <CardDescription>Top countries</CardDescription>
+              </CardHeader>
+              <CardContent className="h-[240px]">
+                {analytics?.by_country?.length ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={analytics.by_country}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="country" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Bar dataKey="views" fill="#111" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                    No country data available.
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>By Traffic Source</CardTitle>
+                <CardDescription>Where viewers come from</CardDescription>
+              </CardHeader>
+              <CardContent>{renderTable(analytics?.by_traffic_source)}</CardContent>
+            </Card>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-4 mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>By Device</CardTitle>
+                <CardDescription>Device breakdown</CardDescription>
+              </CardHeader>
+              <CardContent>{renderTable(analytics?.by_device)}</CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>By Playback Location</CardTitle>
+                <CardDescription>Playback sources</CardDescription>
+              </CardHeader>
+              <CardContent>{renderTable(analytics?.by_playback_location)}</CardContent>
+            </Card>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-4 mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>By Subscribed Status</CardTitle>
+                <CardDescription>Subscriber breakdown</CardDescription>
+              </CardHeader>
+              <CardContent>{renderTable(analytics?.by_subscribed_status)}</CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>By Gender & Age</CardTitle>
+                <CardDescription>Audience demographics</CardDescription>
+              </CardHeader>
+              <CardContent>{renderTable(analytics?.by_gender_age)}</CardContent>
+            </Card>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-4 mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>By Video</CardTitle>
+                <CardDescription>Top video analytics</CardDescription>
+              </CardHeader>
+              <CardContent>{renderTable(analytics?.by_video)}</CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>By Video Country</CardTitle>
+                <CardDescription>Video view locations</CardDescription>
+              </CardHeader>
+              <CardContent>{renderTable(analytics?.by_video_country)}</CardContent>
+            </Card>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-4 mt-4">
+            <Card>
+              <CardHeader>
+                <CardTitle>By Video Playback Location</CardTitle>
+                <CardDescription>Playback by video</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {renderTable(analytics?.by_video_playback_location)}
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader>
+                <CardTitle>Audience Retention by Video</CardTitle>
+                <CardDescription>Retention highlights</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {renderTable(analytics?.audience_retention_by_video)}
+              </CardContent>
+            </Card>
           </div>
         </section>
 
@@ -370,9 +872,7 @@ export default function CreatorDashboardPage() {
                             <div className="flex items-center gap-1">
                               <Calendar className="h-3 w-3" />
                               <p className="font-semibold">
-                                {new Date(
-                                  campaign.deadline
-                                ).toLocaleDateString()}
+                                {formatDate(campaign.deadline)}
                               </p>
                             </div>
                           </div>
@@ -473,7 +973,7 @@ export default function CreatorDashboardPage() {
                       <div className="flex-1">
                         <p className="font-medium text-sm">{earning.brand}</p>
                         <p className="text-xs text-[hsl(var(--muted-foreground))]">
-                          {new Date(earning.date).toLocaleDateString()}
+                          {formatDate(earning.date)}
                         </p>
                       </div>
                       <div className="text-right">

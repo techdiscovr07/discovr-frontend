@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import Link from "next/link"
 import {
   Youtube,
@@ -23,16 +23,9 @@ import {
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-
-// Mock connected channel data
-const mockChannelData = {
-  name: "John Doe",
-  handle: "@johndoe",
-  subscribers: 125000,
-  totalVideos: 245,
-  totalViews: 5600000,
-  thumbnail: "",
-}
+import { fetchYouTubeData, getErrorMessage, getYouTubeConnectUrl } from "@/lib/api"
+import { getCachedIdToken } from "@/lib/auth"
+import type { YouTubeChannel } from "@/lib/models"
 
 const permissions = [
   {
@@ -73,17 +66,66 @@ const securityFeatures = [
 export default function ConnectYouTubePage() {
   const [isConnected, setIsConnected] = useState(false)
   const [isConnecting, setIsConnecting] = useState(false)
+  const [channel, setChannel] = useState<YouTubeChannel | null>(null)
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    const loadChannel = async () => {
+      const token = getCachedIdToken()
+      if (!token) {
+        return
+      }
+
+      try {
+        const data = await fetchYouTubeData(token)
+        if (data.channel) {
+          setChannel(data.channel)
+          setIsConnected(true)
+        }
+      } catch {
+        setIsConnected(false)
+      }
+    }
+
+    loadChannel()
+  }, [])
 
   const handleConnect = async () => {
     setIsConnecting(true)
-    // Mock OAuth flow
-    await new Promise((resolve) => setTimeout(resolve, 2000))
-    setIsConnected(true)
-    setIsConnecting(false)
+    setError("")
+    try {
+      const token = getCachedIdToken()
+      if (!token) {
+        throw new Error("Please log in to connect YouTube.")
+      }
+      const response = await getYouTubeConnectUrl(token)
+      if (!response.auth_url) {
+        throw new Error("No auth URL returned from server.")
+      }
+      window.location.href = response.auth_url
+    } catch (err) {
+      setError(getErrorMessage(err))
+      setIsConnecting(false)
+    }
   }
 
   const handleDisconnect = () => {
     setIsConnected(false)
+    setChannel(null)
+  }
+
+  const handleRefresh = async () => {
+    setError("")
+    try {
+      const token = getCachedIdToken()
+      if (!token) {
+        throw new Error("Please log in to refresh data.")
+      }
+      const data = await fetchYouTubeData(token)
+      setChannel(data.channel ?? null)
+    } catch (err) {
+      setError(getErrorMessage(err))
+    }
   }
 
   return (
@@ -132,7 +174,7 @@ export default function ConnectYouTubePage() {
                 <div className="flex items-start gap-4">
                   <Avatar className="h-16 w-16">
                     <AvatarFallback className="text-lg">
-                      {mockChannelData.name
+                      {(channel?.title ?? "YT")
                         .split(" ")
                         .map((n) => n[0])
                         .join("")}
@@ -140,10 +182,10 @@ export default function ConnectYouTubePage() {
                   </Avatar>
                   <div className="flex-1">
                     <h3 className="text-xl font-semibold">
-                      {mockChannelData.name}
+                      {channel?.title ?? "YouTube Channel"}
                     </h3>
                     <p className="text-[hsl(var(--muted-foreground))] mb-4">
-                      {mockChannelData.handle}
+                      {channel?.handle ?? channel?.customUrl ?? "Connected"}
                     </p>
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>
@@ -151,7 +193,9 @@ export default function ConnectYouTubePage() {
                           Subscribers
                         </p>
                         <p className="font-semibold text-lg">
-                          {(mockChannelData.subscribers / 1000).toFixed(1)}K
+                          {channel?.subscriberCount
+                            ? `${(channel.subscriberCount / 1000).toFixed(1)}K`
+                            : "—"}
                         </p>
                       </div>
                       <div>
@@ -159,7 +203,7 @@ export default function ConnectYouTubePage() {
                           Videos
                         </p>
                         <p className="font-semibold text-lg">
-                          {mockChannelData.totalVideos}
+                          {channel?.videoCount ?? "—"}
                         </p>
                       </div>
                       <div>
@@ -167,7 +211,9 @@ export default function ConnectYouTubePage() {
                           Total Views
                         </p>
                         <p className="font-semibold text-lg">
-                          {(mockChannelData.totalViews / 1000000).toFixed(1)}M
+                          {channel?.viewCount
+                            ? `${(channel.viewCount / 1000000).toFixed(1)}M`
+                            : "—"}
                         </p>
                       </div>
                     </div>
@@ -178,7 +224,9 @@ export default function ConnectYouTubePage() {
                 <Button variant="outline" onClick={handleDisconnect}>
                   Disconnect Channel
                 </Button>
-                <Button variant="outline">Refresh Data</Button>
+                <Button variant="outline" onClick={handleRefresh}>
+                  Refresh Data
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -219,6 +267,11 @@ export default function ConnectYouTubePage() {
                       ? "Connecting..."
                       : "Connect with YouTube"}
                   </Button>
+                  {error && (
+                    <p className="text-sm text-[hsl(var(--destructive))] mt-4">
+                      {error}
+                    </p>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -324,6 +377,14 @@ export default function ConnectYouTubePage() {
               By connecting, you agree to our Terms of Service and Privacy
               Policy
             </p>
+            <div className="mt-4">
+              <Link
+                href="/dashboard/creator"
+                className="text-sm text-[hsl(var(--primary))] hover:underline"
+              >
+                Back to app
+              </Link>
+            </div>
           </div>
         )}
       </div>

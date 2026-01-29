@@ -1,6 +1,18 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? ""
+import type {
+  AuthRole,
+  YouTubeAnalyticsResponse,
+  YouTubeDataResponse,
+} from "@/lib/models"
 
-export type AuthRole = "brand" | "creator"
+const resolveApiBaseUrl = () => {
+  const envUrl = process.env.NEXT_PUBLIC_API_URL
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    return ""
+  }
+  return envUrl ?? "https://discovr-backend.onrender.com"
+}
+
+const API_BASE_URL = resolveApiBaseUrl()
 
 type RequestOptions = Omit<RequestInit, "body"> & {
   body?: unknown
@@ -121,5 +133,43 @@ export const fetchProfile = (idToken: string) =>
       Authorization: `Bearer ${idToken}`,
     },
   })
+
+export const getYouTubeConnectUrl = async (idToken: string) => {
+  const response = await requestJson<{ auth_url?: string }>(
+    "/integrations/youtube/connect",
+    {
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+      },
+    },
+  )
+  return response
+}
+
+export const fetchYouTubeData = (idToken: string) =>
+  requestJson<YouTubeDataResponse>("/integrations/youtube/data", {
+    headers: {
+      Authorization: `Bearer ${idToken}`,
+    },
+  })
+
+export const fetchYouTubeAnalytics = (
+  idToken: string,
+  startDate: string,
+  endDate: string,
+) => {
+  const params = new URLSearchParams({
+    start_date: startDate,
+    end_date: endDate,
+  })
+  return requestJson<YouTubeAnalyticsResponse>(
+    `/integrations/youtube/analytics/all?${params.toString()}`,
+    {
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+      },
+    },
+  )
+}
 
 export { ApiError, getErrorMessage }
