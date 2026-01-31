@@ -47,7 +47,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { fetchProfile, getErrorMessage } from "@/lib/api"
+import { ApiError, fetchProfile, getErrorMessage } from "@/lib/api"
 import { clearCachedIdToken, getCachedIdToken } from "@/lib/auth"
 
 // Mock data
@@ -121,11 +121,13 @@ export default function DashboardPage() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [profileName, setProfileName] = useState("User")
   const [profileError, setProfileError] = useState("")
+  const [authChecked, setAuthChecked] = useState(false)
 
   useEffect(() => {
     const loadProfile = async () => {
       const token = getCachedIdToken()
       if (!token) {
+        setAuthChecked(true)
         router.replace("/login")
         return
       }
@@ -143,10 +145,18 @@ export default function DashboardPage() {
             setProfileName(name)
           }
         }
+        setAuthChecked(true)
       } catch (error) {
         setProfileError(getErrorMessage(error))
-        clearCachedIdToken()
-        router.replace("/login")
+        setAuthChecked(true)
+        // Only clear token and redirect on 401 Unauthorized (invalid/expired token).
+        // Network errors, CORS, or 5xx in production would otherwise kick users to login.
+        const isUnauthorized =
+          error instanceof ApiError && error.status === 401
+        if (isUnauthorized) {
+          clearCachedIdToken()
+          router.replace("/login")
+        }
       }
     }
 
@@ -164,6 +174,19 @@ export default function DashboardPage() {
     .map((part) => part[0]?.toUpperCase())
     .slice(0, 2)
     .join("")
+
+  if (!authChecked) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[hsl(var(--background))]">
+        <div className="text-[hsl(var(--muted-foreground))]">Loading...</div>
+      </div>
+    )
+  }
+
+  const token = getCachedIdToken()
+  if (!token) {
+    return null
+  }
 
   return (
     <div className="flex h-screen bg-[hsl(var(--background))]">

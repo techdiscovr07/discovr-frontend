@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Mail, Lock, ArrowRight, User } from "lucide-react"
+import { Mail, Lock, ArrowRight, User, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { getErrorMessage, signup } from "@/lib/api"
+import { toast } from "sonner"
 
 export default function SignupPage() {
   const router = useRouter()
@@ -91,9 +92,12 @@ export default function SignupPage() {
         password,
         role: role as "brand" | "creator",
       })
+      toast.success("Account created! Redirecting to sign in.")
       router.push("/login")
     } catch (error) {
-      setServerError(getErrorMessage(error))
+      const message = getErrorMessage(error)
+      setServerError(message)
+      toast.error(message)
     } finally {
       setIsLoading(false)
     }
@@ -252,7 +256,10 @@ export default function SignupPage() {
               disabled={isLoading}
             >
               {isLoading ? (
-                "Creating account..."
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating account...
+                </>
               ) : (
                 <>
                   Create account

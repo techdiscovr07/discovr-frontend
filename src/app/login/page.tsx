@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Mail, Lock, ArrowRight } from "lucide-react"
+import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -28,6 +28,7 @@ import {
   loginWithPassword,
 } from "@/lib/api"
 import { setCachedIdToken } from "@/lib/auth"
+import { toast } from "sonner"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -88,9 +89,12 @@ export default function LoginPage() {
       }
 
       setCachedIdToken(idToken)
+      toast.success("Signed in successfully")
       router.push("/dashboard")
     } catch (error) {
-      setServerError(getErrorMessage(error))
+      const message = getErrorMessage(error)
+      setServerError(message)
+      toast.error(message)
     } finally {
       setIsLoading(false)
     }
@@ -196,7 +200,10 @@ export default function LoginPage() {
               disabled={isLoading}
             >
               {isLoading ? (
-                "Signing in..."
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing in...
+                </>
               ) : (
                 <>
                   Sign in
