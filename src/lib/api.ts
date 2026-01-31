@@ -1,5 +1,6 @@
 import type {
   AuthRole,
+  YouTubeAnalyticsBasicResponse,
   YouTubeAnalyticsResponse,
   YouTubeDataResponse,
 } from "@/lib/models"
@@ -164,6 +165,25 @@ export const fetchYouTubeAnalytics = (
   })
   return requestJson<YouTubeAnalyticsResponse>(
     `/integrations/youtube/analytics/all?${params.toString()}`,
+    {
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+      },
+    },
+  )
+}
+
+export const fetchYouTubeAnalyticsBasic = (
+  idToken: string,
+  startDate: string,
+  endDate: string,
+) => {
+  const params = new URLSearchParams({
+    start_date: startDate,
+    end_date: endDate,
+  })
+  return requestJson<YouTubeAnalyticsBasicResponse>(
+    `/integrations/youtube/analytics?${params.toString()}`,
     {
       headers: {
         Authorization: `Bearer ${idToken}`,

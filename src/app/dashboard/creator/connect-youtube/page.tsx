@@ -79,7 +79,24 @@ export default function ConnectYouTubePage() {
       try {
         const data = await fetchYouTubeData(token)
         if (data.channel) {
-          setChannel(data.channel)
+          const mappedChannel: YouTubeChannel = {
+            id: data.channel.id,
+            title: data.channel.snippet?.title,
+            description: data.channel.snippet?.description,
+            customUrl: data.channel.snippet?.customUrl,
+            publishedAt: data.channel.snippet?.publishedAt,
+            thumbnails: data.channel.snippet?.thumbnails,
+            subscriberCount: data.channel.statistics?.subscriberCount
+              ? Number(data.channel.statistics.subscriberCount)
+              : undefined,
+            viewCount: data.channel.statistics?.viewCount
+              ? Number(data.channel.statistics.viewCount)
+              : undefined,
+            videoCount: data.channel.statistics?.videoCount
+              ? Number(data.channel.statistics.videoCount)
+              : undefined,
+          }
+          setChannel(mappedChannel)
           setIsConnected(true)
         }
       } catch {
@@ -122,7 +139,28 @@ export default function ConnectYouTubePage() {
         throw new Error("Please log in to refresh data.")
       }
       const data = await fetchYouTubeData(token)
-      setChannel(data.channel ?? null)
+      if (data.channel) {
+        const mappedChannel: YouTubeChannel = {
+          id: data.channel.id,
+          title: data.channel.snippet?.title,
+          description: data.channel.snippet?.description,
+          customUrl: data.channel.snippet?.customUrl,
+          publishedAt: data.channel.snippet?.publishedAt,
+          thumbnails: data.channel.snippet?.thumbnails,
+          subscriberCount: data.channel.statistics?.subscriberCount
+            ? Number(data.channel.statistics.subscriberCount)
+            : undefined,
+          viewCount: data.channel.statistics?.viewCount
+            ? Number(data.channel.statistics.viewCount)
+            : undefined,
+          videoCount: data.channel.statistics?.videoCount
+            ? Number(data.channel.statistics.videoCount)
+            : undefined,
+        }
+        setChannel(mappedChannel)
+      } else {
+        setChannel(null)
+      }
     } catch (err) {
       setError(getErrorMessage(err))
     }
@@ -185,7 +223,7 @@ export default function ConnectYouTubePage() {
                       {channel?.title ?? "YouTube Channel"}
                     </h3>
                     <p className="text-[hsl(var(--muted-foreground))] mb-4">
-                      {channel?.handle ?? channel?.customUrl ?? "Connected"}
+                      {channel?.customUrl ?? "Connected"}
                     </p>
                     <div className="grid grid-cols-3 gap-4 text-sm">
                       <div>

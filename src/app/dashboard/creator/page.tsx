@@ -38,13 +38,17 @@ import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
-  fetchYouTubeAnalytics,
+  fetchYouTubeAnalyticsBasic,
   fetchYouTubeData,
   getErrorMessage,
   getYouTubeConnectUrl,
 } from "@/lib/api"
 import { getCachedIdToken } from "@/lib/auth"
-import type { AnalyticsSection, YouTubeAnalyticsResponse } from "@/lib/models"
+import type {
+  AnalyticsRow,
+  AnalyticsSection,
+  YouTubeAnalyticsBasicResponse,
+} from "@/lib/models"
 import {
   Bar,
   BarChart,
@@ -135,21 +139,21 @@ export default function CreatorDashboardPage() {
     channel?: {
       title?: string
       customUrl?: string
-      handle?: string
       subscriberCount?: number
       viewCount?: number
       videoCount?: number
+      thumbnailUrl?: string
     }
     uploads?: Array<{
       id?: string
+      videoId?: string
       title?: string
       publishedAt?: string
-      viewCount?: number
+      thumbnailUrl?: string
     }>
   } | null>(null)
-  const [analytics, setAnalytics] = useState<YouTubeAnalyticsResponse | null>(
-    null,
-  )
+  const [analyticsBasic, setAnalyticsBasic] =
+    useState<YouTubeAnalyticsBasicResponse | null>(null)
   const [isLoadingData, setIsLoadingData] = useState(false)
   const [isLoadingAnalytics, setIsLoadingAnalytics] = useState(false)
   const [dataError, setDataError] = useState("")
@@ -179,10 +183,7 @@ export default function CreatorDashboardPage() {
         name: "YouTube",
         connected: Boolean(youtubeData?.channel),
         icon: Youtube,
-        handle:
-          youtubeData?.channel?.handle ??
-          youtubeData?.channel?.customUrl ??
-          "",
+        handle: youtubeData?.channel?.customUrl ?? "",
         followers: youtubeData?.channel?.subscriberCount ?? 0,
       },
       {
@@ -208,7 +209,39 @@ export default function CreatorDashboardPage() {
     setDataError("")
     try {
       const data = await fetchYouTubeData(token)
-      setYoutubeData(data)
+      const mapped = {
+        channel: data.channel
+          ? {
+              title: data.channel.snippet?.title,
+              customUrl: data.channel.snippet?.customUrl,
+              subscriberCount: data.channel.statistics?.subscriberCount
+                ? Number(data.channel.statistics.subscriberCount)
+                : undefined,
+              viewCount: data.channel.statistics?.viewCount
+                ? Number(data.channel.statistics.viewCount)
+                : undefined,
+              videoCount: data.channel.statistics?.videoCount
+                ? Number(data.channel.statistics.videoCount)
+                : undefined,
+              thumbnailUrl:
+                data.channel.snippet?.thumbnails?.high?.url ??
+                data.channel.snippet?.thumbnails?.medium?.url ??
+                data.channel.snippet?.thumbnails?.default?.url,
+            }
+          : undefined,
+        uploads: data.uploads?.map((upload) => ({
+          id: upload.id,
+          videoId: upload.contentDetails?.videoId,
+          title: upload.snippet?.title,
+          publishedAt:
+            upload.contentDetails?.videoPublishedAt ?? upload.snippet?.publishedAt,
+          thumbnailUrl:
+            upload.snippet?.thumbnails?.high?.url ??
+            upload.snippet?.thumbnails?.medium?.url ??
+            upload.snippet?.thumbnails?.default?.url,
+        })),
+      }
+      setYoutubeData(mapped)
     } catch (error) {
       setDataError(getErrorMessage(error))
     } finally {
@@ -220,14 +253,71 @@ export default function CreatorDashboardPage() {
     setIsLoadingAnalytics(true)
     setAnalyticsError("")
     try {
-      const data = await fetchYouTubeAnalytics(token, startDate, endDate)
-      setAnalytics(data)
+      const data = await fetchYouTubeAnalyticsBasic(token, startDate, endDate)
+      setAnalyticsBasic(data)
     } catch (error) {
       setAnalyticsError(getErrorMessage(error))
     } finally {
       setIsLoadingAnalytics(false)
     }
   }
+
+  const analyticsDerived = useMemo(() => {
+    const raw = analyticsBasic
+    if (!raw?.column_headers?.length || !raw.rows?.length) return null
+    const names = raw.column_headers.map((h) => h?.name ?? "").filter(Boolean)
+    const rowsAsObjects: AnalyticsSection = raw.rows.map((row) => {
+      const obj: AnalyticsRow = {}
+      names.forEach((name, i) => {
+        obj[name] = row[i] ?? null
+      })
+      return obj
+    })
+    const numericKeys = names.filter(
+      (n) =>
+        n !== "day" &&
+        ["views", "estimatedMinutesWatched", "averageViewDuration", "subscribersGained", "subscribersLost", "likes", "comments", "shares"].includes(n),
+    )
+    const summaryRow: AnalyticsRow = { Period: "Total" }
+    numericKeys.forEach((key) => {
+      const values = rowsAsObjects
+        .map((r) => r[key])
+        .filter((v): v is number => typeof v === "number")
+      if (key === "averageViewDuration" && values.length > 0) {
+        summaryRow[key] = Math.round(
+          values.reduce((a, b) => a + b, 0) / values.length,
+        )
+      } else {
+        summaryRow[key] = values.reduce((a, b) => a + b, 0)
+      }
+    })
+    return {
+      summary: [summaryRow],
+      by_day: rowsAsObjects,
+      daily: rowsAsObjects,
+    }
+  }, [analyticsBasic])
+
+  const analytics = useMemo(
+    () =>
+      analyticsDerived
+        ? {
+            summary: analyticsDerived.summary,
+            by_day: analyticsDerived.by_day,
+            by_country: undefined as AnalyticsSection | undefined,
+            by_traffic_source: undefined as AnalyticsSection | undefined,
+            by_device: undefined as AnalyticsSection | undefined,
+            by_playback_location: undefined as AnalyticsSection | undefined,
+            by_subscribed_status: undefined as AnalyticsSection | undefined,
+            by_gender_age: undefined as AnalyticsSection | undefined,
+            by_video: undefined as AnalyticsSection | undefined,
+            by_video_country: undefined as AnalyticsSection | undefined,
+            by_video_playback_location: undefined as AnalyticsSection | undefined,
+            audience_retention_by_video: undefined as AnalyticsSection | undefined,
+          }
+        : null,
+    [analyticsDerived],
+  )
 
   useEffect(() => {
     if (!authToken) return
@@ -444,9 +534,7 @@ export default function CreatorDashboardPage() {
                     Handle
                   </span>
                   <span className="font-medium">
-                    {youtubeData?.channel?.handle ??
-                      youtubeData?.channel?.customUrl ??
-                      "—"}
+                    {youtubeData?.channel?.customUrl ?? "—"}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
@@ -488,7 +576,7 @@ export default function CreatorDashboardPage() {
                       <TableRow>
                         <TableHead>Title</TableHead>
                         <TableHead>Published</TableHead>
-                        <TableHead className="text-right">Views</TableHead>
+                        <TableHead className="text-right">Video</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -499,7 +587,18 @@ export default function CreatorDashboardPage() {
                             {formatDate(upload.publishedAt)}
                           </TableCell>
                           <TableCell className="text-right">
-                            {upload.viewCount ?? "—"}
+                            {upload.videoId ? (
+                              <a
+                                href={`https://www.youtube.com/watch?v=${upload.videoId}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[hsl(var(--primary))] hover:underline"
+                              >
+                                Open
+                              </a>
+                            ) : (
+                              "—"
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -601,7 +700,7 @@ export default function CreatorDashboardPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={analytics.by_day}>
                       <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="date" />
+                      <XAxis dataKey="day" />
                       <YAxis />
                       <Tooltip />
                       <Line type="monotone" dataKey="views" stroke="#111" />
@@ -612,6 +711,26 @@ export default function CreatorDashboardPage() {
                     No daily data available.
                   </p>
                 )}
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="grid lg:grid-cols-1 gap-4 mb-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Daily breakdown</CardTitle>
+                <CardDescription>
+                  Day-by-day metrics (views, watch time, engagement)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {analyticsDerived?.daily?.length
+                  ? renderTable(analyticsDerived.daily)
+                  : (
+                    <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                      No daily data available.
+                    </p>
+                  )}
               </CardContent>
             </Card>
           </div>
