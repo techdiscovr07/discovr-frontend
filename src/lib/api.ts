@@ -18,17 +18,14 @@ const isLocalhostUrl = (value: string) => {
   }
 }
 
+const STATIC_BACKEND_URL = "https://discovr-backend.onrender.com"
+
 const resolveApiBaseUrl = () => {
-  const envUrl = process.env.NEXT_PUBLIC_API_URL
 
   if (typeof window !== "undefined" && window.location.hostname === "localhost") {
     return ""
   }
-  // Prevent accidentally shipping a localhost API base URL to production.
-  if (typeof window !== "undefined" && envUrl && isLocalhostUrl(envUrl)) {
-    return "https://discovr-backend.onrender.com"
-  }
-  return envUrl ?? "https://discovr-backend.onrender.com"
+  return STATIC_BACKEND_URL
 }
 
 const API_BASE_URL = resolveApiBaseUrl()
