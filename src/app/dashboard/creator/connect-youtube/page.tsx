@@ -26,6 +26,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
   fetchYouTubeData,
   getErrorMessage,
+  assertValidYouTubeAuthUrl,
   getYouTubeConnectUrlWithRedirect,
 } from "@/lib/api"
 import { getCachedIdToken } from "@/lib/auth"
@@ -121,10 +122,8 @@ export default function ConnectYouTubePage() {
       }
       const redirect = `${window.location.origin}/dashboard/creator?youtube=connected`
       const response = await getYouTubeConnectUrlWithRedirect(token, redirect)
-      if (!response.auth_url) {
-        throw new Error("No auth URL returned from server.")
-      }
-      window.location.href = response.auth_url
+      const authUrl = assertValidYouTubeAuthUrl(response.auth_url ?? "")
+      window.location.href = authUrl
     } catch (err) {
       setError(getErrorMessage(err))
       setIsConnecting(false)

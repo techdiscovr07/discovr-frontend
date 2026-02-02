@@ -5,16 +5,21 @@ import type {
   YouTubeDataResponse,
 } from "@/lib/models"
 
+const isLocalhostUrl = (value: string) => {
+  try {
+    const parsed = new URL(value)
+    return (
+      parsed.hostname === "localhost" ||
+      parsed.hostname === "127.0.0.1" ||
+      parsed.hostname === "0.0.0.0"
+    )
+  } catch {
+    return value.includes("localhost") || value.includes("127.0.0.1")
+  }
+}
+
 const resolveApiBaseUrl = () => {
   const envUrl = process.env.NEXT_PUBLIC_API_URL
-  const isLocalhostUrl = (value: string) => {
-    try {
-      const parsed = new URL(value)
-      return parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1"
-    } catch {
-      return false
-    }
-  }
 
   if (typeof window !== "undefined" && window.location.hostname === "localhost") {
     return ""
@@ -149,10 +154,6 @@ export const fetchProfile = (idToken: string) =>
   })
 
 export const getYouTubeConnectUrl = async (idToken: string) => {
-  const params = new URLSearchParams()
-  // NOTE: We accept the redirect value from callers by passing it as a querystring
-  // when needed. This keeps the default behavior unchanged for older callers.
-  // (see overloaded signature below)
   const response = await requestJson<{ auth_url?: string }>(
     "/integrations/youtube/connect",
     {
@@ -162,6 +163,32 @@ export const getYouTubeConnectUrl = async (idToken: string) => {
     },
   )
   return response
+}
+
+export const assertValidYouTubeAuthUrl = (authUrl: string) => {
+  if (!authUrl) {
+    throw new Error("No auth URL returned from server.")
+  }
+  let redirectUri: string | null = null
+  try {
+    const parsed = new URL(authUrl)
+    redirectUri = parsed.searchParams.get("redirect_uri")
+  } catch {
+    if (authUrl.includes("localhost") || authUrl.includes("127.0.0.1")) {
+      throw new Error(
+        "YouTube OAuth is misconfigured: backend returned a localhost auth URL. Update the backend base URL / redirect URI to use your public backend domain, then try again.",
+      )
+    }
+    return authUrl
+  }
+
+  if (redirectUri && isLocalhostUrl(redirectUri)) {
+    throw new Error(
+      `YouTube OAuth is misconfigured: backend returned redirect_uri=${redirectUri}. Update the backend base URL / redirect URI to use your public backend domain, then try again.`,
+    )
+  }
+
+  return authUrl
 }
 
 export const getYouTubeConnectUrlWithRedirect = async (

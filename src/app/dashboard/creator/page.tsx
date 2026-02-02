@@ -42,6 +42,7 @@ import {
   fetchYouTubeAnalyticsBasic,
   fetchYouTubeData,
   getErrorMessage,
+  assertValidYouTubeAuthUrl,
   getYouTubeConnectUrlWithRedirect,
 } from "@/lib/api"
 import { getCachedIdToken } from "@/lib/auth"
@@ -346,10 +347,8 @@ export default function CreatorDashboardPage() {
     try {
       const redirect = `${window.location.origin}/dashboard/creator?youtube=connected`
       const response = await getYouTubeConnectUrlWithRedirect(authToken, redirect)
-      if (!response.auth_url) {
-        throw new Error("No auth URL returned from server.")
-      }
-      window.location.href = response.auth_url
+      const authUrl = assertValidYouTubeAuthUrl(response.auth_url ?? "")
+      window.location.href = authUrl
     } catch (error) {
       setTokenError(getErrorMessage(error))
     }
