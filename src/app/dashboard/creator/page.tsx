@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, type ChangeEvent } from "react"
 import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import {
   Youtube,
   Instagram,
@@ -136,7 +136,6 @@ const recentEarnings = [
 
 export default function CreatorDashboardPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const [authToken, setAuthToken] = useState<string | null>(null)
   const [tokenError, setTokenError] = useState("")
   const [youtubeData, setYoutubeData] = useState<{
@@ -182,12 +181,13 @@ export default function CreatorDashboardPage() {
   }, [])
 
   useEffect(() => {
-    const status = searchParams.get("youtube")
+    if (typeof window === "undefined") return
+    const status = new URLSearchParams(window.location.search).get("youtube")
     if (status === "connected") {
       toast.success("YouTube connected successfully")
       router.replace("/dashboard/creator")
     }
-  }, [router, searchParams])
+  }, [router])
 
   const platformStatus = useMemo(
     () => [
