@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, type ChangeEvent } from "react"
 import Link from "next/link"
+import { useRouter, useSearchParams } from "next/navigation"
 import {
   Youtube,
   Instagram,
@@ -41,7 +42,7 @@ import {
   fetchYouTubeAnalyticsBasic,
   fetchYouTubeData,
   getErrorMessage,
-  getYouTubeConnectUrl,
+  getYouTubeConnectUrlWithRedirect,
 } from "@/lib/api"
 import { getCachedIdToken } from "@/lib/auth"
 import type {
@@ -49,6 +50,7 @@ import type {
   AnalyticsSection,
   YouTubeAnalyticsBasicResponse,
 } from "@/lib/models"
+import { toast } from "sonner"
 import {
   Bar,
   BarChart,
@@ -133,6 +135,8 @@ const recentEarnings = [
 ]
 
 export default function CreatorDashboardPage() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
   const [authToken, setAuthToken] = useState<string | null>(null)
   const [tokenError, setTokenError] = useState("")
   const [youtubeData, setYoutubeData] = useState<{
@@ -176,6 +180,14 @@ export default function CreatorDashboardPage() {
     }
     setAuthToken(token)
   }, [])
+
+  useEffect(() => {
+    const status = searchParams.get("youtube")
+    if (status === "connected") {
+      toast.success("YouTube connected successfully")
+      router.replace("/dashboard/creator")
+    }
+  }, [router, searchParams])
 
   const platformStatus = useMemo(
     () => [
@@ -332,7 +344,8 @@ export default function CreatorDashboardPage() {
       return
     }
     try {
-      const response = await getYouTubeConnectUrl(authToken)
+      const redirect = `${window.location.origin}/dashboard/creator?youtube=connected`
+      const response = await getYouTubeConnectUrlWithRedirect(authToken, redirect)
       if (!response.auth_url) {
         throw new Error("No auth URL returned from server.")
       }

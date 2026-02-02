@@ -23,7 +23,11 @@ import {
 } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { fetchYouTubeData, getErrorMessage, getYouTubeConnectUrl } from "@/lib/api"
+import {
+  fetchYouTubeData,
+  getErrorMessage,
+  getYouTubeConnectUrlWithRedirect,
+} from "@/lib/api"
 import { getCachedIdToken } from "@/lib/auth"
 import type { YouTubeChannel } from "@/lib/models"
 
@@ -115,7 +119,8 @@ export default function ConnectYouTubePage() {
       if (!token) {
         throw new Error("Please log in to connect YouTube.")
       }
-      const response = await getYouTubeConnectUrl(token)
+      const redirect = `${window.location.origin}/dashboard/creator?youtube=connected`
+      const response = await getYouTubeConnectUrlWithRedirect(token, redirect)
       if (!response.auth_url) {
         throw new Error("No auth URL returned from server.")
       }

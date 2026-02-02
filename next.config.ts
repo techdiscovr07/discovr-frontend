@@ -1,7 +1,22 @@
 import type { NextConfig } from "next";
 
+const isLocalhostUrl = (value: string) => {
+  try {
+    const parsed = new URL(value)
+    return parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1"
+  } catch {
+    return false
+  }
+}
+
+const envBackendUrl = process.env.NEXT_PUBLIC_API_URL
 const backendBaseUrl =
-  process.env.NEXT_PUBLIC_API_URL ??
+  // Prevent accidentally shipping a localhost API base URL to production.
+  (process.env.NODE_ENV !== "development" &&
+  typeof envBackendUrl === "string" &&
+  isLocalhostUrl(envBackendUrl)
+    ? "https://discovr-backend.onrender.com"
+    : envBackendUrl) ??
   (process.env.NODE_ENV === "development"
     ? "http://localhost:8080"
     : "https://discovr-backend.onrender.com")

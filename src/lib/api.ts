@@ -7,8 +7,21 @@ import type {
 
 const resolveApiBaseUrl = () => {
   const envUrl = process.env.NEXT_PUBLIC_API_URL
+  const isLocalhostUrl = (value: string) => {
+    try {
+      const parsed = new URL(value)
+      return parsed.hostname === "localhost" || parsed.hostname === "127.0.0.1"
+    } catch {
+      return false
+    }
+  }
+
   if (typeof window !== "undefined" && window.location.hostname === "localhost") {
     return ""
+  }
+  // Prevent accidentally shipping a localhost API base URL to production.
+  if (typeof window !== "undefined" && envUrl && isLocalhostUrl(envUrl)) {
+    return "https://discovr-backend.onrender.com"
   }
   return envUrl ?? "https://discovr-backend.onrender.com"
 }
@@ -136,6 +149,10 @@ export const fetchProfile = (idToken: string) =>
   })
 
 export const getYouTubeConnectUrl = async (idToken: string) => {
+  const params = new URLSearchParams()
+  // NOTE: We accept the redirect value from callers by passing it as a querystring
+  // when needed. This keeps the default behavior unchanged for older callers.
+  // (see overloaded signature below)
   const response = await requestJson<{ auth_url?: string }>(
     "/integrations/youtube/connect",
     {
@@ -145,6 +162,21 @@ export const getYouTubeConnectUrl = async (idToken: string) => {
     },
   )
   return response
+}
+
+export const getYouTubeConnectUrlWithRedirect = async (
+  idToken: string,
+  redirect: string,
+) => {
+  const params = new URLSearchParams({ redirect })
+  return requestJson<{ auth_url?: string }>(
+    `/integrations/youtube/connect?${params.toString()}`,
+    {
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+      },
+    },
+  )
 }
 
 export const fetchYouTubeData = (idToken: string) =>
