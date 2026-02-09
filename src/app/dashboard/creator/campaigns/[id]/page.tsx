@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useParams, useRouter } from "next/navigation"
+import { useParams, useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import {
   Loader2,
@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import {
+  linkCreatorToCampaign,
   fetchCreatorCampaignBrief,
   submitCreatorBid,
   uploadCreatorContent,
@@ -51,7 +52,9 @@ type CampaignBrief = {
 export default function CreatorCampaignDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const campaignId = params.id as string
+  const creatorToken = searchParams.get("creator_token")
 
   const [loading, setLoading] = useState(true)
   const [brief, setBrief] = useState<CampaignBrief | null>(null)
@@ -65,7 +68,13 @@ export default function CreatorCampaignDetailPage() {
   useEffect(() => {
     const token = getCachedIdToken()
     if (!token) {
-      router.push("/login")
+      const loginReturn =
+        campaignId && creatorToken
+          ? `?campaign_id=${encodeURIComponent(campaignId)}&creator_token=${encodeURIComponent(creatorToken)}`
+          : campaignId
+            ? `?campaign_id=${encodeURIComponent(campaignId)}`
+            : ""
+      router.push(`/login${loginReturn}`)
       return
     }
 
@@ -75,8 +84,8 @@ export default function CreatorCampaignDetailPage() {
         setBrief(response)
       } catch (error) {
         const message = getErrorMessage(error)
-        if (message.includes("Amount not finalized") || message.includes("Brief not available")) {
-          // Brief not available yet, show bidding form
+        if (message.includes("Amount not finalized") || message.includes("Brief not available") || message.includes("Creator not found")) {
+          // Brief not available yet, or not yet linked – show bidding form or link first
           setBrief(null)
         } else {
           toast.error(message)
@@ -86,8 +95,28 @@ export default function CreatorCampaignDetailPage() {
       }
     }
 
-    loadBrief()
-  }, [campaignId, router])
+    const run = async () => {
+      if (creatorToken) {
+        try {
+          await linkCreatorToCampaign(token, campaignId, creatorToken)
+          // Optional: remove creator_token from URL so we don't re-link on refresh
+          if (typeof window !== "undefined" && window.history.replaceState) {
+            const url = new URL(window.location.href)
+            url.searchParams.delete("creator_token")
+            window.history.replaceState({}, "", url.pathname + url.search)
+          }
+        } catch (err) {
+          const msg = getErrorMessage(err)
+          if (!msg.includes("already used")) {
+            toast.error(msg)
+          }
+        }
+      }
+      await loadBrief()
+    }
+
+    run()
+  }, [campaignId, creatorToken, router])
 
   const handleSubmitBid = async () => {
     const amount = parseFloat(bidAmount)

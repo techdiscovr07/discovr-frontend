@@ -101,10 +101,10 @@ function SignupForm() {
         role: (role || "creator") as "creator" | "brand_owner" | "brand_emp",
       })
       
-      // If this is a campaign signup, redirect to campaign detail page
+      // If this is a campaign signup, redirect to campaign detail page (with creator_token so backend can link)
       if (campaignId && creatorToken) {
         toast.success("Account created! Redirecting to campaign.")
-        router.push(`/dashboard/creator/campaigns/${campaignId}`)
+        router.push(`/dashboard/creator/campaigns/${campaignId}?creator_token=${encodeURIComponent(creatorToken)}`)
       } else {
         toast.success("Account created! Redirecting to sign in.")
         router.push("/login")

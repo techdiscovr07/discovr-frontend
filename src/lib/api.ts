@@ -375,6 +375,22 @@ export const fetchYouTubeAnalyticsBasic = (
 }
 
 // Creator API functions
+export const linkCreatorToCampaign = (
+  token: string,
+  campaignId: string,
+  creatorToken: string,
+) =>
+  requestJson<{ message: string; campaign_id: string }>(
+    "/creator/campaigns/link",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: { campaign_id: campaignId, creator_token: creatorToken },
+    },
+  )
+
 export const fetchCreatorCampaigns = (token: string) =>
   requestJson<{ campaigns: Array<{
     campaign_id: string

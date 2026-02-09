@@ -16,7 +16,6 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import {
-  ApiError,
   extractIdToken,
   getErrorMessage,
   loginWithPassword,
@@ -72,61 +71,36 @@ function LoginForm() {
     setServerError("")
 
     try {
-      const tryLoginWithRole = async (roleToTry: "brand_owner" | "brand_emp" | "creator") => {
-        const response = await loginWithPassword({
-          email,
-          password,
-          role: roleToTry,
-        })
-        const idToken = extractIdToken(response)
-        if (!idToken) {
-          throw new Error("Login succeeded but no id token was returned.")
-        }
-        return { role: roleToTry, token: idToken }
+      // Single login: backend returns user with role from MongoDB (no role guess)
+      const response = await loginWithPassword({ email, password }) as {
+        user?: { role?: string }
+        id_token?: string
+        idToken?: string
       }
-
-      const shouldRetry = (error: unknown) =>
-        error instanceof ApiError &&
-        [401, 403, 404].includes(error.status)
-
-      let authResult:
-        | { role: "brand_owner" | "brand_emp" | "creator"; token: string }
-        | null = null
-
-      try {
-        authResult = await tryLoginWithRole("brand_owner")
-      } catch (error) {
-        if (!shouldRetry(error)) throw error
+      const idToken = extractIdToken(response)
+      if (!idToken) {
+        throw new Error("Login succeeded but no id token was returned.")
       }
+      const role = (response.user?.role ?? "").toLowerCase()
 
-      if (!authResult) {
-        try {
-          authResult = await tryLoginWithRole("brand_emp")
-        } catch (error) {
-          if (!shouldRetry(error)) throw error
-        }
-      }
-
-      if (!authResult) {
-        authResult = await tryLoginWithRole("creator")
-      }
-
-      if (authResult.role === "brand_owner" || authResult.role === "brand_emp") {
+      if (role === "brand_owner" || role === "brand_emp") {
         clearCachedIdToken()
         clearBrandTokens()
-        setBrandAuthToken(authResult.token, authResult.role)
+        setBrandAuthToken(idToken, role === "brand_owner" ? "brand_owner" : "brand_emp")
         toast.success(
-          authResult.role === "brand_owner"
+          role === "brand_owner"
             ? "Signed in as Brand Owner"
             : "Signed in as Brand Employee",
         )
         router.push("/dashboard/brand")
       } else {
         clearBrandTokens()
-        setCachedIdToken(authResult.token)
-        toast.success("Signed in successfully")
+        setCachedIdToken(idToken)
+        toast.success("Signed in as Creator")
         if (campaignId) {
-          router.push(`/dashboard/creator/campaigns/${campaignId}`)
+          const creatorToken = searchParams.get("creator_token")
+          const q = creatorToken ? `?creator_token=${encodeURIComponent(creatorToken)}` : ""
+          router.push(`/dashboard/creator/campaigns/${campaignId}${q}`)
         } else {
           router.push("/dashboard/creator")
         }
