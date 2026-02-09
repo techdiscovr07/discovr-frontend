@@ -308,7 +308,7 @@ export default function CreatorCampaignDetailPage() {
       )}
 
       {/* Content Upload Phase */}
-      {showContentUpload && status !== "content_pending" && status !== "content_approved" && status !== "content_live" && (
+      {showContentUpload && (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
