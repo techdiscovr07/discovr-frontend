@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useState, useEffect } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Mail, Lock, ArrowRight, User, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -27,13 +27,25 @@ import { toast } from "sonner"
 
 export default function SignupPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const campaignId = searchParams.get("campaign_id")
+  const creatorToken = searchParams.get("creator_token")
+  const isCampaignSignup = Boolean(campaignId)
+  
   const [name, setName] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [role, setRole] = useState<string>("")
+  const [role, setRole] = useState<string>("creator") // Default to creator for campaign signups
   const [isLoading, setIsLoading] = useState(false)
   const [serverError, setServerError] = useState("")
+  
+  // If campaign_id is present, this is a creator signup from campaign link
+  useEffect(() => {
+    if (isCampaignSignup) {
+      setRole("creator")
+    }
+  }, [isCampaignSignup])
   const [errors, setErrors] = useState<{
     name?: string
     email?: string
@@ -67,10 +79,6 @@ export default function SignupPage() {
       newErrors.confirmPassword = "Passwords do not match"
     }
     
-    if (!role) {
-      newErrors.role = "Please select a role"
-    }
-    
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -90,10 +98,17 @@ export default function SignupPage() {
         name: name.trim(),
         email,
         password,
-        role: role as "brand" | "creator",
+        role: (role || "creator") as "creator" | "brand_owner" | "brand_emp",
       })
-      toast.success("Account created! Redirecting to sign in.")
-      router.push("/login")
+      
+      // If this is a campaign signup, redirect to campaign detail page
+      if (campaignId && creatorToken) {
+        toast.success("Account created! Redirecting to campaign.")
+        router.push(`/dashboard/creator/campaigns/${campaignId}`)
+      } else {
+        toast.success("Account created! Redirecting to sign in.")
+        router.push("/login")
+      }
     } catch (error) {
       const message = getErrorMessage(error)
       setServerError(message)
@@ -108,10 +123,12 @@ export default function SignupPage() {
       <Card className="w-full max-w-md shadow-xl border bg-[hsl(var(--card))]">
         <CardHeader className="space-y-1 text-center">
           <CardTitle className="text-3xl font-bold tracking-tight">
-            Create an account
+            {campaignId && creatorToken ? "Sign up for Campaign" : "Create an account"}
           </CardTitle>
           <CardDescription className="text-base">
-            Enter your information to get started
+            {campaignId && creatorToken
+              ? "Create your account to submit your bid for this campaign"
+              : "Enter your information to get started"}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
@@ -219,32 +236,35 @@ export default function SignupPage() {
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select
-                value={role}
-                onValueChange={(value) => {
-                  setRole(value)
-                  if (errors.role) {
-                    setErrors((prev) => ({ ...prev, role: undefined }))
-                  }
-                }}
-                disabled={isLoading}
-              >
-                <SelectTrigger
-                  className={errors.role ? "border-[hsl(var(--destructive))]" : ""}
+            {!isCampaignSignup && (
+              <div className="space-y-2">
+                <Label htmlFor="role">Role</Label>
+                <Select
+                  value={role}
+                  onValueChange={(value) => {
+                    setRole(value)
+                    if (errors.role) {
+                      setErrors((prev) => ({ ...prev, role: undefined }))
+                    }
+                  }}
+                  disabled={isLoading}
                 >
-                  <SelectValue placeholder="Select your role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="brand">Brand</SelectItem>
-                  <SelectItem value="creator">Creator</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.role && (
-                <p className="text-sm text-[hsl(var(--destructive))] mt-1">{errors.role}</p>
-              )}
-            </div>
+                  <SelectTrigger
+                    className={errors.role ? "border-[hsl(var(--destructive))]" : ""}
+                  >
+                    <SelectValue placeholder="Select your role" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="creator">Creator</SelectItem>
+                    <SelectItem value="brand_owner">Brand Owner</SelectItem>
+                    <SelectItem value="brand_emp">Brand Employee</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.role && (
+                  <p className="text-sm text-[hsl(var(--destructive))] mt-1">{errors.role}</p>
+                )}
+              </div>
+            )}
             {serverError && (
               <p className="text-sm text-[hsl(var(--destructive))]">{serverError}</p>
             )}

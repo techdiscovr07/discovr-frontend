@@ -135,6 +135,18 @@ export default function DashboardPage() {
       try {
         const profile = await fetchProfile(token)
         if (profile && typeof profile === "object") {
+          const role =
+            typeof (profile as { role?: string }).role === "string"
+              ? (profile as { role?: string }).role
+              : typeof (profile as { user_role?: string }).user_role === "string"
+              ? (profile as { user_role?: string }).user_role
+              : typeof (profile as { userRole?: string }).userRole === "string"
+              ? (profile as { userRole?: string }).userRole
+              : null
+          if (role && role.toLowerCase().includes("creator")) {
+            router.replace("/dashboard/creator")
+            return
+          }
           const name =
             typeof (profile as { name?: string }).name === "string"
               ? (profile as { name?: string }).name
@@ -273,11 +285,6 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex items-center gap-4">
-            <Link href="/dashboard/creator">
-              <Button variant="outline" size="sm">
-                Switch to Creator View
-              </Button>
-            </Link>
             <Button variant="ghost" size="icon">
               <Bell className="h-5 w-5" />
             </Button>

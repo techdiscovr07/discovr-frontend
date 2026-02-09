@@ -1,4 +1,4 @@
-export type AuthRole = "brand" | "creator"
+export type AuthRole = "creator" | "brand_owner" | "brand_emp" | "admin"
 
 export type AnalyticsRow = Record<string, string | number | null>
 

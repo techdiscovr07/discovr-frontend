@@ -410,9 +410,7 @@ export default function CreatorDashboardPage() {
                 Manage your campaigns and track your earnings
               </p>
             </div>
-            <Link href="/dashboard">
-              <Button variant="outline">Switch to Brand View</Button>
-            </Link>
+            
           </div>
         </div>
       </header>

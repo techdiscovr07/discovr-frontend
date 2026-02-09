@@ -19,11 +19,12 @@ const isLocalhostUrl = (value: string) => {
 }
 
 const STATIC_BACKEND_URL = "https://discovr-backend.onrender.com"
+const LOCAL_BACKEND_URL = "http://localhost:8080"
 
 const resolveApiBaseUrl = () => {
 
   if (typeof window !== "undefined" && window.location.hostname === "localhost") {
-    return ""
+    return LOCAL_BACKEND_URL
   }
   return STATIC_BACKEND_URL
 }
@@ -69,6 +70,32 @@ const requestJson = async <T>(
       ...headers,
     },
     body: body === undefined ? undefined : JSON.stringify(body),
+  })
+
+  const text = await response.text()
+  const data = parseJsonSafely(text)
+
+  if (!response.ok) {
+    const message =
+      (isRecord(data) && typeof data.message === "string" && data.message) ||
+      response.statusText ||
+      "Request failed"
+    throw new ApiError(message, response.status)
+  }
+
+  return (data ?? ({} as T)) as T
+}
+
+const requestForm = async <T>(
+  path: string,
+  { body, headers, ...options }: RequestOptions = {},
+): Promise<T> => {
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    ...options,
+    headers: {
+      ...headers,
+    },
+    body: body as FormData | undefined,
   })
 
   const text = await response.text()
@@ -131,7 +158,7 @@ export const signup = (payload: {
 export const loginWithPassword = (payload: {
   email: string
   password: string
-  role: AuthRole
+  role?: AuthRole
 }) => requestJson("/auth/login/password", { method: "POST", body: payload })
 
 export const loginWithIdToken = (payload: { idToken: string; role: AuthRole }) =>
@@ -147,6 +174,105 @@ export const fetchProfile = (idToken: string) =>
   requestJson("/api/profile", {
     headers: {
       Authorization: `Bearer ${idToken}`,
+    },
+  })
+
+export const fetchBrandCampaigns = (token: string) =>
+  requestJson<Record<string, unknown>>("/brand/campaigns", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+export const createBrandCampaign = (
+  token: string,
+  payload: {
+    name: string
+    description: string
+    creator_categories: string[]
+    total_budget: number
+    creator_count: number
+    go_live_date: string
+  },
+) =>
+  requestJson<Record<string, unknown>>("/brand/campaigns", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: payload,
+  })
+
+export const uploadBrandCampaignBrief = (token: string, formData: FormData) =>
+  requestForm<Record<string, unknown>>("/brand/campaigns/brief", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  })
+
+export const fetchBrandCampaignCreators = (
+  token: string,
+  campaignId: string,
+  filters?: {
+    min_followers?: number
+    max_followers?: number
+    min_commercial?: number
+    max_commercial?: number
+    status?: string
+  }
+) => {
+  const params = new URLSearchParams({ campaign_id: campaignId })
+  if (filters) {
+    if (filters.min_followers) params.append("min_followers", filters.min_followers.toString())
+    if (filters.max_followers) params.append("max_followers", filters.max_followers.toString())
+    if (filters.min_commercial) params.append("min_commercial", filters.min_commercial.toString())
+    if (filters.max_commercial) params.append("max_commercial", filters.max_commercial.toString())
+    if (filters.status) params.append("status", filters.status)
+  }
+  return requestJson<Record<string, unknown>>(
+    `/brand/campaigns/creators?${params.toString()}`,
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    },
+  )
+}
+
+export const respondToCampaignCreators = (
+  token: string,
+  payload: {
+    campaign_id: string
+    updates: Array<{
+      creator_id: string
+      status: "pending" | "accepted" | "rejected" | "negotiated"
+      comment?: string
+    }>
+  },
+) =>
+  requestJson<Record<string, unknown>>("/brand/campaigns/creators/respond", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: payload,
+  })
+
+export const uploadBrandCreatorsSheet = (token: string, formData: FormData) =>
+  requestForm<Record<string, unknown>>("/brand/campaigns/creators/upload", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  })
+
+export const fetchBrandProfile = (token: string) =>
+  requestJson<Record<string, unknown>>("/brand/profile", {
+    headers: {
+      Authorization: `Bearer ${token}`,
     },
   })
 
@@ -247,5 +373,195 @@ export const fetchYouTubeAnalyticsBasic = (
     },
   )
 }
+
+// Creator API functions
+export const fetchCreatorCampaigns = (token: string) =>
+  requestJson<{ campaigns: Array<{
+    campaign_id: string
+    campaign_name: string
+    status: string
+    bid_amount?: number
+    final_amount?: number
+    has_brief: boolean
+    has_content: boolean
+    go_live_date: string
+  }>}>("/creator/campaigns", {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+export const submitCreatorBid = (
+  token: string,
+  campaignId: string,
+  bidAmount: number,
+) =>
+  requestJson<{
+    creator_id: string
+    bid_amount: number
+    status: string
+    bid_submitted_at: string
+    message: string
+  }>(`/creator/campaigns/bid?campaign_id=${encodeURIComponent(campaignId)}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: { bid_amount: bidAmount },
+  })
+
+export const fetchCreatorCampaignBrief = (token: string, campaignId: string) =>
+  requestJson<{
+    campaign: {
+      id: string
+      name: string
+      description?: string
+      video_title?: string
+      primary_focus?: string
+      secondary_focus?: string
+      dos?: string
+      donts?: string
+      cta?: string
+      sample_video_url?: string
+      go_live_date?: string
+    }
+    final_amount: number
+    status: string
+  }>(`/creator/campaigns/brief?campaign_id=${encodeURIComponent(campaignId)}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+export const uploadCreatorContent = (
+  token: string,
+  campaignId: string,
+  file: File,
+  liveUrl?: string,
+) => {
+  const formData = new FormData()
+  formData.append("file", file)
+  if (liveUrl) {
+    formData.append("live_url", liveUrl)
+  }
+  return requestForm<{
+    creator_id: string
+    content_url: string
+    status: string
+    content_submitted_at: string
+    message: string
+  }>(`/creator/campaigns/content?campaign_id=${encodeURIComponent(campaignId)}`, formData, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+}
+
+export const creatorGoLive = (
+  token: string,
+  campaignId: string,
+  liveUrl: string,
+) =>
+  requestJson<{
+    creator_id: string
+    status: string
+    went_live_at: string
+    live_url: string
+    message: string
+  }>(`/creator/campaigns/go-live?campaign_id=${encodeURIComponent(campaignId)}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: { live_url: liveUrl },
+  })
+
+// Brand bidding API functions
+export const fetchBrandCreatorBids = (token: string, campaignId: string) =>
+  requestJson<{
+    creators: Array<{
+      creator_id: string
+      name: string
+      email: string
+      instagram: string
+      bid_amount: number
+      status: string
+      bid_submitted_at: string
+      final_amount?: number
+      proposed_amount?: number
+      negotiation_deadline?: string
+    }>
+  }>(`/brand/campaigns/bids?campaign_id=${encodeURIComponent(campaignId)}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+export const finalizeCreatorAmounts = (
+  token: string,
+  campaignId: string,
+  updates: Array<{
+    creator_id: string
+    action: "accept" | "negotiate" | "reject"
+    proposed_amount?: number
+  }>,
+) =>
+  requestJson<{
+    campaign_id: string
+    finalized_count: number
+    negotiated_count: number
+    rejected_count: number
+    message: string
+  }>(`/brand/campaigns/finalize-amounts?campaign_id=${encodeURIComponent(campaignId)}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: { updates },
+  })
+
+export const fetchBrandCreatorContent = (token: string, campaignId: string) =>
+  requestJson<{
+    creators: Array<{
+      creator_id: string
+      name: string
+      email: string
+      instagram: string
+      content_url: string
+      content_submitted_at: string
+      status: string
+      content_feedback?: string
+      live_url?: string
+      went_live_at?: string
+    }>
+  }>(`/brand/campaigns/content?campaign_id=${encodeURIComponent(campaignId)}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+export const reviewCreatorContent = (
+  token: string,
+  campaignId: string,
+  updates: Array<{
+    creator_id: string
+    action: "approve" | "reject" | "request_revision"
+    feedback?: string
+  }>,
+) =>
+  requestJson<{
+    campaign_id: string
+    approved_count: number
+    rejected_count: number
+    revision_requested_count: number
+    message: string
+  }>(`/brand/campaigns/review-content?campaign_id=${encodeURIComponent(campaignId)}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: { updates },
+  })
 
 export { ApiError, getErrorMessage }

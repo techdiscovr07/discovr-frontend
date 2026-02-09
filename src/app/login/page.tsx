@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -16,31 +16,30 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
+  ApiError,
   extractIdToken,
   getErrorMessage,
   loginWithPassword,
 } from "@/lib/api"
-import { setCachedIdToken } from "@/lib/auth"
+import {
+  clearBrandTokens,
+  clearCachedIdToken,
+  setBrandAuthToken,
+  setCachedIdToken,
+} from "@/lib/auth"
 import { toast } from "sonner"
 
 export default function LoginPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const campaignId = searchParams.get("campaign_id")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
-  const [role, setRole] = useState<string>("")
   const [isLoading, setIsLoading] = useState(false)
   const [serverError, setServerError] = useState("")
   const [errors, setErrors] = useState<{
     email?: string
     password?: string
-    role?: string
   }>({})
 
   const validate = () => {
@@ -58,10 +57,6 @@ export default function LoginPage() {
       newErrors.password = "Password must be at least 8 characters"
     }
     
-    if (!role) {
-      newErrors.role = "Please select a role"
-    }
-    
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -77,20 +72,65 @@ export default function LoginPage() {
     setServerError("")
 
     try {
-      const response = await loginWithPassword({
-        email,
-        password,
-        role: role as "brand" | "creator",
-      })
-      const idToken = extractIdToken(response)
-
-      if (!idToken) {
-        throw new Error("Login succeeded but no id token was returned.")
+      const tryLoginWithRole = async (roleToTry: "brand_owner" | "brand_emp" | "creator") => {
+        const response = await loginWithPassword({
+          email,
+          password,
+          role: roleToTry,
+        })
+        const idToken = extractIdToken(response)
+        if (!idToken) {
+          throw new Error("Login succeeded but no id token was returned.")
+        }
+        return { role: roleToTry, token: idToken }
       }
 
-      setCachedIdToken(idToken)
-      toast.success("Signed in successfully")
-      router.push("/dashboard")
+      const shouldRetry = (error: unknown) =>
+        error instanceof ApiError &&
+        [401, 403, 404].includes(error.status)
+
+      let authResult:
+        | { role: "brand_owner" | "brand_emp" | "creator"; token: string }
+        | null = null
+
+      try {
+        authResult = await tryLoginWithRole("brand_owner")
+      } catch (error) {
+        if (!shouldRetry(error)) throw error
+      }
+
+      if (!authResult) {
+        try {
+          authResult = await tryLoginWithRole("brand_emp")
+        } catch (error) {
+          if (!shouldRetry(error)) throw error
+        }
+      }
+
+      if (!authResult) {
+        authResult = await tryLoginWithRole("creator")
+      }
+
+      if (authResult.role === "brand_owner" || authResult.role === "brand_emp") {
+        clearCachedIdToken()
+        clearBrandTokens()
+        setBrandAuthToken(authResult.token, authResult.role)
+        toast.success(
+          authResult.role === "brand_owner"
+            ? "Signed in as Brand Owner"
+            : "Signed in as Brand Employee",
+        )
+        router.push("/dashboard/brand")
+      } else {
+        clearBrandTokens()
+        setCachedIdToken(authResult.token)
+        toast.success("Signed in successfully")
+        if (campaignId) {
+          router.push(`/dashboard/creator/campaigns/${campaignId}`)
+        } else {
+          router.push("/dashboard/creator")
+        }
+      }
     } catch (error) {
       const message = getErrorMessage(error)
       setServerError(message)
@@ -160,33 +200,6 @@ export default function LoginPage() {
                 <p className="text-sm text-[hsl(var(--destructive))] mt-1">
                   {errors.password}
                 </p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select
-                value={role}
-                onValueChange={(value) => {
-                  setRole(value)
-                  if (errors.role) {
-                    setErrors((prev) => ({ ...prev, role: undefined }))
-                  }
-                }}
-                disabled={isLoading}
-              >
-                <SelectTrigger
-                  className={errors.role ? "border-[hsl(var(--destructive))]" : ""}
-                >
-                  <SelectValue placeholder="Select your role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="brand">Brand</SelectItem>
-                  <SelectItem value="creator">Creator</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.role && (
-                <p className="text-sm text-[hsl(var(--destructive))] mt-1">{errors.role}</p>
               )}
             </div>
             {serverError && (
