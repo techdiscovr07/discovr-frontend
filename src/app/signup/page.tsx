@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { Suspense, useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Mail, Lock, ArrowRight, User, Loader2 } from "lucide-react"
@@ -25,7 +25,7 @@ import {
 import { getErrorMessage, signup } from "@/lib/api"
 import { toast } from "sonner"
 
-export default function SignupPage() {
+function SignupForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const campaignId = searchParams.get("campaign_id")
@@ -300,5 +300,19 @@ export default function SignupPage() {
         </form>
       </Card>
     </div>
+  )
+}
+
+export default function SignupPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center p-4 bg-white">
+          <div className="text-[hsl(var(--muted-foreground))]">Loading...</div>
+        </div>
+      }
+    >
+      <SignupForm />
+    </Suspense>
   )
 }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { Suspense, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { Mail, Lock, ArrowRight, Loader2 } from "lucide-react"
@@ -29,7 +29,7 @@ import {
 } from "@/lib/auth"
 import { toast } from "sonner"
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const campaignId = searchParams.get("campaign_id")
@@ -237,5 +237,19 @@ export default function LoginPage() {
         </form>
       </Card>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center p-4 bg-white">
+          <div className="text-[hsl(var(--muted-foreground))]">Loading...</div>
+        </div>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   )
 }
