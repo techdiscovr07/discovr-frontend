@@ -450,11 +450,12 @@ export const uploadCreatorContent = (
     status: string
     content_submitted_at: string
     message: string
-  }>(`/creator/campaigns/content?campaign_id=${encodeURIComponent(campaignId)}`, formData, {
+  }>(`/creator/campaigns/content?campaign_id=${encodeURIComponent(campaignId)}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,
     },
+    body: formData,
   })
 }
 
