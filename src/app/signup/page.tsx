@@ -108,10 +108,11 @@ function SignupForm() {
         setCachedIdToken(idToken)
       }
       
-      // If this is a campaign signup, redirect to campaign detail page (with creator_token so backend can link)
-      if (campaignId && creatorToken) {
+      // If this is a campaign signup, redirect to campaign detail page. Backend will link by creator_token or by matching your signup email to the sheet.
+      if (campaignId) {
         toast.success("Account created! Redirecting to campaign.")
-        router.push(`/dashboard/creator/campaigns/${campaignId}?creator_token=${encodeURIComponent(creatorToken)}`)
+        const q = creatorToken ? `?creator_token=${encodeURIComponent(creatorToken)}` : ""
+        router.push(`/dashboard/creator/campaigns/${campaignId}${q}`)
       } else {
         toast.success("Account created! Redirecting to sign in.")
         router.push("/login")

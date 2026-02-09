@@ -96,26 +96,21 @@ export default function CreatorCampaignDetailPage() {
     }
 
     const run = async () => {
-      // Link creator to campaign if creator_token is present
-      if (creatorToken) {
-        try {
-          await linkCreatorToCampaign(token, campaignId, creatorToken)
-          toast.success("Campaign linked successfully!")
-          // Remove creator_token from URL so we don't re-link on refresh
-          if (typeof window !== "undefined" && window.history.replaceState) {
-            const url = new URL(window.location.href)
-            url.searchParams.delete("creator_token")
-            window.history.replaceState({}, "", url.pathname + url.search)
-          }
-        } catch (err) {
-          const msg = getErrorMessage(err)
-          if (msg.includes("already used") || msg.includes("already linked")) {
-            // Already linked - that's fine, continue
-            console.log("Creator already linked to campaign")
-          } else {
-            toast.error(`Failed to link campaign: ${msg}`)
-            // Still try to load brief - maybe they're already linked from elsewhere
-          }
+      // Link creator to campaign: by creator_token (from email link) or by matching signup email to sheet email
+      try {
+        await linkCreatorToCampaign(token, campaignId, creatorToken ?? undefined)
+        toast.success("Campaign linked successfully!")
+        if (typeof window !== "undefined" && window.history.replaceState && creatorToken) {
+          const url = new URL(window.location.href)
+          url.searchParams.delete("creator_token")
+          window.history.replaceState({}, "", url.pathname + url.search)
+        }
+      } catch (err) {
+        const msg = getErrorMessage(err)
+        if (msg.includes("already used") || msg.includes("already linked")) {
+          // Already linked – continue
+        } else {
+          toast.error(`Failed to link campaign: ${msg}`)
         }
       }
       await loadBrief()

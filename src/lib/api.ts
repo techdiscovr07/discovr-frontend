@@ -374,11 +374,11 @@ export const fetchYouTubeAnalyticsBasic = (
   )
 }
 
-// Creator API functions
+// Creator API functions – link by creator_token (from email) or by matching signup email to campaign_creator email
 export const linkCreatorToCampaign = (
   token: string,
   campaignId: string,
-  creatorToken: string,
+  creatorToken?: string | null,
 ) =>
   requestJson<{ message: string; campaign_id: string }>(
     "/creator/campaigns/link",
@@ -387,7 +387,7 @@ export const linkCreatorToCampaign = (
       headers: {
         Authorization: `Bearer ${token}`,
       },
-      body: { campaign_id: campaignId, creator_token: creatorToken },
+      body: { campaign_id: campaignId, ...(creatorToken ? { creator_token: creatorToken } : {}) },
     },
   )
 
