@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Loader2, Calendar, DollarSign, FileText, Video } from "lucide-react"
+import { Loader2, Calendar, DollarSign, FileText, Video, Target, TrendingUp, Youtube } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -76,12 +76,87 @@ export default function CreatorCampaignsPage() {
     )
   }
 
+  const needsBid = campaigns.filter(
+    (c) => c.status?.includes("accepted") || c.status?.includes("bid_pending")
+  ).length
+  const needsContent = campaigns.filter(
+    (c) =>
+      (c.status?.includes("amount_finalized") || c.status?.includes("amount_negotiated")) &&
+      !c.has_content
+  ).length
+  const totalEarnings = campaigns.reduce(
+    (sum, c) => sum + (c.final_amount && c.status?.includes("content") ? c.final_amount : 0),
+    0
+  )
+
   return (
     <div className="container mx-auto py-8 px-4">
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2">My Campaigns</h1>
         <p className="text-muted-foreground">View and manage your campaign participations</p>
       </div>
+
+      {/* Overview stats */}
+      {campaigns.length > 0 && (
+        <div className="grid gap-4 md:grid-cols-3 mb-8">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Campaigns</CardTitle>
+              <Target className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{campaigns.length}</div>
+              <p className="text-xs text-muted-foreground">Active participations</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pending Your Action</CardTitle>
+              <FileText className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {needsBid + needsContent}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {needsBid > 0 && `${needsBid} to bid`}
+                {needsBid > 0 && needsContent > 0 && " · "}
+                {needsContent > 0 && `${needsContent} to upload content`}
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Earnings (This View)</CardTitle>
+              <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">₹{totalEarnings.toLocaleString()}</div>
+              <p className="text-xs text-muted-foreground">From content-approved campaigns</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Connect YouTube CTA */}
+      <Card className="mb-8 border-primary/20 bg-primary/5">
+        <CardContent className="py-4 flex flex-row items-center justify-between gap-4 flex-wrap">
+          <div className="flex items-center gap-3">
+            <div className="rounded-full bg-primary/10 p-2">
+              <Youtube className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="font-medium">Connect your YouTube channel</p>
+              <p className="text-sm text-muted-foreground">
+                Get discovered by brands and match with more campaigns
+              </p>
+            </div>
+          </div>
+          <Link href="/dashboard/creator/connect-youtube">
+            <Button variant="default">Connect YouTube</Button>
+          </Link>
+        </CardContent>
+      </Card>
 
       {campaigns.length === 0 ? (
         <Card>
@@ -109,35 +184,36 @@ export default function CreatorCampaignsPage() {
                   </Badge>
                 </div>
                 <CardDescription>
-                  <div className="flex items-center gap-2 mt-2">
-                    <Calendar className="h-4 w-4" />
-                    <span>
-                      {new Date(campaign.go_live_date).toLocaleDateString()}
-                    </span>
-                  </div>
+                  <span className="inline-flex items-center gap-2 mt-2">
+                    <Calendar className="h-4 w-4 shrink-0" />
+                    {new Date(campaign.go_live_date).toLocaleDateString()}
+                  </span>
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {campaign.bid_amount && (
+                  {/* When brand has negotiated/finalized, show that amount prominently */}
+                  {(campaign.final_amount != null && campaign.final_amount > 0) ||
+                  (campaign.status && (campaign.status.includes("amount_negotiated") || campaign.status.includes("amount_finalized"))) ? (
                     <div className="flex items-center gap-2 text-sm">
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
                       <span>
-                        Bid: ₹{campaign.bid_amount.toLocaleString()}
-                        {campaign.final_amount && campaign.final_amount !== campaign.bid_amount && (
+                        <span className="font-medium">
+                          Amount: ₹{(campaign.final_amount ?? campaign.bid_amount ?? 0).toLocaleString()}
+                        </span>
+                        {campaign.bid_amount != null && campaign.final_amount != null && campaign.final_amount !== campaign.bid_amount && (
                           <span className="text-muted-foreground ml-1">
-                            (Final: ₹{campaign.final_amount.toLocaleString()})
+                            (Your bid: ₹{campaign.bid_amount.toLocaleString()})
                           </span>
                         )}
                       </span>
                     </div>
-                  )}
-                  {campaign.final_amount && !campaign.bid_amount && (
+                  ) : campaign.bid_amount != null ? (
                     <div className="flex items-center gap-2 text-sm">
                       <DollarSign className="h-4 w-4 text-muted-foreground" />
-                      <span>Final Amount: ₹{campaign.final_amount.toLocaleString()}</span>
+                      <span>Bid: ₹{campaign.bid_amount.toLocaleString()}</span>
                     </div>
-                  )}
+                  ) : null}
                   <div className="flex items-center gap-2 text-sm">
                     <FileText className="h-4 w-4 text-muted-foreground" />
                     <span>Brief: {campaign.has_brief ? "Available" : "Not available"}</span>

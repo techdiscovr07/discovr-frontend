@@ -449,6 +449,18 @@ export const fetchCreatorCampaignBrief = (token: string, campaignId: string) =>
     },
   })
 
+/** Creator accepts the final amount offered by the brand (after negotiation). */
+export const acceptCreatorFinalAmount = (token: string, campaignId: string) =>
+  requestJson<{ status: string; message: string }>(
+    `/creator/campaigns/accept-amount?campaign_id=${encodeURIComponent(campaignId)}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    }
+  )
+
 export const uploadCreatorContent = (
   token: string,
   campaignId: string,

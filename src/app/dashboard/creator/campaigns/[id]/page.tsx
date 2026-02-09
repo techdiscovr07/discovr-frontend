@@ -13,6 +13,7 @@ import {
   XCircle,
   Clock,
   ExternalLink,
+  ThumbsUp,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -23,7 +24,9 @@ import { Textarea } from "@/components/ui/textarea"
 import {
   linkCreatorToCampaign,
   fetchCreatorCampaignBrief,
+  fetchCreatorCampaigns,
   submitCreatorBid,
+  acceptCreatorFinalAmount,
   uploadCreatorContent,
   creatorGoLive,
   getErrorMessage,
@@ -64,6 +67,7 @@ export default function CreatorCampaignDetailPage() {
   const [liveUrl, setLiveUrl] = useState("")
   const [uploadingContent, setUploadingContent] = useState(false)
   const [submittingGoLive, setSubmittingGoLive] = useState(false)
+  const [acceptingAmount, setAcceptingAmount] = useState(false)
 
   useEffect(() => {
     const token = getCachedIdToken()
@@ -78,17 +82,44 @@ export default function CreatorCampaignDetailPage() {
       return
     }
 
+    /** When brief API fails (e.g. 403), get status from campaign list so we don't show the bid form for amount_negotiated/amount_finalized. */
+    const loadStatusFromList = async (): Promise<CampaignBrief | null> => {
+      try {
+        const { campaigns = [] } = await fetchCreatorCampaigns(token)
+        const c = campaigns.find((x: { campaign_id: string }) => x.campaign_id === campaignId)
+        if (!c) return null
+        const status = (c as { status?: string }).status
+        const finalAmount = (c as { final_amount?: number }).final_amount
+        const campaignName = (c as { campaign_name?: string }).campaign_name
+        if (status && (status.includes("amount_negotiated") || status.includes("amount_finalized") || status.includes("content") || status.includes("payment"))) {
+          return {
+            status,
+            final_amount: typeof finalAmount === "number" ? finalAmount : 0,
+            campaign: { id: campaignId, name: campaignName || "Campaign" },
+          }
+        }
+      } catch {
+        // ignore
+      }
+      return null
+    }
+
     const loadBrief = async () => {
       try {
         const response = await fetchCreatorCampaignBrief(token, campaignId)
         setBrief(response)
       } catch (error) {
         const message = getErrorMessage(error)
-        if (message.includes("Amount not finalized") || message.includes("Brief not available") || message.includes("Creator not found")) {
-          // Brief not available yet, or not yet linked – show bidding form or link first
+        const fallback = await loadStatusFromList()
+        if (fallback) {
+          setBrief(fallback)
+        } else if (message.includes("Amount not finalized") || message.includes("Brief not available") || message.includes("Creator not found")) {
           setBrief(null)
         } else {
-          toast.error(message)
+          setBrief(null)
+          if (!message.toLowerCase().includes("forbidden")) {
+            toast.error(message)
+          }
         }
       } finally {
         setLoading(false)
@@ -96,21 +127,42 @@ export default function CreatorCampaignDetailPage() {
     }
 
     const run = async () => {
-      // Link creator to campaign: by creator_token (from email link) or by matching signup email to sheet email
+      // Link creator to campaign ONLY when needed:
+      // - if a creator_token is present (email invite flow), OR
+      // - if the campaign isn't already present in /creator/campaigns
+      // This avoids noisy 400 Bad Request errors on normal page loads.
+      let alreadyLinked = false
       try {
-        await linkCreatorToCampaign(token, campaignId, creatorToken ?? undefined)
-        toast.success("Campaign linked successfully!")
-        if (typeof window !== "undefined" && window.history.replaceState && creatorToken) {
-          const url = new URL(window.location.href)
-          url.searchParams.delete("creator_token")
-          window.history.replaceState({}, "", url.pathname + url.search)
-        }
-      } catch (err) {
-        const msg = getErrorMessage(err)
-        if (msg.includes("already used") || msg.includes("already linked")) {
-          // Already linked – continue
-        } else {
-          toast.error(`Failed to link campaign: ${msg}`)
+        const { campaigns = [] } = await fetchCreatorCampaigns(token)
+        alreadyLinked = campaigns.some(
+          (c: { campaign_id: string }) => c.campaign_id === campaignId,
+        )
+      } catch {
+        // ignore
+      }
+
+      const shouldAttemptLink = Boolean(creatorToken) || !alreadyLinked
+
+      if (shouldAttemptLink) {
+        try {
+          await linkCreatorToCampaign(token, campaignId, creatorToken ?? undefined)
+          if (creatorToken) {
+            toast.success("Campaign linked successfully!")
+          }
+          if (typeof window !== "undefined" && window.history.replaceState && creatorToken) {
+            const url = new URL(window.location.href)
+            url.searchParams.delete("creator_token")
+            window.history.replaceState({}, "", url.pathname + url.search)
+          }
+        } catch (err) {
+          const msg = getErrorMessage(err)
+          if (msg.includes("already used") || msg.includes("already linked")) {
+            // Already linked – continue
+          } else if (!creatorToken && (msg.toLowerCase().includes("bad request") || msg.toLowerCase().includes("400"))) {
+            // Backend may require creator_token for linking; ignore on normal page views.
+          } else {
+            toast.error(`Failed to link campaign: ${msg}`)
+          }
         }
       }
       await loadBrief()
@@ -199,6 +251,24 @@ export default function CreatorCampaignDetailPage() {
     }
   }
 
+  const handleAcceptFinalAmount = async () => {
+    const token = getCachedIdToken()
+    if (!token) {
+      router.push("/login")
+      return
+    }
+    setAcceptingAmount(true)
+    try {
+      await acceptCreatorFinalAmount(token, campaignId)
+      toast.success("Amount accepted. You can now view the brief and upload content.")
+      window.location.reload()
+    } catch (error) {
+      toast.error(getErrorMessage(error))
+    } finally {
+      setAcceptingAmount(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -209,6 +279,7 @@ export default function CreatorCampaignDetailPage() {
 
   const status = brief?.status || "accepted"
   const showBidding = status === "accepted" || status === "bid_pending"
+  const showAcceptAmount = brief && status === "amount_negotiated" && brief.final_amount != null
   const showBrief = brief && status === "amount_finalized"
   const showContentUpload = brief && status === "amount_finalized" && brief.campaign
   const showGoLive = status === "content_approved"
@@ -263,6 +334,39 @@ export default function CreatorCampaignDetailPage() {
                   </>
                 ) : (
                   "Submit Bid"
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Accept final amount (brand has negotiated) */}
+      {showAcceptAmount && brief && (
+        <Card className="mb-6 border-primary/20 bg-primary/5">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <ThumbsUp className="h-5 w-5" />
+              Brand has offered a final amount
+            </CardTitle>
+            <CardDescription>
+              The brand has proposed ₹{brief.final_amount.toLocaleString()}. Accept this amount to view the brief and proceed to content upload.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-4 flex-wrap">
+              <p className="text-2xl font-semibold">₹{brief.final_amount.toLocaleString()}</p>
+              <Button
+                onClick={handleAcceptFinalAmount}
+                disabled={acceptingAmount}
+              >
+                {acceptingAmount ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Accepting...
+                  </>
+                ) : (
+                  "Accept final amount"
                 )}
               </Button>
             </div>
@@ -332,6 +436,9 @@ export default function CreatorCampaignDetailPage() {
                   <ExternalLink className="h-4 w-4" />
                 </a>
               </div>
+            )}
+            {!brief.campaign.primary_focus && !brief.campaign.video_title && !brief.campaign.dos && (
+              <p className="text-sm text-muted-foreground">Brief details will appear here once the brand has completed the brief.</p>
             )}
           </CardContent>
         </Card>
