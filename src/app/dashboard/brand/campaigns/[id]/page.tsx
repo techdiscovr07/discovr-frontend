@@ -196,7 +196,7 @@ export default function BrandCampaignDetailPage() {
   }>>([])
   const [loadingBids, setLoadingBids] = useState(false)
   const [finalizingAmounts, setFinalizingAmounts] = useState(false)
-  const [bidActions, setBidActions] = useState<Record<string, { action: "accept" | "negotiate" | "reject"; proposedAmount?: string }>>({})
+  const [bidActions, setBidActions] = useState<Record<string, { proposedAmount?: string }>>({})
   const [creatorContent, setCreatorContent] = useState<Array<{
     creator_id: string
     name: string
@@ -854,7 +854,7 @@ export default function BrandCampaignDetailPage() {
             <div className="space-y-2">
               <div className="rounded-lg border border-[hsl(var(--border))] bg-[hsl(var(--card))] p-3">
                 <div className="flex items-center justify-between text-xs font-medium text-[hsl(var(--muted-foreground))]">
-                  <span>Commercial</span>
+                  <span>Amount</span>
                   <span>
                     {commercialRange[0]} - {commercialRange[1]}
                   </span>
@@ -885,7 +885,7 @@ export default function BrandCampaignDetailPage() {
                   <TableHead>Creator</TableHead>
                   <TableHead>Instagram</TableHead>
                   <TableHead>Avg views</TableHead>
-                  <TableHead>Commercial</TableHead>
+                  <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Comment</TableHead>
                 </TableRow>
@@ -996,9 +996,9 @@ export default function BrandCampaignDetailPage() {
       {campaign?.reviewStatus === "creators_are_final" && (
         <Card>
           <CardHeader>
-            <CardTitle>Creator Bids</CardTitle>
+            <CardTitle>Brand Offers</CardTitle>
             <p className="text-sm text-[hsl(var(--muted-foreground))]">
-              Review and finalize creator bid amounts
+              Start bidding by sending offers to negotiated creators
             </p>
           </CardHeader>
           <CardContent>
@@ -1008,7 +1008,7 @@ export default function BrandCampaignDetailPage() {
               </div>
             ) : bids.length === 0 ? (
               <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                No bids submitted yet.
+                No offers sent yet.
               </p>
             ) : (
               <>
@@ -1017,9 +1017,10 @@ export default function BrandCampaignDetailPage() {
                     <TableRow>
                       <TableHead>Creator</TableHead>
                       <TableHead>Email</TableHead>
-                      <TableHead>Bid Amount</TableHead>
+                      <TableHead>Brand Offer</TableHead>
+                      <TableHead>Creator Counter</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead>Action</TableHead>
+                      <TableHead>Send Offer</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1030,10 +1031,10 @@ export default function BrandCampaignDetailPage() {
                           <TableCell>{bid.name}</TableCell>
                           <TableCell>{bid.email}</TableCell>
                           <TableCell>
-                            <span>₹{(bid.final_amount ?? bid.bid_amount).toLocaleString()}</span>
-                            {bid.final_amount != null && bid.status?.includes("negotiated") && (
-                              <span className="text-muted-foreground text-xs block">negotiated</span>
-                            )}
+                            {bid.proposed_amount ? `₹${bid.proposed_amount.toLocaleString()}` : "—"}
+                          </TableCell>
+                          <TableCell>
+                            {bid.bid_amount ? `₹${bid.bid_amount.toLocaleString()}` : "—"}
                           </TableCell>
                           <TableCell>
                             <Badge className={statusBadgeClass(bid.status)}>
@@ -1042,44 +1043,21 @@ export default function BrandCampaignDetailPage() {
                           </TableCell>
                           <TableCell>
                             <div className="flex gap-2">
-                              <Select
-                                value={action?.action || ""}
-                                onValueChange={(value) =>
+                              <Input
+                                type="number"
+                                placeholder="Offer amount"
+                                className="w-32"
+                                value={action?.proposedAmount || ""}
+                                onChange={(e) =>
                                   setBidActions((prev) => ({
                                     ...prev,
                                     [bid.creator_id]: {
                                       ...prev[bid.creator_id],
-                                      action: value as "accept" | "negotiate" | "reject",
+                                      proposedAmount: e.target.value,
                                     },
                                   }))
                                 }
-                              >
-                                <SelectTrigger className="w-32">
-                                  <SelectValue placeholder="Select" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="accept">Accept</SelectItem>
-                                  <SelectItem value="negotiate">Negotiate</SelectItem>
-                                  <SelectItem value="reject">Reject</SelectItem>
-                                </SelectContent>
-                              </Select>
-                              {action?.action === "negotiate" && (
-                                <Input
-                                  type="number"
-                                  placeholder="Amount"
-                                  className="w-32"
-                                  value={action.proposedAmount || ""}
-                                  onChange={(e) =>
-                                    setBidActions((prev) => ({
-                                      ...prev,
-                                      [bid.creator_id]: {
-                                        ...prev[bid.creator_id],
-                                        proposedAmount: e.target.value,
-                                      },
-                                    }))
-                                  }
-                                />
-                              )}
+                              />
                             </div>
                           </TableCell>
                         </TableRow>
@@ -1094,14 +1072,12 @@ export default function BrandCampaignDetailPage() {
                     const updates = Object.entries(bidActions)
                       .map(([creatorId, action]) => ({
                         creator_id: creatorId,
-                        action: action.action,
-                        proposed_amount: action.action === "negotiate" && action.proposedAmount
-                          ? parseFloat(action.proposedAmount)
-                          : undefined,
+                        action: "negotiate" as const,
+                        proposed_amount: action.proposedAmount ? parseFloat(action.proposedAmount) : undefined,
                       }))
-                      .filter((u) => u.action)
+                      .filter((u) => typeof u.proposed_amount === "number" && u.proposed_amount > 0)
                     if (updates.length === 0) {
-                      toast.error("Please select actions for at least one creator")
+                      toast.error("Please enter offer amounts for at least one creator")
                       return
                     }
                     setFinalizingAmounts(true)
@@ -1122,10 +1098,10 @@ export default function BrandCampaignDetailPage() {
                   {finalizingAmounts ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Finalizing...
+                      Sending...
                     </>
                   ) : (
-                    "Finalize Amounts"
+                    "Send Offers"
                   )}
                 </Button>
               </>

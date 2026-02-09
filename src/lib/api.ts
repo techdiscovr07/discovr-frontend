@@ -191,6 +191,7 @@ export const createBrandCampaign = (
     description: string
     creator_categories: string[]
     total_budget: number
+    cpv: number
     creator_count: number
     go_live_date: string
   },
@@ -426,6 +427,31 @@ export const submitCreatorBid = (
     body: { bid_amount: bidAmount },
   })
 
+export const fetchCreatorBidStatus = (token: string, campaignId: string) =>
+  requestJson<{
+    status: string
+    bid_amount?: number
+    proposed_amount?: number
+    final_amount?: number
+    negotiation_deadline?: string
+  }>(`/creator/campaigns/bid-status?campaign_id=${encodeURIComponent(campaignId)}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+export const respondToCreatorBid = (
+  token: string,
+  payload: { campaign_id: string; action: "accept" | "reject" | "renegotiate"; counter_amount?: number },
+) =>
+  requestJson<Record<string, unknown>>("/creator/campaigns/bid/respond", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: payload,
+  })
+
 export const fetchCreatorCampaignBrief = (token: string, campaignId: string) =>
   requestJson<{
     campaign: {
@@ -448,18 +474,6 @@ export const fetchCreatorCampaignBrief = (token: string, campaignId: string) =>
       Authorization: `Bearer ${token}`,
     },
   })
-
-/** Creator accepts the final amount offered by the brand (after negotiation). */
-export const acceptCreatorFinalAmount = (token: string, campaignId: string) =>
-  requestJson<{ status: string; message: string }>(
-    `/creator/campaigns/accept-amount?campaign_id=${encodeURIComponent(campaignId)}`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    }
-  )
 
 export const uploadCreatorContent = (
   token: string,

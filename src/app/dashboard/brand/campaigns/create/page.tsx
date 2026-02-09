@@ -35,6 +35,7 @@ export default function BrandCampaignCreatePage() {
   const [categoryInput, setCategoryInput] = useState("")
   const [categories, setCategories] = useState<string[]>([])
   const [totalBudget, setTotalBudget] = useState("")
+  const [cpv, setCpv] = useState("")
   const [creatorCount, setCreatorCount] = useState("")
   const [goLiveDate, setGoLiveDate] = useState("")
 
@@ -45,9 +46,10 @@ export default function BrandCampaignCreatePage() {
       description.trim() &&
       categories.length > 0 &&
       totalBudget.trim() &&
+      cpv.trim() &&
       creatorCount.trim() &&
       goLiveDate.trim(),
-    [name, description, categories, totalBudget, creatorCount, goLiveDate],
+    [name, description, categories, totalBudget, cpv, creatorCount, goLiveDate],
   )
 
   const handleAddCategory = () => {
@@ -78,6 +80,7 @@ export default function BrandCampaignCreatePage() {
         description: description.trim(),
         creator_categories: categories,
         total_budget: Number(totalBudget),
+        cpv: Number(cpv),
         creator_count: Number(creatorCount),
         go_live_date: goLiveDate,
       })
@@ -185,6 +188,18 @@ export default function BrandCampaignCreatePage() {
                   value={totalBudget}
                   onChange={(event) => setTotalBudget(event.target.value)}
                   placeholder="5000"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="cpv">CPV</Label>
+                <Input
+                  id="cpv"
+                  type="number"
+                  value={cpv}
+                  onChange={(event) => setCpv(event.target.value)}
+                  placeholder="0.50"
+                  step="0.01"
+                  min="0"
                 />
               </div>
               <div className="space-y-2">

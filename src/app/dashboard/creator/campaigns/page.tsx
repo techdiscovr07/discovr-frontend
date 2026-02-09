@@ -3,12 +3,21 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
-import { Loader2, Calendar, DollarSign, FileText, Video, Target, TrendingUp, Youtube } from "lucide-react"
+import { Loader2, Calendar, DollarSign, FileText, Video, Target, TrendingUp, Youtube, User } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { fetchCreatorCampaigns, getErrorMessage } from "@/lib/api"
-import { getCachedIdToken } from "@/lib/auth"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { fetchCreatorCampaigns, fetchProfile, getErrorMessage } from "@/lib/api"
+import { clearCachedIdToken, getCachedIdToken } from "@/lib/auth"
 import { toast } from "sonner"
 
 type CampaignSummary = {
@@ -23,7 +32,7 @@ type CampaignSummary = {
 }
 
 const statusBadgeClass = (status: string) => {
-  if (status.includes("bid_pending")) return "bg-yellow-100 text-yellow-800"
+  if (status.includes("bid_pending") || status.includes("amount_negotiated")) return "bg-yellow-100 text-yellow-800"
   if (status.includes("amount_finalized")) return "bg-green-100 text-green-800"
   if (status.includes("amount_negotiated")) return "bg-orange-100 text-orange-800"
   if (status.includes("amount_rejected")) return "bg-red-100 text-red-800"
@@ -46,6 +55,8 @@ export default function CreatorCampaignsPage() {
   const router = useRouter()
   const [campaigns, setCampaigns] = useState<CampaignSummary[]>([])
   const [loading, setLoading] = useState(true)
+  const [profileName, setProfileName] = useState("Creator")
+  const [profileInstagram, setProfileInstagram] = useState<string | null>(null)
 
   useEffect(() => {
     const token = getCachedIdToken()
@@ -68,6 +79,42 @@ export default function CreatorCampaignsPage() {
     loadCampaigns()
   }, [router])
 
+  useEffect(() => {
+    const token = getCachedIdToken()
+    if (!token) return
+    const loadProfile = async () => {
+      try {
+        const profile = await fetchProfile(token)
+        if (profile && typeof profile === "object") {
+          const name =
+            (typeof (profile as { name?: string }).name === "string"
+              ? (profile as { name?: string }).name
+              : typeof (profile as { fullName?: string }).fullName === "string"
+              ? (profile as { fullName?: string }).fullName
+              : null) ?? "Creator"
+          const instagram =
+            (typeof (profile as { instagram?: string }).instagram === "string"
+              ? (profile as { instagram?: string }).instagram
+              : typeof (profile as { instagram_url?: string }).instagram_url === "string"
+              ? (profile as { instagram_url?: string }).instagram_url
+              : typeof (profile as { instagramUrl?: string }).instagramUrl === "string"
+              ? (profile as { instagramUrl?: string }).instagramUrl
+              : null) ?? null
+          setProfileName(name)
+          setProfileInstagram(instagram)
+        }
+      } catch {
+        // ignore
+      }
+    }
+    loadProfile()
+  }, [])
+
+  const handleLogout = () => {
+    clearCachedIdToken()
+    router.push("/login")
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -77,7 +124,10 @@ export default function CreatorCampaignsPage() {
   }
 
   const needsBid = campaigns.filter(
-    (c) => c.status?.includes("accepted") || c.status?.includes("bid_pending")
+    (c) =>
+      c.status?.includes("accepted") ||
+      c.status?.includes("bid_pending") ||
+      c.status?.includes("amount_negotiated")
   ).length
   const needsContent = campaigns.filter(
     (c) =>
@@ -91,9 +141,65 @@ export default function CreatorCampaignsPage() {
 
   return (
     <div className="container mx-auto py-8 px-4">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold mb-1">Creator Dashboard</h1>
+          <p className="text-muted-foreground">View and manage your campaign participations</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard/creator/campaigns">
+            <Button variant="ghost">Dashboard</Button>
+          </Link>
+          <Link href="/dashboard/creator/connect-youtube">
+            <Button variant="outline">Connect YouTube</Button>
+          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <Avatar className="h-7 w-7">
+                  <AvatarFallback>
+                    <User className="h-4 w-4" />
+                  </AvatarFallback>
+                </Avatar>
+                <span className="max-w-[120px] truncate">{profileName}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-60">
+              <DropdownMenuLabel className="space-y-1">
+                <div className="text-sm font-medium">{profileName}</div>
+                {profileInstagram && (
+                  <div className="text-xs text-muted-foreground truncate">
+                    {profileInstagram}
+                  </div>
+                )}
+              </DropdownMenuLabel>
+              {profileInstagram && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <a
+                      href={
+                        profileInstagram.startsWith("http")
+                          ? profileInstagram
+                          : `https://instagram.com/${profileInstagram.replace(/^@/, "")}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      View Instagram
+                    </a>
+                  </DropdownMenuItem>
+                </>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
       <div className="mb-8">
-        <h1 className="text-3xl font-bold mb-2">My Campaigns</h1>
-        <p className="text-muted-foreground">View and manage your campaign participations</p>
+        <h2 className="text-2xl font-semibold mb-1">My Campaigns</h2>
+        <p className="text-muted-foreground">Active and historical campaign work</p>
       </div>
 
       {/* Overview stats */}

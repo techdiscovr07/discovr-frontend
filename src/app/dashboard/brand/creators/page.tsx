@@ -272,7 +272,7 @@ export default function BrandCreatorsPage() {
                   <TableHead>Instagram</TableHead>
                   <TableHead>Followers</TableHead>
                   <TableHead>Avg views</TableHead>
-                  <TableHead>Commercial</TableHead>
+                  <TableHead>Amount</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead className="text-right">Decision</TableHead>
                 </TableRow>

@@ -13,11 +13,20 @@ import {
   XCircle,
   Clock,
   ExternalLink,
-  ThumbsUp,
+  User,
 } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
@@ -25,13 +34,14 @@ import {
   linkCreatorToCampaign,
   fetchCreatorCampaignBrief,
   fetchCreatorCampaigns,
-  submitCreatorBid,
-  acceptCreatorFinalAmount,
+  fetchProfile,
+  fetchCreatorBidStatus,
+  respondToCreatorBid,
   uploadCreatorContent,
   creatorGoLive,
   getErrorMessage,
 } from "@/lib/api"
-import { getCachedIdToken } from "@/lib/auth"
+import { clearCachedIdToken, getCachedIdToken } from "@/lib/auth"
 import { toast } from "sonner"
 
 type CampaignBrief = {
@@ -50,6 +60,8 @@ type CampaignBrief = {
   }
   final_amount: number
   status: string
+  content_feedback?: string
+  content_status?: string
 }
 
 export default function CreatorCampaignDetailPage() {
@@ -61,13 +73,21 @@ export default function CreatorCampaignDetailPage() {
 
   const [loading, setLoading] = useState(true)
   const [brief, setBrief] = useState<CampaignBrief | null>(null)
-  const [bidAmount, setBidAmount] = useState("")
-  const [submittingBid, setSubmittingBid] = useState(false)
+  const [bidStatus, setBidStatus] = useState<{
+    status: string
+    proposed_amount?: number
+    bid_amount?: number
+    final_amount?: number
+    negotiation_deadline?: string
+  } | null>(null)
+  const [counterAmount, setCounterAmount] = useState("")
+  const [responding, setResponding] = useState(false)
   const [contentFile, setContentFile] = useState<File | null>(null)
   const [liveUrl, setLiveUrl] = useState("")
   const [uploadingContent, setUploadingContent] = useState(false)
   const [submittingGoLive, setSubmittingGoLive] = useState(false)
-  const [acceptingAmount, setAcceptingAmount] = useState(false)
+  const [profileName, setProfileName] = useState("Creator")
+  const [profileInstagram, setProfileInstagram] = useState<string | null>(null)
 
   useEffect(() => {
     const token = getCachedIdToken()
@@ -126,24 +146,19 @@ export default function CreatorCampaignDetailPage() {
       }
     }
 
-    const run = async () => {
-      // Link creator to campaign ONLY when needed:
-      // - if a creator_token is present (email invite flow), OR
-      // - if the campaign isn't already present in /creator/campaigns
-      // This avoids noisy 400 Bad Request errors on normal page loads.
-      let alreadyLinked = false
+    const loadBid = async () => {
       try {
-        const { campaigns = [] } = await fetchCreatorCampaigns(token)
-        alreadyLinked = campaigns.some(
-          (c: { campaign_id: string }) => c.campaign_id === campaignId,
-        )
+        const status = await fetchCreatorBidStatus(token, campaignId)
+        setBidStatus(status)
       } catch {
         // ignore
       }
+    }
 
-      const shouldAttemptLink = Boolean(creatorToken) || !alreadyLinked
-
-      if (shouldAttemptLink) {
+    const run = async () => {
+      // Link creator to campaign only when a creator_token is present (email invite flow).
+      // Some backends reject link attempts without creator_token, which causes 403/400 toasts.
+      if (creatorToken) {
         try {
           await linkCreatorToCampaign(token, campaignId, creatorToken ?? undefined)
           if (creatorToken) {
@@ -158,43 +173,83 @@ export default function CreatorCampaignDetailPage() {
           const msg = getErrorMessage(err)
           if (msg.includes("already used") || msg.includes("already linked")) {
             // Already linked – continue
-          } else if (!creatorToken && (msg.toLowerCase().includes("bad request") || msg.toLowerCase().includes("400"))) {
-            // Backend may require creator_token for linking; ignore on normal page views.
           } else {
             toast.error(`Failed to link campaign: ${msg}`)
           }
         }
       }
+      await loadBid()
       await loadBrief()
     }
 
     run()
   }, [campaignId, creatorToken, router])
 
-  const handleSubmitBid = async () => {
-    const amount = parseFloat(bidAmount)
-    if (!amount || amount <= 0) {
-      toast.error("Please enter a valid bid amount")
-      return
+  useEffect(() => {
+    const token = getCachedIdToken()
+    if (!token) return
+    const loadProfile = async () => {
+      try {
+        const profile = await fetchProfile(token)
+        if (profile && typeof profile === "object") {
+          const name =
+            (typeof (profile as { name?: string }).name === "string"
+              ? (profile as { name?: string }).name
+              : typeof (profile as { fullName?: string }).fullName === "string"
+              ? (profile as { fullName?: string }).fullName
+              : null) ?? "Creator"
+          const instagram =
+            (typeof (profile as { instagram?: string }).instagram === "string"
+              ? (profile as { instagram?: string }).instagram
+              : typeof (profile as { instagram_url?: string }).instagram_url === "string"
+              ? (profile as { instagram_url?: string }).instagram_url
+              : typeof (profile as { instagramUrl?: string }).instagramUrl === "string"
+              ? (profile as { instagramUrl?: string }).instagramUrl
+              : null) ?? null
+          setProfileName(name)
+          setProfileInstagram(instagram)
+        }
+      } catch {
+        // ignore
+      }
     }
+    loadProfile()
+  }, [])
 
+  const handleLogout = () => {
+    clearCachedIdToken()
+    router.push("/login")
+  }
+
+  const handleBidResponse = async (action: "accept" | "reject" | "renegotiate") => {
     const token = getCachedIdToken()
     if (!token) {
       router.push("/login")
       return
     }
-
-    setSubmittingBid(true)
+    if (action === "renegotiate") {
+      const amount = parseFloat(counterAmount)
+      if (!amount || amount <= 0) {
+        toast.error("Please enter a valid counter amount")
+        return
+      }
+    }
+    setResponding(true)
     try {
-      await submitCreatorBid(token, campaignId, amount)
-      toast.success("Bid submitted successfully!")
-      setBidAmount("")
-      // Reload page to show updated status
-      window.location.reload()
+      await respondToCreatorBid(token, {
+        campaign_id: campaignId,
+        action,
+        counter_amount: action === "renegotiate" ? parseFloat(counterAmount) : undefined,
+      })
+      toast.success("Response submitted!")
+      setCounterAmount("")
+      const status = await fetchCreatorBidStatus(token, campaignId)
+      setBidStatus(status)
+      await fetchCreatorCampaignBrief(token, campaignId).then(setBrief).catch(() => null)
     } catch (error) {
       toast.error(getErrorMessage(error))
     } finally {
-      setSubmittingBid(false)
+      setResponding(false)
     }
   }
 
@@ -251,23 +306,7 @@ export default function CreatorCampaignDetailPage() {
     }
   }
 
-  const handleAcceptFinalAmount = async () => {
-    const token = getCachedIdToken()
-    if (!token) {
-      router.push("/login")
-      return
-    }
-    setAcceptingAmount(true)
-    try {
-      await acceptCreatorFinalAmount(token, campaignId)
-      toast.success("Amount accepted. You can now view the brief and upload content.")
-      window.location.reload()
-    } catch (error) {
-      toast.error(getErrorMessage(error))
-    } finally {
-      setAcceptingAmount(false)
-    }
-  }
+  // Creator responds to brand offer via handleBidResponse
 
   if (loading) {
     return (
@@ -277,20 +316,82 @@ export default function CreatorCampaignDetailPage() {
     )
   }
 
-  const status = brief?.status || "accepted"
-  const showBidding = status === "accepted" || status === "bid_pending"
-  const showAcceptAmount = brief && status === "amount_negotiated" && brief.final_amount != null
+  const status = bidStatus?.status || brief?.status || "accepted"
+  const offerAmount = bidStatus?.proposed_amount ?? 0
+  const counterValue = bidStatus?.bid_amount ?? 0
   const showBrief = brief && status === "amount_finalized"
-  const showContentUpload = brief && status === "amount_finalized" && brief.campaign
+  const showOffer = offerAmount > 0 || status === "amount_negotiated"
+  const showWaitingOffer =
+    (status === "accepted" || status === "negotiated") && !showOffer && !showBrief
+  const showRevisionRequested =
+    status === "content_revision_requested" || status === "content_rejected"
+  const showContentUpload =
+    brief &&
+    (status === "amount_finalized" ||
+      status === "content_revision_requested" ||
+      status === "content_rejected") &&
+    brief.campaign
   const showGoLive = status === "content_approved"
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
-      <Link href="/dashboard/creator/campaigns">
-        <Button variant="ghost" className="mb-4">
-          ← Back to Campaigns
-        </Button>
-      </Link>
+      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard/creator/campaigns">
+            <Button variant="ghost">← Back to Campaigns</Button>
+          </Link>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link href="/dashboard/creator/campaigns">
+            <Button variant="ghost">Dashboard</Button>
+          </Link>
+          <Link href="/dashboard/creator/connect-youtube">
+            <Button variant="outline">Connect YouTube</Button>
+          </Link>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="flex items-center gap-2">
+                <Avatar className="h-7 w-7">
+                  <AvatarFallback>
+                    <User className="h-4 w-4" />
+                  </AvatarFallback>
+                </Avatar>
+                <span className="max-w-[120px] truncate">{profileName}</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-60">
+              <DropdownMenuLabel className="space-y-1">
+                <div className="text-sm font-medium">{profileName}</div>
+                {profileInstagram && (
+                  <div className="text-xs text-muted-foreground truncate">
+                    {profileInstagram}
+                  </div>
+                )}
+              </DropdownMenuLabel>
+              {profileInstagram && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <a
+                      href={
+                        profileInstagram.startsWith("http")
+                          ? profileInstagram
+                          : `https://instagram.com/${profileInstagram.replace(/^@/, "")}`
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      View Instagram
+                    </a>
+                  </DropdownMenuItem>
+                </>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
 
       {brief && (
         <div className="mb-6">
@@ -301,76 +402,72 @@ export default function CreatorCampaignDetailPage() {
         </div>
       )}
 
-      {/* Bidding Phase */}
-      {showBidding && (
+      {/* Brand Offer */}
+      {showOffer && (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
-              Submit Your Bid
+              Brand Offer
             </CardTitle>
             <CardDescription>
-              Enter your bid amount for this campaign. The brand will review and finalize the amount.
+              The brand has started the bid. You can accept, reject, or renegotiate.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div>
-                <Label htmlFor="bidAmount">Bid Amount (₹)</Label>
-                <Input
-                  id="bidAmount"
-                  type="number"
-                  placeholder="50000"
-                  value={bidAmount}
-                  onChange={(e) => setBidAmount(e.target.value)}
-                  disabled={submittingBid}
-                />
-              </div>
-              <Button onClick={handleSubmitBid} disabled={submittingBid || !bidAmount}>
-                {submittingBid ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  "Submit Bid"
+              <div className="flex flex-wrap items-center gap-4">
+                <div>
+                  <p className="text-sm text-muted-foreground">Brand offer</p>
+                  <p className="text-2xl font-semibold">₹{offerAmount.toLocaleString()}</p>
+                </div>
+                {counterValue > 0 && (
+                  <div>
+                    <p className="text-sm text-muted-foreground">Your counter</p>
+                    <p className="text-xl font-semibold">₹{counterValue.toLocaleString()}</p>
+                  </div>
                 )}
-              </Button>
+              </div>
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="counterAmount">Counter Amount (₹)</Label>
+                  <Input
+                    id="counterAmount"
+                    type="number"
+                    placeholder="Enter counter amount"
+                    value={counterAmount}
+                    onChange={(e) => setCounterAmount(e.target.value)}
+                    disabled={responding}
+                  />
+                </div>
+                <div className="flex flex-wrap items-end gap-2">
+                  <Button onClick={() => handleBidResponse("accept")} disabled={responding}>
+                    Accept
+                  </Button>
+                  <Button variant="outline" onClick={() => handleBidResponse("reject")} disabled={responding}>
+                    Reject
+                  </Button>
+                  <Button variant="secondary" onClick={() => handleBidResponse("renegotiate")} disabled={responding}>
+                    Renegotiate
+                  </Button>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Accept final amount (brand has negotiated) */}
-      {showAcceptAmount && brief && (
-        <Card className="mb-6 border-primary/20 bg-primary/5">
+      {showWaitingOffer && (
+        <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <ThumbsUp className="h-5 w-5" />
-              Brand has offered a final amount
+              <Clock className="h-5 w-5" />
+              Waiting for brand offer
             </CardTitle>
             <CardDescription>
-              The brand has proposed ₹{brief.final_amount.toLocaleString()}. Accept this amount to view the brief and proceed to content upload.
+              The brand will start the bid for this campaign. You will be notified once an offer is available.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center gap-4 flex-wrap">
-              <p className="text-2xl font-semibold">₹{brief.final_amount.toLocaleString()}</p>
-              <Button
-                onClick={handleAcceptFinalAmount}
-                disabled={acceptingAmount}
-              >
-                {acceptingAmount ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Accepting...
-                  </>
-                ) : (
-                  "Accept final amount"
-                )}
-              </Button>
-            </div>
-          </CardContent>
         </Card>
       )}
 
@@ -444,16 +541,47 @@ export default function CreatorCampaignDetailPage() {
         </Card>
       )}
 
+      {/* Revision Requested */}
+      {showRevisionRequested && (
+        <Card className="mb-6 border-yellow-200 bg-yellow-50/40">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-yellow-700" />
+              Content revision requested
+            </CardTitle>
+            <CardDescription>
+              The brand has requested changes to your content. Please review the feedback and upload a revised version.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {brief?.content_feedback ? (
+              <div>
+                <h3 className="font-semibold mb-2">Feedback</h3>
+                <p className="text-muted-foreground whitespace-pre-line">
+                  {brief.content_feedback}
+                </p>
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                Feedback will appear here once the brand shares it.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
       {/* Content Upload Phase */}
       {showContentUpload && (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Upload className="h-5 w-5" />
-              Upload Content
+              {showRevisionRequested ? "Upload Revised Content" : "Upload Content"}
             </CardTitle>
             <CardDescription>
-              Upload your video content for brand review
+              {showRevisionRequested
+                ? "Upload the revised video based on the brand's feedback."
+                : "Upload your video content for brand review"}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -489,7 +617,7 @@ export default function CreatorCampaignDetailPage() {
                     Uploading...
                   </>
                 ) : (
-                  "Upload Content"
+                  showRevisionRequested ? "Upload Revised Content" : "Upload Content"
                 )}
               </Button>
             </div>
