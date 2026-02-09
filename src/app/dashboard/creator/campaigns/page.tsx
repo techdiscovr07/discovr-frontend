@@ -85,8 +85,16 @@ export default function CreatorCampaignsPage() {
 
       {campaigns.length === 0 ? (
         <Card>
-          <CardContent className="py-12 text-center">
-            <p className="text-muted-foreground">No campaigns found. You'll see campaigns here once you're selected.</p>
+          <CardContent className="py-12 text-center space-y-4">
+            <p className="text-muted-foreground text-lg">
+              No campaigns found.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              If you signed up using a campaign link from your email, make sure you've completed the signup process by visiting the campaign page.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              You'll see campaigns here once you're selected by a brand and linked to a campaign.
+            </p>
           </CardContent>
         </Card>
       ) : (

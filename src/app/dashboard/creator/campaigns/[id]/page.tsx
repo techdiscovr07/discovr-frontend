@@ -96,10 +96,12 @@ export default function CreatorCampaignDetailPage() {
     }
 
     const run = async () => {
+      // Link creator to campaign if creator_token is present
       if (creatorToken) {
         try {
           await linkCreatorToCampaign(token, campaignId, creatorToken)
-          // Optional: remove creator_token from URL so we don't re-link on refresh
+          toast.success("Campaign linked successfully!")
+          // Remove creator_token from URL so we don't re-link on refresh
           if (typeof window !== "undefined" && window.history.replaceState) {
             const url = new URL(window.location.href)
             url.searchParams.delete("creator_token")
@@ -107,8 +109,12 @@ export default function CreatorCampaignDetailPage() {
           }
         } catch (err) {
           const msg = getErrorMessage(err)
-          if (!msg.includes("already used")) {
-            toast.error(msg)
+          if (msg.includes("already used") || msg.includes("already linked")) {
+            // Already linked - that's fine, continue
+            console.log("Creator already linked to campaign")
+          } else {
+            toast.error(`Failed to link campaign: ${msg}`)
+            // Still try to load brief - maybe they're already linked from elsewhere
           }
         }
       }

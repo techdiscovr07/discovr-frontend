@@ -22,7 +22,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { getErrorMessage, signup } from "@/lib/api"
+import { extractIdToken, getErrorMessage, signup } from "@/lib/api"
+import { setCachedIdToken } from "@/lib/auth"
 import { toast } from "sonner"
 
 function SignupForm() {
@@ -94,12 +95,18 @@ function SignupForm() {
     setServerError("")
 
     try {
-      await signup({
+      const response = await signup({
         name: name.trim(),
         email,
         password,
         role: (role || "creator") as "creator" | "brand_owner" | "brand_emp",
-      })
+      }) as { id_token?: string; idToken?: string; user?: { role?: string } }
+      
+      // Extract and store token if returned (backend may return id_token after signup)
+      const idToken = extractIdToken(response)
+      if (idToken) {
+        setCachedIdToken(idToken)
+      }
       
       // If this is a campaign signup, redirect to campaign detail page (with creator_token so backend can link)
       if (campaignId && creatorToken) {
