@@ -41,6 +41,14 @@ import {
   creatorGoLive,
   getErrorMessage,
 } from "@/lib/api"
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
 import { clearCachedIdToken, getCachedIdToken } from "@/lib/auth"
 import { toast } from "sonner"
 
@@ -88,6 +96,7 @@ export default function CreatorCampaignDetailPage() {
   const [submittingGoLive, setSubmittingGoLive] = useState(false)
   const [profileName, setProfileName] = useState("Creator")
   const [profileInstagram, setProfileInstagram] = useState<string | null>(null)
+  const [brandBidPopupOpen, setBrandBidPopupOpen] = useState(true)
 
   useEffect(() => {
     const token = getCachedIdToken()
@@ -216,6 +225,16 @@ export default function CreatorCampaignDetailPage() {
     loadProfile()
   }, [])
 
+  const status = bidStatus?.status || brief?.status || "accepted"
+  const offerAmount = bidStatus?.proposed_amount ?? 0
+  const showBrandBidPopup = status === "accepted" && offerAmount > 0
+
+  useEffect(() => {
+    if (showBrandBidPopup) {
+      setBrandBidPopupOpen(true)
+    }
+  }, [showBrandBidPopup])
+
   const handleLogout = () => {
     clearCachedIdToken()
     router.push("/login")
@@ -243,6 +262,7 @@ export default function CreatorCampaignDetailPage() {
       })
       toast.success("Response submitted!")
       setCounterAmount("")
+      setBrandBidPopupOpen(false)
       const status = await fetchCreatorBidStatus(token, campaignId)
       setBidStatus(status)
       await fetchCreatorCampaignBrief(token, campaignId).then(setBrief).catch(() => null)
@@ -316,13 +336,12 @@ export default function CreatorCampaignDetailPage() {
     )
   }
 
-  const status = bidStatus?.status || brief?.status || "accepted"
-  const offerAmount = bidStatus?.proposed_amount ?? 0
-  const counterValue = bidStatus?.bid_amount ?? 0
   const showBrief = brief && status === "amount_finalized"
   const showOffer = offerAmount > 0 || status === "amount_negotiated"
   const showWaitingOffer =
     (status === "accepted" || status === "negotiated") && !showOffer && !showBrief
+  const showBrandBidPopupOpen = showBrandBidPopup && brandBidPopupOpen
+  const counterValue = bidStatus?.bid_amount ?? 0
   const showRevisionRequested =
     status === "content_revision_requested" || status === "content_rejected"
   const showContentUpload =
@@ -334,6 +353,45 @@ export default function CreatorCampaignDetailPage() {
   const showGoLive = status === "content_approved"
 
   return (
+    <>
+      {showBrandBidPopupOpen && (
+        <Dialog open={brandBidPopupOpen} onOpenChange={setBrandBidPopupOpen}>
+          <DialogContent showClose={true}>
+            <DialogHeader>
+              <DialogTitle>Brand has bid on you</DialogTitle>
+              <DialogDescription>
+                The brand has bid ₹{offerAmount.toLocaleString()} for this campaign. Accept to get onboarded, reject to decline, or negotiate with a counter amount.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="grid gap-3 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="popup-counter">Counter Amount (₹) - if negotiating</Label>
+                  <Input
+                    id="popup-counter"
+                    type="number"
+                    placeholder="Enter counter amount"
+                    value={counterAmount}
+                    onChange={(e) => setCounterAmount(e.target.value)}
+                    disabled={responding}
+                  />
+                </div>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={() => handleBidResponse("accept")} disabled={responding}>
+                Accept
+              </Button>
+              <Button variant="outline" onClick={() => handleBidResponse("reject")} disabled={responding}>
+                Reject
+              </Button>
+              <Button variant="secondary" onClick={() => handleBidResponse("renegotiate")} disabled={responding}>
+                Negotiate
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     <div className="container mx-auto py-8 px-4 max-w-4xl">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-4">
         <div className="flex items-center gap-3">
@@ -411,7 +469,7 @@ export default function CreatorCampaignDetailPage() {
               Brand Offer
             </CardTitle>
             <CardDescription>
-              The brand has started the bid. You can accept, reject, or renegotiate.
+              The brand has bid on you for this campaign. Accept to get onboarded, reject to decline, or negotiate with a counter amount (one-time only).
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -704,5 +762,6 @@ export default function CreatorCampaignDetailPage() {
         </Card>
       )}
     </div>
+    </>
   )
 }

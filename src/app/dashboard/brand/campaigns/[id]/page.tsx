@@ -73,7 +73,7 @@ type CreatorRow = {
   comment?: string
 }
 
-type CreatorStatus = "pending" | "accepted" | "rejected" | "negotiated"
+type CreatorStatus = "pending" | "accepted" | "rejected"
 
 const normalizeCreators = (payload: Record<string, unknown>) => {
   const list =
@@ -423,7 +423,7 @@ export default function BrandCampaignDetailPage() {
       "pending",
       "accepted",
       "rejected",
-      "negotiated",
+      // "negotiated",
     ]
 
     const updates = creators
@@ -942,7 +942,6 @@ export default function BrandCampaignDetailPage() {
                               <SelectItem value="pending">Pending</SelectItem>
                               <SelectItem value="accepted">Accepted</SelectItem>
                               <SelectItem value="rejected">Rejected</SelectItem>
-                              <SelectItem value="negotiated">Negotiated</SelectItem>
                             </SelectContent>
                           </Select>
                           <span
@@ -996,9 +995,9 @@ export default function BrandCampaignDetailPage() {
       {campaign?.reviewStatus === "creators_are_final" && (
         <Card>
           <CardHeader>
-            <CardTitle>Brand Offers</CardTitle>
+            <CardTitle>Creator Bids</CardTitle>
             <p className="text-sm text-[hsl(var(--muted-foreground))]">
-              Start bidding by sending offers to negotiated creators
+              When you accept a creator, your bid (CPV × avg views) is sent. Creators can accept, reject, or negotiate once.
             </p>
           </CardHeader>
           <CardContent>
@@ -1008,103 +1007,97 @@ export default function BrandCampaignDetailPage() {
               </div>
             ) : bids.length === 0 ? (
               <p className="text-sm text-[hsl(var(--muted-foreground))]">
-                No offers sent yet.
+                No bids yet. Accept creators above to send your offer.
               </p>
             ) : (
-              <>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Creator</TableHead>
-                      <TableHead>Email</TableHead>
-                      <TableHead>Brand Offer</TableHead>
-                      <TableHead>Creator Counter</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Send Offer</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {bids.map((bid) => {
-                      const action = bidActions[bid.creator_id]
-                      return (
-                        <TableRow key={bid.creator_id}>
-                          <TableCell>{bid.name}</TableCell>
-                          <TableCell>{bid.email}</TableCell>
-                          <TableCell>
-                            {bid.proposed_amount ? `₹${bid.proposed_amount.toLocaleString()}` : "—"}
-                          </TableCell>
-                          <TableCell>
-                            {bid.bid_amount ? `₹${bid.bid_amount.toLocaleString()}` : "—"}
-                          </TableCell>
-                          <TableCell>
-                            <Badge className={statusBadgeClass(bid.status)}>
-                              {bid.status.replace(/_/g, " ")}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Creator</TableHead>
+                    <TableHead>Email</TableHead>
+                    <TableHead>Brand Bid</TableHead>
+                    <TableHead>Creator Counter</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {bids.map((bid) => {
+                    const action = bidActions[bid.creator_id]
+                    const awaitingBrandResponse = bid.status === "amount_negotiated"
+                    return (
+                      <TableRow key={bid.creator_id}>
+                        <TableCell>{bid.name}</TableCell>
+                        <TableCell>{bid.email}</TableCell>
+                        <TableCell>
+                          {bid.proposed_amount ? `₹${bid.proposed_amount.toLocaleString()}` : "—"}
+                        </TableCell>
+                        <TableCell>
+                          {bid.bid_amount ? `₹${bid.bid_amount.toLocaleString()}` : "—"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={statusBadgeClass(bid.status)}>
+                            {bid.status.replace(/_/g, " ")}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {awaitingBrandResponse ? (
                             <div className="flex gap-2">
-                              <Input
-                                type="number"
-                                placeholder="Offer amount"
-                                className="w-32"
-                                value={action?.proposedAmount || ""}
-                                onChange={(e) =>
-                                  setBidActions((prev) => ({
-                                    ...prev,
-                                    [bid.creator_id]: {
-                                      ...prev[bid.creator_id],
-                                      proposedAmount: e.target.value,
-                                    },
-                                  }))
-                                }
-                              />
+                              <Button
+                                size="sm"
+                                onClick={async () => {
+                                  const token = getBrandAuthToken()
+                                  if (!token || !campaignId) return
+                                  setFinalizingAmounts(true)
+                                  try {
+                                    await finalizeCreatorAmounts(token, campaignId, [
+                                      { creator_id: bid.creator_id, action: "accept_counter" },
+                                    ])
+                                    toast.success("Counter accepted")
+                                    loadBids()
+                                  } catch (err) {
+                                    toast.error(getErrorMessage(err))
+                                  } finally {
+                                    setFinalizingAmounts(false)
+                                  }
+                                }}
+                                disabled={finalizingAmounts}
+                              >
+                                Accept Counter
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={async () => {
+                                  const token = getBrandAuthToken()
+                                  if (!token || !campaignId) return
+                                  setFinalizingAmounts(true)
+                                  try {
+                                    await finalizeCreatorAmounts(token, campaignId, [
+                                      { creator_id: bid.creator_id, action: "reject_counter" },
+                                    ])
+                                    toast.success("Counter rejected")
+                                    loadBids()
+                                  } catch (err) {
+                                    toast.error(getErrorMessage(err))
+                                  } finally {
+                                    setFinalizingAmounts(false)
+                                  }
+                                }}
+                                disabled={finalizingAmounts}
+                              >
+                                Reject Counter
+                              </Button>
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      )
-                    })}
-                  </TableBody>
-                </Table>
-                <Button
-                  onClick={async () => {
-                    const token = getBrandAuthToken()
-                    if (!token || !campaignId) return
-                    const updates = Object.entries(bidActions)
-                      .map(([creatorId, action]) => ({
-                        creator_id: creatorId,
-                        action: "negotiate" as const,
-                        proposed_amount: action.proposedAmount ? parseFloat(action.proposedAmount) : undefined,
-                      }))
-                      .filter((u) => typeof u.proposed_amount === "number" && u.proposed_amount > 0)
-                    if (updates.length === 0) {
-                      toast.error("Please enter offer amounts for at least one creator")
-                      return
-                    }
-                    setFinalizingAmounts(true)
-                    try {
-                      await finalizeCreatorAmounts(token, campaignId, updates)
-                      toast.success("Amounts finalized successfully")
-                      setBidActions({})
-                      loadBids()
-                    } catch (err) {
-                      toast.error(getErrorMessage(err))
-                    } finally {
-                      setFinalizingAmounts(false)
-                    }
-                  }}
-                  disabled={finalizingAmounts || Object.keys(bidActions).length === 0}
-                  className="mt-4"
-                >
-                  {finalizingAmounts ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Sending...
-                    </>
-                  ) : (
-                    "Send Offers"
-                  )}
-                </Button>
-              </>
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )
+                  })}
+                </TableBody>
+              </Table>
             )}
           </CardContent>
         </Card>

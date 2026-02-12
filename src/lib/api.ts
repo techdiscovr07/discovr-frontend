@@ -546,14 +546,13 @@ export const finalizeCreatorAmounts = (
   campaignId: string,
   updates: Array<{
     creator_id: string
-    action: "accept" | "negotiate" | "reject"
+    action: "accept_counter" | "reject_counter"
     proposed_amount?: number
   }>,
 ) =>
   requestJson<{
     campaign_id: string
-    finalized_count: number
-    negotiated_count: number
+    accepted_count: number
     rejected_count: number
     message: string
   }>(`/brand/campaigns/finalize-amounts?campaign_id=${encodeURIComponent(campaignId)}`, {
