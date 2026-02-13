@@ -466,13 +466,35 @@ export const fetchCreatorCampaignBrief = (token: string, campaignId: string) =>
       cta?: string
       sample_video_url?: string
       go_live_date?: string
+      brand_name?: string
     }
     final_amount: number
     status: string
+    script_content?: string
+    script_feedback?: string
+    script_submitted_at?: string
   }>(`/creator/campaigns/brief?campaign_id=${encodeURIComponent(campaignId)}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
+  })
+
+export const uploadCreatorScript = (
+  token: string,
+  campaignId: string,
+  scriptContent: string,
+) =>
+  requestJson<{
+    creator_id: string
+    status: string
+    script_submitted_at: string
+    message: string
+  }>(`/creator/campaigns/script?campaign_id=${encodeURIComponent(campaignId)}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: { script_content: scriptContent },
   })
 
 export const uploadCreatorContent = (
@@ -556,6 +578,47 @@ export const finalizeCreatorAmounts = (
     rejected_count: number
     message: string
   }>(`/brand/campaigns/finalize-amounts?campaign_id=${encodeURIComponent(campaignId)}`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: { updates },
+  })
+
+export const fetchBrandCreatorScripts = (token: string, campaignId: string) =>
+  requestJson<{
+    creators: Array<{
+      creator_id: string
+      name: string
+      email: string
+      instagram: string
+      script_content: string
+      script_submitted_at: string
+      status: string
+      script_feedback?: string
+    }>
+  }>(`/brand/campaigns/scripts?campaign_id=${encodeURIComponent(campaignId)}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+export const reviewCreatorScript = (
+  token: string,
+  campaignId: string,
+  updates: Array<{
+    creator_id: string
+    action: "approve" | "reject" | "request_revision"
+    feedback?: string
+  }>,
+) =>
+  requestJson<{
+    campaign_id: string
+    approved_count: number
+    rejected_count: number
+    revision_requested_count: number
+    message: string
+  }>(`/brand/campaigns/review-script?campaign_id=${encodeURIComponent(campaignId)}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,

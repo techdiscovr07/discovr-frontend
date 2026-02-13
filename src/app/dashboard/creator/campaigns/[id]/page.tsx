@@ -37,6 +37,7 @@ import {
   fetchProfile,
   fetchCreatorBidStatus,
   respondToCreatorBid,
+  uploadCreatorScript,
   uploadCreatorContent,
   creatorGoLive,
   getErrorMessage,
@@ -65,9 +66,13 @@ type CampaignBrief = {
     cta?: string
     sample_video_url?: string
     go_live_date?: string
+    brand_name?: string
   }
   final_amount: number
   status: string
+  script_content?: string
+  script_feedback?: string
+  script_submitted_at?: string
   content_feedback?: string
   content_status?: string
 }
@@ -90,6 +95,8 @@ export default function CreatorCampaignDetailPage() {
   } | null>(null)
   const [counterAmount, setCounterAmount] = useState("")
   const [responding, setResponding] = useState(false)
+  const [scriptContent, setScriptContent] = useState("")
+  const [submittingScript, setSubmittingScript] = useState(false)
   const [contentFile, setContentFile] = useState<File | null>(null)
   const [liveUrl, setLiveUrl] = useState("")
   const [uploadingContent, setUploadingContent] = useState(false)
@@ -120,7 +127,7 @@ export default function CreatorCampaignDetailPage() {
         const status = (c as { status?: string }).status
         const finalAmount = (c as { final_amount?: number }).final_amount
         const campaignName = (c as { campaign_name?: string }).campaign_name
-        if (status && (status.includes("amount_negotiated") || status.includes("amount_finalized") || status.includes("content") || status.includes("payment"))) {
+        if (status && (status.includes("amount_negotiated") || status.includes("amount_finalized") || status.includes("script_") || status.includes("content") || status.includes("payment"))) {
           return {
             status,
             final_amount: typeof finalAmount === "number" ? finalAmount : 0,
@@ -142,7 +149,13 @@ export default function CreatorCampaignDetailPage() {
         const fallback = await loadStatusFromList()
         if (fallback) {
           setBrief(fallback)
-        } else if (message.includes("Amount not finalized") || message.includes("Brief not available") || message.includes("Creator not found")) {
+        } else if (
+          message.includes("Amount not finalized") ||
+          message.includes("Brief not available") ||
+          message.includes("Creator not found") ||
+          message.includes("Not Found") ||
+          message.includes("Request failed")
+        ) {
           setBrief(null)
         } else {
           setBrief(null)
@@ -165,26 +178,26 @@ export default function CreatorCampaignDetailPage() {
     }
 
     const run = async () => {
-      // Link creator to campaign only when a creator_token is present (email invite flow).
-      // Some backends reject link attempts without creator_token, which causes 403/400 toasts.
-      if (creatorToken) {
-        try {
-          await linkCreatorToCampaign(token, campaignId, creatorToken ?? undefined)
-          if (creatorToken) {
-            toast.success("Campaign linked successfully!")
-          }
-          if (typeof window !== "undefined" && window.history.replaceState && creatorToken) {
-            const url = new URL(window.location.href)
-            url.searchParams.delete("creator_token")
-            window.history.replaceState({}, "", url.pathname + url.search)
-          }
-        } catch (err) {
-          const msg = getErrorMessage(err)
-          if (msg.includes("already used") || msg.includes("already linked")) {
-            // Already linked – continue
-          } else {
-            toast.error(`Failed to link campaign: ${msg}`)
-          }
+      // Always try to link: by creator_token (from email) or by matching signup email to campaign_creator
+      // This ensures existing creators who land on this page (with or without token) get linked
+      try {
+        await linkCreatorToCampaign(token, campaignId, creatorToken ?? undefined)
+        if (creatorToken) {
+          toast.success("Campaign linked successfully!")
+        }
+        if (typeof window !== "undefined" && window.history.replaceState && creatorToken) {
+          const url = new URL(window.location.href)
+          url.searchParams.delete("creator_token")
+          window.history.replaceState({}, "", url.pathname + url.search)
+        }
+      } catch (err) {
+        const msg = getErrorMessage(err)
+        if (msg.includes("already used") || msg.includes("already linked")) {
+          // Already linked – continue
+        } else if (msg.includes("Creator not found") || msg.includes("Use the signup link")) {
+          // Creator not in campaign – don't block, loadBid/loadBrief will handle
+        } else {
+          toast.error(`Failed to link campaign: ${msg}`)
         }
       }
       await loadBid()
@@ -273,6 +286,32 @@ export default function CreatorCampaignDetailPage() {
     }
   }
 
+  const handleUploadScript = async () => {
+    const content = scriptContent.trim() || brief?.script_content?.trim() || ""
+    if (!content) {
+      toast.error("Please enter your video script")
+      return
+    }
+
+    const token = getCachedIdToken()
+    if (!token) {
+      router.push("/login")
+      return
+    }
+
+    setSubmittingScript(true)
+    try {
+      await uploadCreatorScript(token, campaignId, content)
+      toast.success("Script submitted successfully!")
+      setScriptContent("")
+      await fetchCreatorCampaignBrief(token, campaignId).then(setBrief).catch(() => null)
+    } catch (error) {
+      toast.error(getErrorMessage(error))
+    } finally {
+      setSubmittingScript(false)
+    }
+  }
+
   const handleUploadContent = async () => {
     if (!contentFile) {
       toast.error("Please select a video file")
@@ -336,17 +375,43 @@ export default function CreatorCampaignDetailPage() {
     )
   }
 
-  const showBrief = brief && status === "amount_finalized"
-  const showOffer = offerAmount > 0 || status === "amount_negotiated"
+  const showBrief =
+    brief &&
+    (status === "amount_finalized" ||
+      status.startsWith("script_") ||
+      status.startsWith("content_") ||
+      status.startsWith("payment_"))
+  // Only show Brand Offer when still in negotiation phase (not yet accepted/finalized)
+  const showOffer =
+    (offerAmount > 0 || status === "amount_negotiated") &&
+    status !== "amount_finalized" &&
+    !status.includes("content") &&
+    !status.includes("payment")
   const showWaitingOffer =
     (status === "accepted" || status === "negotiated") && !showOffer && !showBrief
+  // Show brand details when amount is finalized (brand has accepted) or later
+  const showBrandDetails =
+    brief &&
+    (status === "amount_finalized" ||
+      status.startsWith("script_") ||
+      status.includes("content") ||
+      status.includes("payment"))
   const showBrandBidPopupOpen = showBrandBidPopup && brandBidPopupOpen
   const counterValue = bidStatus?.bid_amount ?? 0
+  const showScriptUpload =
+    brief &&
+    (status === "amount_finalized" ||
+      status === "script_revision_requested" ||
+      status === "script_rejected") &&
+    brief.campaign
+  const showScriptPending = status === "script_pending"
+  const showScriptRevisionRequested =
+    status === "script_revision_requested" || status === "script_rejected"
   const showRevisionRequested =
     status === "content_revision_requested" || status === "content_rejected"
   const showContentUpload =
     brief &&
-    (status === "amount_finalized" ||
+    (status === "script_approved" ||
       status === "content_revision_requested" ||
       status === "content_rejected") &&
     brief.campaign
@@ -460,7 +525,38 @@ export default function CreatorCampaignDetailPage() {
         </div>
       )}
 
-      {/* Brand Offer */}
+      {/* Brand Details - shown when amount finalized (brand accepted) or later */}
+      {showBrandDetails && brief && (
+        <Card className="mb-6 border-primary/10">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              Brand Partner
+            </CardTitle>
+            <CardDescription>
+              You&apos;ve agreed to work with this brand on this campaign.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div>
+              <p className="text-sm text-muted-foreground">Brand</p>
+              <p className="text-lg font-semibold">
+                {brief.campaign.brand_name || "Brand"}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Campaign</p>
+              <p className="font-medium">{brief.campaign.name}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Agreed Amount</p>
+              <p className="text-xl font-semibold">₹{brief.final_amount.toLocaleString()}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Brand Offer - only when still negotiating */}
       {showOffer && (
         <Card className="mb-6">
           <CardHeader>
@@ -599,7 +695,117 @@ export default function CreatorCampaignDetailPage() {
         </Card>
       )}
 
-      {/* Revision Requested */}
+      {/* Script Upload - Step 1: Submit video script before filming */}
+      {showScriptUpload && (
+        <Card className="mb-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5" />
+              Video Script
+            </CardTitle>
+            <CardDescription>
+              {showScriptRevisionRequested
+                ? "The brand has requested changes to your script. Please revise and resubmit."
+                : "Submit your video script for brand approval before filming. The brand will review and approve, request changes, or reject."}
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {showScriptRevisionRequested && brief?.script_feedback && (
+              <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-4">
+                <h4 className="font-semibold text-amber-800 mb-2">Brand Feedback</h4>
+                <p className="text-sm text-amber-900 whitespace-pre-line">
+                  {brief.script_feedback}
+                </p>
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="scriptContent">Your Script</Label>
+              <Textarea
+                id="scriptContent"
+                placeholder="Paste or write your video script here..."
+                value={scriptContent || brief?.script_content || ""}
+                onChange={(e) => setScriptContent(e.target.value)}
+                rows={10}
+                className="font-mono text-sm"
+                disabled={submittingScript}
+              />
+            </div>
+            <Button
+              onClick={handleUploadScript}
+              disabled={
+                submittingScript ||
+                !(scriptContent.trim() || brief?.script_content?.trim())
+              }
+            >
+              {submittingScript ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Submitting...
+                </>
+              ) : showScriptRevisionRequested ? (
+                "Resubmit Script"
+              ) : (
+                "Submit Script"
+              )}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Script Pending - Waiting for brand review */}
+      {showScriptPending && (
+        <Card className="mb-6 border-blue-200 bg-blue-50/40">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5 text-blue-700" />
+              Script Under Review
+            </CardTitle>
+            <CardDescription>
+              Your script has been submitted. The brand will review it and either approve, request changes, or reject. You will be notified once they respond.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+
+      {/* Script Approved - Can proceed to video upload */}
+      {status === "script_approved" && brief && (
+        <Card className="mb-6 border-green-200 bg-green-50/40">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CheckCircle className="h-5 w-5 text-green-600" />
+              Script Approved
+            </CardTitle>
+            <CardDescription>
+              Your script has been approved. You can now film and upload your video.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      )}
+
+      {/* Script Rejected - Final state */}
+      {status === "script_rejected" && brief?.script_feedback && (
+        <Card className="mb-6 border-red-200 bg-red-50/40">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-red-600" />
+              Script Rejected
+            </CardTitle>
+            <CardDescription>
+              The brand has rejected your script. You can revise and resubmit using the form above.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="rounded-lg border border-red-200 bg-white p-4">
+              <h4 className="font-semibold text-red-800 mb-2">Brand Feedback</h4>
+              <p className="text-sm text-red-900 whitespace-pre-line">
+                {brief.script_feedback}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Revision Requested - Content (video) */}
       {showRevisionRequested && (
         <Card className="mb-6 border-yellow-200 bg-yellow-50/40">
           <CardHeader>

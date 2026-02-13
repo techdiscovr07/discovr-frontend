@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-import { Instagram, Loader2, RefreshCcw } from "lucide-react"
+import { Instagram, Loader2, RefreshCcw, FileText, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -26,6 +26,12 @@ import {
 } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
   fetchBrandCampaignCreators,
   fetchBrandCampaigns,
   getErrorMessage,
@@ -33,11 +39,14 @@ import {
   uploadBrandCampaignBrief,
   fetchBrandCreatorBids,
   finalizeCreatorAmounts,
+  fetchBrandCreatorScripts,
+  reviewCreatorScript,
   fetchBrandCreatorContent,
   reviewCreatorContent,
 } from "@/lib/api"
 import { getBrandAuthToken } from "@/lib/auth"
 import { toast } from "sonner"
+import { AIReviewDialog } from "@/components/AIReviewDialog"
 
 type CampaignDetail = {
   id: string
@@ -197,6 +206,23 @@ export default function BrandCampaignDetailPage() {
   const [loadingBids, setLoadingBids] = useState(false)
   const [finalizingAmounts, setFinalizingAmounts] = useState(false)
   const [bidActions, setBidActions] = useState<Record<string, { proposedAmount?: string }>>({})
+  const [creatorScripts, setCreatorScripts] = useState<Array<{
+    creator_id: string
+    name: string
+    email: string
+    instagram: string
+    script_content: string
+    script_submitted_at: string
+    status: string
+    script_feedback?: string
+  }>>([])
+  const [loadingScripts, setLoadingScripts] = useState(false)
+  const [reviewingScript, setReviewingScript] = useState(false)
+  const [scriptActions, setScriptActions] = useState<Record<string, { action: "approve" | "reject" | "request_revision"; feedback?: string }>>({})
+  const [scriptDialogOpen, setScriptDialogOpen] = useState(false)
+  const [selectedScript, setSelectedScript] = useState<{ name: string; script_content: string; script_submitted_at: string } | null>(null)
+  const [aiReviewOpen, setAiReviewOpen] = useState(false)
+  const [aiReviewScriptIndex, setAiReviewScriptIndex] = useState(0)
   const [creatorContent, setCreatorContent] = useState<Array<{
     creator_id: string
     name: string
@@ -387,6 +413,20 @@ export default function BrandCampaignDetailPage() {
     }
   }
 
+  const loadScripts = async () => {
+    const token = getBrandAuthToken()
+    if (!token || !campaignId) return
+    setLoadingScripts(true)
+    try {
+      const response = await fetchBrandCreatorScripts(token, campaignId)
+      setCreatorScripts(response.creators || [])
+    } catch (err) {
+      // Silently fail
+    } finally {
+      setLoadingScripts(false)
+    }
+  }
+
   const loadContent = async () => {
     const token = getBrandAuthToken()
     if (!token || !campaignId) return
@@ -407,6 +447,7 @@ export default function BrandCampaignDetailPage() {
       loadBids()
     }
     if (campaign?.briefCompleted) {
+      loadScripts()
       loadContent()
     }
   }, [campaignId, campaign?.reviewStatus, campaign?.briefCompleted])
@@ -579,6 +620,22 @@ export default function BrandCampaignDetailPage() {
       case "rejected":
         return "bg-red-100 text-red-700"
       case "negotiated":
+        return "bg-amber-100 text-amber-700"
+      case "script_pending":
+        return "bg-blue-100 text-blue-700"
+      case "script_approved":
+        return "bg-emerald-100 text-emerald-700"
+      case "script_rejected":
+        return "bg-red-100 text-red-700"
+      case "script_revision_requested":
+        return "bg-amber-100 text-amber-700"
+      case "content_pending":
+        return "bg-blue-100 text-blue-700"
+      case "content_approved":
+        return "bg-emerald-100 text-emerald-700"
+      case "content_rejected":
+        return "bg-red-100 text-red-700"
+      case "content_revision_requested":
         return "bg-amber-100 text-amber-700"
       default:
         return "bg-zinc-100 text-zinc-700"
@@ -1103,7 +1160,307 @@ export default function BrandCampaignDetailPage() {
         </Card>
       )}
 
-      {/* Content Review Section */}
+      {/* Script Review Section - Step 1: Review scripts before video */}
+      {campaign?.briefCompleted && (
+        <>
+        {/* Simple script view dialog */}
+        <Dialog open={scriptDialogOpen} onOpenChange={setScriptDialogOpen}>
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+            <DialogHeader>
+              <DialogTitle>
+                Script by {selectedScript?.name ?? "Creator"}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="overflow-y-auto flex-1 -mx-6 px-6">
+              {selectedScript && (
+                <>
+                  <p className="text-xs text-muted-foreground mb-2">
+                    Submitted {new Date(selectedScript.script_submitted_at).toLocaleDateString()}
+                  </p>
+                  <pre className="whitespace-pre-wrap text-sm font-sans rounded-lg border bg-muted/30 p-4">
+                    {selectedScript.script_content}
+                  </pre>
+                </>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* AI Review Dialog */}
+        {creatorScripts[aiReviewScriptIndex] && (
+          <AIReviewDialog
+            open={aiReviewOpen}
+            onOpenChange={setAiReviewOpen}
+            type="script"
+            content={{
+              creator_name: creatorScripts[aiReviewScriptIndex].name,
+              status: creatorScripts[aiReviewScriptIndex].status,
+              updated_at: creatorScripts[aiReviewScriptIndex].script_submitted_at,
+              cost: 0, // TODO: get from campaign or creator
+              script_content: creatorScripts[aiReviewScriptIndex].script_content,
+            }}
+            aiChecks={[
+              { id: "1", label: "Brand safety checks", passed: true },
+              { id: "2", label: "On-screen CTA visuals", passed: true },
+              { id: "3", label: "Product description accuracy", passed: true },
+              { id: "4", label: "Face on screen", passed: true },
+              { id: "5", label: "People-first language", passed: true },
+              { id: "6", label: "Authentic video environment", passed: true },
+              { id: "7", label: "No negative phrasing", passed: true },
+              { id: "8", label: "No mention of competitors", passed: true },
+            ]}
+            agentRecommendation={{
+              approved: true,
+              message: "This draft passes all your safety checks",
+            }}
+            onApprove={async () => {
+              const token = getBrandAuthToken()
+              if (!token || !campaignId) return
+              const currentScript = creatorScripts[aiReviewScriptIndex]
+              try {
+                await reviewCreatorScript(token, campaignId, [
+                  { creator_id: currentScript.creator_id, action: "approve" },
+                ])
+                toast.success("Script approved!")
+                setAiReviewOpen(false)
+                loadScripts()
+                loadContent()
+              } catch (err) {
+                toast.error(getErrorMessage(err))
+              }
+            }}
+            onReject={async (feedback) => {
+              const token = getBrandAuthToken()
+              if (!token || !campaignId) return
+              const currentScript = creatorScripts[aiReviewScriptIndex]
+              try {
+                await reviewCreatorScript(token, campaignId, [
+                  {
+                    creator_id: currentScript.creator_id,
+                    action: "reject",
+                    feedback,
+                  },
+                ])
+                toast.success("Script rejected")
+                setAiReviewOpen(false)
+                loadScripts()
+              } catch (err) {
+                toast.error(getErrorMessage(err))
+              }
+            }}
+            onRequestRevision={async (feedback) => {
+              const token = getBrandAuthToken()
+              if (!token || !campaignId) return
+              const currentScript = creatorScripts[aiReviewScriptIndex]
+              try {
+                await reviewCreatorScript(token, campaignId, [
+                  {
+                    creator_id: currentScript.creator_id,
+                    action: "request_revision",
+                    feedback,
+                  },
+                ])
+                toast.success("Revision requested")
+                setAiReviewOpen(false)
+                loadScripts()
+              } catch (err) {
+                toast.error(getErrorMessage(err))
+              }
+            }}
+            onNavigatePrev={() => {
+              if (aiReviewScriptIndex > 0) {
+                setAiReviewScriptIndex(aiReviewScriptIndex - 1)
+              }
+            }}
+            onNavigateNext={() => {
+              if (aiReviewScriptIndex < creatorScripts.length - 1) {
+                setAiReviewScriptIndex(aiReviewScriptIndex + 1)
+              }
+            }}
+            hasPrev={aiReviewScriptIndex > 0}
+            hasNext={aiReviewScriptIndex < creatorScripts.length - 1}
+          />
+        )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Script Review</CardTitle>
+            <p className="text-sm text-[hsl(var(--muted-foreground))]">
+              Review creator video scripts. Approve to let them film, request changes, or reject.
+            </p>
+          </CardHeader>
+          <CardContent>
+            {loadingScripts ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin" />
+              </div>
+            ) : creatorScripts.length === 0 ? (
+              <p className="text-sm text-[hsl(var(--muted-foreground))]">
+                No script submissions yet. Creators will submit scripts for your approval before filming.
+              </p>
+            ) : (
+              <>
+                <Table className="table-fixed">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[140px]">Creator</TableHead>
+                      <TableHead className="w-[120px]">Script</TableHead>
+                      <TableHead className="w-[110px] whitespace-nowrap">Submitted</TableHead>
+                      <TableHead className="w-[120px] whitespace-nowrap">Status</TableHead>
+                      <TableHead className="w-[240px]">Action</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {creatorScripts.map((script) => {
+                      const action = scriptActions[script.creator_id]
+                      return (
+                        <TableRow key={script.creator_id}>
+                          <TableCell className="align-top font-medium">{script.name}</TableCell>
+                          <TableCell className="align-top">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-1.5"
+                              onClick={() => {
+                                setSelectedScript({
+                                  name: script.name,
+                                  script_content: script.script_content,
+                                  script_submitted_at: script.script_submitted_at,
+                                })
+                                setScriptDialogOpen(true)
+                              }}
+                            >
+                              <FileText className="h-4 w-4" />
+                              View script
+                            </Button>
+                          </TableCell>
+                          <TableCell className="align-top whitespace-nowrap text-muted-foreground">
+                            {script.script_submitted_at
+                              ? new Date(script.script_submitted_at).toLocaleDateString()
+                              : "—"}
+                          </TableCell>
+                          <TableCell className="align-top">
+                            <Badge className={statusBadgeClass(script.status)}>
+                              {script.status.replace(/_/g, " ")}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="align-top">
+                            {script.status === "script_pending" ? (
+                              <div className="flex flex-col gap-2">
+                                <Button
+                                  variant="default"
+                                  size="sm"
+                                  className="gap-2 w-full"
+                                  onClick={() => {
+                                    const scriptIndex = creatorScripts.findIndex(
+                                      (s) => s.creator_id === script.creator_id
+                                    )
+                                    setAiReviewScriptIndex(scriptIndex)
+                                    setAiReviewOpen(true)
+                                  }}
+                                >
+                                  <Sparkles className="h-4 w-4" />
+                                  AI Review
+                                </Button>
+                                <Select
+                                  value={action?.action || ""}
+                                  onValueChange={(value) =>
+                                    setScriptActions((prev) => ({
+                                      ...prev,
+                                      [script.creator_id]: {
+                                        ...prev[script.creator_id],
+                                        action: value as "approve" | "reject" | "request_revision",
+                                      },
+                                    }))
+                                  }
+                                >
+                                  <SelectTrigger className="w-full">
+                                    <SelectValue placeholder="Manual select" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="approve">Approve</SelectItem>
+                                    <SelectItem value="reject">Reject</SelectItem>
+                                    <SelectItem value="request_revision">Request Changes</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                {(action?.action === "reject" || action?.action === "request_revision") && (
+                                  <Input
+                                    placeholder="Feedback"
+                                    className="w-full"
+                                    value={action.feedback || ""}
+                                    onChange={(e) =>
+                                      setScriptActions((prev) => ({
+                                        ...prev,
+                                        [script.creator_id]: {
+                                          ...prev[script.creator_id],
+                                          feedback: e.target.value,
+                                        },
+                                      }))
+                                    }
+                                  />
+                                )}
+                              </div>
+                            ) : (
+                              script.script_feedback && (
+                                <span className="text-sm text-muted-foreground max-w-xs truncate block" title={script.script_feedback}>
+                                  {script.script_feedback}
+                                </span>
+                              )
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+                <Button
+                  onClick={async () => {
+                    const token = getBrandAuthToken()
+                    if (!token || !campaignId) return
+                    const updates = Object.entries(scriptActions)
+                      .map(([creatorId, action]) => ({
+                        creator_id: creatorId,
+                        action: action.action,
+                        feedback: action.feedback,
+                      }))
+                      .filter((u) => u.action)
+                    if (updates.length === 0) {
+                      toast.error("Please select actions for at least one creator")
+                      return
+                    }
+                    setReviewingScript(true)
+                    try {
+                      await reviewCreatorScript(token, campaignId, updates)
+                      toast.success("Script review submitted")
+                      setScriptActions({})
+                      loadScripts()
+                      loadContent()
+                    } catch (err) {
+                      toast.error(getErrorMessage(err))
+                    } finally {
+                      setReviewingScript(false)
+                    }
+                  }}
+                  disabled={reviewingScript || Object.keys(scriptActions).length === 0}
+                  className="mt-4"
+                >
+                  {reviewingScript ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Reviewing...
+                    </>
+                  ) : (
+                    "Submit Script Review"
+                  )}
+                </Button>
+              </>
+            )}
+          </CardContent>
+        </Card>
+        </>
+      )}
+
+      {/* Content Review Section - Step 2: Review videos after script approved */}
       {campaign?.briefCompleted && (
         <Card>
           <CardHeader>
