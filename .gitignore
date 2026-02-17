@@ -108,6 +108,11 @@ frontend/next-env.d.ts
 .cache/
 .temp/
 
+# Development directories (code is in frontend/)
+discovr-app-new/
+.next/
+backup/
+
 # Package manager locks (optional - some teams commit these)
 # package-lock.json
 # yarn.lock
