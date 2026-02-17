@@ -16,14 +16,12 @@ node_modules/
 *.spec
 
 # Next.js
-frontend/.next/
-frontend/out/
-frontend/.next
-frontend/out
+.next/
+out/
 
 # Production builds
-frontend/build
-frontend/dist
+build/
+dist/
 backend/bin/
 backend/dist/
 
@@ -46,7 +44,7 @@ backend/vendor/
 .env.production.local
 .env*.local
 backend/.env
-frontend/.env
+.env
 
 # Firebase credentials
 backend/firebase-credentials.json
@@ -58,8 +56,8 @@ backend/firebase-credentials.json
 # Uploads and user-generated content
 backend/uploads/
 backend/uploads/**/*
-frontend/public/uploads/
-frontend/public/uploads/**/*
+public/uploads/
+public/uploads/**/*
 
 # IDE and editor files
 .vscode/
@@ -100,7 +98,7 @@ lerna-debug.log*
 
 # TypeScript
 *.tsbuildinfo
-frontend/next-env.d.ts
+next-env.d.ts
 
 # Temporary files
 *.tmp
@@ -108,11 +106,12 @@ frontend/next-env.d.ts
 .cache/
 .temp/
 
-# Development directories (code is in frontend/)
+# Development directories
 discovr-app-new/
 .next/
 backup/
 src/
+frontend/
 
 # Backend code (separate repository: discovr)
 backend/
