@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardBody, Button } from '../../../components';
 import {
     Instagram,
     Youtube,
-    MessageCircle,
-    CheckCircle
+    MessageCircle
 } from 'lucide-react';
 import {
     BarChart,
@@ -25,6 +25,7 @@ type SortField = 'name' | 'followers' | 'engagement' | 'campaigns' | 'totalEarne
 type SortDirection = 'asc' | 'desc';
 
 export const BrandCreatorsTab: React.FC<BrandCreatorsTabProps> = ({ searchQuery = '' }) => {
+    const navigate = useNavigate();
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 12;
     const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -109,12 +110,12 @@ export const BrandCreatorsTab: React.FC<BrandCreatorsTabProps> = ({ searchQuery 
     return (
         <div className="creators-container animate-fade-in">
             {/* Creator Performance Section */}
-            <div className="overview-bottom-grid">
-                <Card className="analytics-card">
+            <div className="creators-header-grid">
+                <Card className="performance-card">
                     <CardHeader>
                         <div className="card-header-content">
-                            <h3>Pool Performance</h3>
-                            <Button variant="ghost" size="sm">Instagram</Button>
+                            <h3>Creator Performance</h3>
+                            <Button variant="ghost" size="sm">Last 30 Days</Button>
                         </div>
                     </CardHeader>
                     <CardBody>
@@ -125,59 +126,36 @@ export const BrandCreatorsTab: React.FC<BrandCreatorsTabProps> = ({ searchQuery 
                                 <YAxis stroke="rgba(255,255,255,0.3)" fontSize={10} axisLine={false} tickLine={false} />
                                 <Tooltip
                                     contentStyle={{
-                                        background: 'rgba(17, 24, 39, 0.95)',
+                                        background: '#1f2937',
                                         border: '1px solid rgba(255,255,255,0.1)',
                                         borderRadius: '8px'
                                     }}
                                 />
-                                <Bar dataKey="engagement" fill="var(--color-accent)" radius={[4, 4, 0, 0]} name="Eng %" />
-                                <Bar dataKey="campaigns" fill="var(--color-accent-alt)" radius={[4, 4, 0, 0]} name="Camps" />
+                                <Bar dataKey="engagement" fill="#3b82f6" radius={[4, 4, 0, 0]} name="Engagement %" />
+                                <Bar dataKey="campaigns" fill="#10b981" radius={[4, 4, 0, 0]} name="Campaigns" />
                             </BarChart>
                         </ResponsiveContainer>
                     </CardBody>
                 </Card>
-
-                <Card className="analytics-card" style={{ background: 'var(--gradient-glass)' }}>
-                    <CardBody>
-                        <div style={{ padding: 'var(--space-4)' }}>
-                            <div className="welcome-badge" style={{ marginBottom: 'var(--space-6)' }}>Curation Strength</div>
-                            <h2 style={{ fontSize: 'var(--text-3xl)', fontWeight: 900, marginBottom: 'var(--space-2)' }}>Top 1%.</h2>
-                            <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', lineHeight: 1.6 }}>
-                                Your creator pool is currently outperforming industry benchmarks by <strong>4.2%</strong> in organic reach.
-                            </p>
-                            <div style={{ marginTop: 'var(--space-6)', paddingTop: 'var(--space-6)', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                                <p style={{ fontSize: '10px', color: 'var(--color-text-secondary)', fontWeight: 700, textTransform: 'uppercase' }}>Recent matches</p>
-                                <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-                                    {[1, 2, 3, 4].map(i => (
-                                        <div key={i} style={{ width: 32, height: 32, borderRadius: 8, background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-subtle)' }} />
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </CardBody>
-                </Card>
             </div>
 
-            {/* Premium Filter Bar */}
-            <div className="premium-filter-bar">
-                <div className="filter-group">
-                    <div className="custom-select-wrapper">
-                        <select
-                            className="premium-select"
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value)}
-                        >
-                            <option value="all">ALL POOLS</option>
-                            <option value="Active">ACTIVE</option>
-                            <option value="Pending">PENDING</option>
-                        </select>
-                    </div>
+            {/* Filter Bar */}
+            <div className="filter-bar-clean">
+                <div className="filter-left">
+                    <select
+                        className="clean-select"
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value)}
+                    >
+                        <option value="all">All Statuses</option>
+                        <option value="Active">Active</option>
+                        <option value="Pending">Pending</option>
+                    </select>
                 </div>
 
-                <div className="filter-group">
-                    <span style={{ fontSize: '10px', fontWeight: 900, color: 'var(--color-text-tertiary)', letterSpacing: '0.1em' }}>SORT BY</span>
+                <div className="filter-right">
                     <select
-                        className="premium-select"
+                        className="clean-select"
                         value={`${sortField}-${sortDirection}`}
                         onChange={(e) => {
                             const [field, direction] = e.target.value.split('-');
@@ -185,65 +163,77 @@ export const BrandCreatorsTab: React.FC<BrandCreatorsTabProps> = ({ searchQuery 
                             setSortDirection(direction as SortDirection);
                         }}
                     >
-                        <option value="followers-desc">FOLLOWERS</option>
-                        <option value="engagement-desc">ENGAGEMENT</option>
-                        <option value="campaigns-desc">CAMPAIGNS</option>
+                        <option value="name-asc">Sort by Name</option>
+                        <option value="followers-desc">Most Followers</option>
+                        <option value="engagement-desc">Highest Engagement</option>
+                        <option value="campaigns-desc">Most Campaigns</option>
                     </select>
                 </div>
             </div>
 
             {/* Creators Grid */}
-            <div className="brands-grid" style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))' }}>
+            <div className="creators-grid-clean">
                 {paginatedCreators.map((creator) => (
-                    <div key={creator.id} className="premium-creator-card">
-                        <div className="creator-card-header">
-                            <div className="creator-avatar-wrapper">
-                                <div className="creator-avatar-main">
+                    <Card key={creator.id} className="creator-item-card">
+                        <CardBody>
+                            <div className="creator-main-info">
+                                <div className="creator-avatar-circle">
                                     {creator.avatar}
                                 </div>
-                                <div className="platform-badge-float">
+                                <div className="creator-text-info">
+                                    <h4>{creator.name}</h4>
+                                    <p>{creator.niche}</p>
+                                </div>
+                                <div className="platform-icon-clean">
                                     {getPlatformIcon(creator.platform)}
                                 </div>
                             </div>
-                            <div className="creator-meta">
-                                <h4>{creator.name} <CheckCircle size={14} style={{ color: 'var(--color-accent-alt)', marginLeft: 4 }} /></h4>
-                                <p>{creator.niche}</p>
-                            </div>
-                        </div>
 
-                        <div className="creator-stats-row">
-                            <div className="creator-mini-stat">
-                                <span className="mini-stat-label">REACH</span>
-                                <span className="mini-stat-value">{creator.followers}</span>
+                            <div className="creator-metrics-grid">
+                                <div className="metric-item">
+                                    <span className="metric-label">Followers</span>
+                                    <span className="metric-value">{creator.followers}</span>
+                                </div>
+                                <div className="metric-item">
+                                    <span className="metric-label">Engagement</span>
+                                    <span className="metric-value">{creator.engagement}</span>
+                                </div>
+                                <div className="metric-item">
+                                    <span className="metric-label">Earnings</span>
+                                    <span className="metric-value">{creator.totalEarned}</span>
+                                </div>
                             </div>
-                            <div className="creator-mini-stat">
-                                <span className="mini-stat-label">ENG. RATE</span>
-                                <span className="mini-stat-value">{creator.engagement}</span>
+
+                            <div className="creator-card-actions">
+                                <Button variant="ghost" size="sm" fullWidth onClick={() => navigate(`/brand/creator/${creator.id}`)}>
+                                    View Full Profile
+                                </Button>
                             </div>
-                        </div>
-
-                        <div className="creator-tags">
-                            {['FASHION', 'LIFESTYLE', 'PREMIUM'].map(tag => (
-                                <span key={tag} className="creator-tag">{tag}</span>
-                            ))}
-                        </div>
-
-                        <div className="campaign-card-footer" style={{ border: 'none', padding: 0 }}>
-                            <Button variant="ghost" size="sm" onClick={() => { }}>ANALYSIS</Button>
-                            <Button size="sm">MESSAGE</Button>
-                        </div>
-                    </div>
+                        </CardBody>
+                    </Card>
                 ))}
             </div>
 
-            {/* Pagination placeholder */}
+            {/* Pagination */}
             {totalPages > 1 && (
-                <div style={{ display: 'flex', justifyContent: 'center', marginTop: 'var(--space-8)' }}>
-                    <div style={{ display: 'flex', gap: 4 }}>
-                        <Button variant="ghost" size="sm" onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))} disabled={currentPage === 1}>Prev</Button>
-                        <span style={{ display: 'flex', alignItems: 'center', padding: '0 16px', fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>{currentPage} / {totalPages}</span>
-                        <Button variant="ghost" size="sm" onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))} disabled={currentPage === totalPages}>Next</Button>
-                    </div>
+                <div className="pagination-container">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                        disabled={currentPage === 1}
+                    >
+                        Previous
+                    </Button>
+                    <span className="pagination-info">Page {currentPage} of {totalPages}</span>
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                        disabled={currentPage === totalPages}
+                    >
+                        Next
+                    </Button>
                 </div>
             )}
         </div>

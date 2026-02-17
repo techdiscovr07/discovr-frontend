@@ -96,15 +96,10 @@ export const BrandOverviewTab: React.FC<BrandOverviewTabProps> = ({ searchQuery:
 
     return (
         <div className="overview-container">
-            {/* Humanized Welcome Section */}
-            <div className="welcome-section animate-fade-in">
-                <div className="welcome-text">
-                    <span className="welcome-badge">Efficiency: 94%</span>
-                    <h1>Growth Mode: Active.</h1>
-                    <p>You're pacing 12% ahead of last month's reach targets. Elite creators are responding to your latest brief.</p>
-                </div>
-                <div className="welcome-signature">
-                    <span className="signature-text">"Scale fast, scale right."</span>
+            <div className="dashboard-page-header animate-fade-in">
+                <div className="header-text">
+                    <h1>Dashboard Overview</h1>
+                    <p>Track your campaign performance, engagement metrics, and budget allocation in real-time.</p>
                 </div>
             </div>
 
@@ -220,61 +215,36 @@ export const BrandOverviewTab: React.FC<BrandOverviewTabProps> = ({ searchQuery:
             </div>
 
             {/* Budget Allocation */}
-            <div className="overview-bottom-grid">
+            <div className="overview-bottom-grid full-width">
                 <Card className="analytics-card budget-chart-card">
                     <CardHeader>
                         <div className="card-header-content">
-                            <h3>Budget allocation</h3>
-                            <Button variant="ghost" size="sm">Active</Button>
+                            <h3>Budget Allocation</h3>
+                            <div className="card-actions">
+                                <Button variant="ghost" size="sm">Download Report</Button>
+                            </div>
                         </div>
                     </CardHeader>
                     <CardBody>
                         <ResponsiveContainer width="100%" height={300}>
                             <BarChart data={budgetData}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                                <XAxis dataKey="campaign" stroke="rgba(255,255,255,0.5)" />
-                                <YAxis stroke="rgba(255,255,255,0.5)" />
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                <XAxis dataKey="campaign" stroke="rgba(255,255,255,0.5)" fontSize={12} tickLine={false} axisLine={false} />
+                                <YAxis stroke="rgba(255,255,255,0.5)" fontSize={12} tickLine={false} axisLine={false} />
                                 <Tooltip
+                                    cursor={{ fill: 'rgba(255,255,255,0.02)' }}
                                     contentStyle={{
-                                        background: 'rgba(17, 24, 39, 0.95)',
+                                        background: '#1f2937',
                                         border: '1px solid rgba(255,255,255,0.1)',
-                                        borderRadius: '8px'
+                                        borderRadius: '12px',
+                                        boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
                                     }}
                                 />
-                                <Bar dataKey="spent" fill="var(--color-accent)" radius={[4, 4, 0, 0]} />
-                                <Bar dataKey="remaining" fill="var(--color-accent-alt)" radius={[4, 4, 0, 0]} />
+                                <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
+                                <Bar dataKey="spent" name="Spent" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={40} />
+                                <Bar dataKey="remaining" name="Remaining" fill="#10b981" radius={[4, 4, 0, 0]} barSize={40} />
                             </BarChart>
                         </ResponsiveContainer>
-                    </CardBody>
-                </Card>
-
-                {/* Live Creator Activity Feed */}
-                <Card className="analytics-card activity-feed-card">
-                    <CardHeader>
-                        <div className="card-header-content">
-                            <h3><Activity size={18} style={{ marginRight: 8, color: 'var(--color-accent-alt)' }} /> Pulse</h3>
-                            <span className="status-live">LIVE</span>
-                        </div>
-                    </CardHeader>
-                    <CardBody>
-                        <div className="activity-list">
-                            {[
-                                { user: 'Aisha V.', action: 'uploaded 2 new drafts', time: '2m ago', icon: FileText },
-                                { user: 'Rohit S.', action: 'accepted campaign brief', time: '15m ago', icon: Activity },
-                                { user: 'Deepika P.', action: 'hit viral milestone (50k)', time: '1h ago', icon: TrendingUp },
-                                { user: 'System', action: 'Matched 4 new creators', time: '3h ago', icon: Megaphone }
-                            ].map((item, i) => (
-                                <div className="activity-item" key={i}>
-                                    <div className="activity-icon-sm">
-                                        <item.icon size={14} />
-                                    </div>
-                                    <div className="activity-info">
-                                        <p><strong>{item.user}</strong> {item.action}</p>
-                                        <span>{item.time}</span>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
                     </CardBody>
                 </Card>
             </div>

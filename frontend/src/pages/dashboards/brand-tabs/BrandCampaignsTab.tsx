@@ -1,13 +1,10 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Button, Modal, LoadingSpinner } from '../../../components';
+import { Button, Modal, LoadingSpinner, Card, CardBody } from '../../../components';
 import {
     Users,
     IndianRupee,
-    Calendar,
-    TrendingUp,
-    Activity,
-    Clock
+    Calendar
 } from 'lucide-react';
 import { brandApi } from '../../../lib/api';
 import { useToast } from '../../../contexts/ToastContext';
@@ -34,7 +31,6 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
     // Use external modal state if provided, otherwise use internal state
     const isModalOpen = externalModalOpen !== undefined ? externalModalOpen : internalModalOpen;
 
-    const safeCampaigns = useMemo(() => Array.isArray(campaigns) ? campaigns : [], [campaigns]);
 
     const fetchCampaigns = async () => {
         setIsLoading(true);
@@ -343,37 +339,6 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
             </Modal>
 
             <div className="campaigns-container animate-fade-in">
-                {/* Campaign Insights Bar */}
-                <div className="campaign-insights">
-                    <div className="insight-item">
-                        <div className="insight-icon">
-                            <Activity size={18} />
-                        </div>
-                        <div className="insight-details">
-                            <p>Active Campaigns</p>
-                            <h4>{safeCampaigns.filter(c => c.status !== 'Completed').length}</h4>
-                        </div>
-                    </div>
-                    <div className="insight-item">
-                        <div className="insight-icon" style={{ background: 'rgba(0, 242, 234, 0.1)', color: 'var(--color-accent-alt)' }}>
-                            <TrendingUp size={18} />
-                        </div>
-                        <div className="insight-details">
-                            <p>Avg Engagement</p>
-                            <h4>12.4%</h4>
-                        </div>
-                    </div>
-                    <div className="insight-item">
-                        <div className="insight-icon" style={{ background: 'rgba(255, 255, 255, 0.05)', color: '#fff' }}>
-                            <Clock size={18} />
-                        </div>
-                        <div className="insight-details">
-                            <p>Content Pipeline</p>
-                            <h4>12 Drafts</h4>
-                        </div>
-                    </div>
-                </div>
-
                 {/* Campaigns Grid */}
                 <div className="campaigns-grid">
                     {filteredCampaigns.map((campaign) => {
@@ -382,60 +347,60 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
                         const progress = budgetNum > 0 ? Math.min((spentNum / budgetNum) * 100, 100) : 0;
 
                         return (
-                            <div key={campaign.id} className="premium-campaign-card animate-fade-in">
-                                <div className="campaign-card-banner">
-                                    <span className={`status-badge ${getStatusColor(campaign.status)}`}>
-                                        {campaign.status}
-                                    </span>
-                                </div>
-                                <div className="campaign-card-body">
-                                    <h3 className="campaign-card-title">{campaign.name}</h3>
-                                    <p className="campaign-card-date">
-                                        {campaign.startDate} - {campaign.endDate}
-                                    </p>
-
-                                    <div className="budget-progress-container">
-                                        <div className="progress-info">
-                                            <span>Budget Utilization</span>
-                                            <span>₹{spentNum.toLocaleString()} / ₹{budgetNum.toLocaleString()}</span>
+                            <Card key={campaign.id} className="campaign-list-card">
+                                <CardBody>
+                                    <div className="campaign-top-bar">
+                                        <span className={`status-pill ${getStatusColor(campaign.status)}`}>
+                                            {campaign.status}
+                                        </span>
+                                        <div className="dates-info">
+                                            <Calendar size={14} />
+                                            <span>{campaign.startDate} - {campaign.endDate}</span>
                                         </div>
-                                        <div className="premium-progress-bar">
+                                    </div>
+
+                                    <h3 className="campaign-title-clean">{campaign.name}</h3>
+
+                                    <div className="campaign-progress-section">
+                                        <div className="progress-labels">
+                                            <span>Budget Spent</span>
+                                            <span>{progress.toFixed(0)}%</span>
+                                        </div>
+                                        <div className="clean-progress-bar">
                                             <div
-                                                className="progress-bar-fill"
+                                                className="clean-progress-fill"
                                                 style={{ width: `${progress}%` }}
                                             />
                                         </div>
-                                    </div>
-                                    <div className="content-stats-pills">
-                                        <div className="stat-pill">
-                                            <span className="pill-label">Drafts</span>
-                                            <span className="pill-value">{campaign.contentPending || 0}</span>
-                                        </div>
-                                        <div className="stat-pill">
-                                            <span className="pill-label">Live</span>
-                                            <span className="pill-value">{campaign.contentPublished || 0}</span>
-                                        </div>
-                                        <div className="stat-pill">
-                                            <span className="pill-label">ROI</span>
-                                            <span className="pill-value" style={{ color: 'var(--color-accent-alt)' }}>4.2x</span>
+                                        <div className="budget-values">
+                                            <strong>₹{spentNum.toLocaleString()}</strong>
+                                            <span className="total-budget">of ₹{budgetNum.toLocaleString()}</span>
                                         </div>
                                     </div>
 
-                                    <div className="campaign-card-footer">
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--color-text-tertiary)', fontSize: '10px' }}>
-                                            <Calendar size={12} />
-                                            <span>Ends {new Date(campaign.endDate).toLocaleDateString()}</span>
+                                    <div className="campaign-stats-row-clean">
+                                        <div className="mini-stat-clean">
+                                            <span className="label">Creators</span>
+                                            <span className="value">{campaign.targetCreators || 0}</span>
                                         </div>
+                                        <div className="mini-stat-clean">
+                                            <span className="label">Engagement</span>
+                                            <span className="value">4.2%</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="campaign-card-actions-clean">
                                         <Button
                                             variant="ghost"
+                                            fullWidth
                                             size="sm"
                                             onClick={() => navigate(`/brand/campaign/${campaign.id}`)}
                                         >
-                                            View Pipeline
+                                            View Campaign Details
                                         </Button>
                                     </div>
-                                </div>
-                            </div>
+                                </CardBody>
+                            </Card>
                         );
                     })}
                 </div>
