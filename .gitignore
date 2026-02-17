@@ -113,6 +113,9 @@ discovr-app-new/
 .next/
 backup/
 
+# Backend code (separate repository: discovr)
+backend/
+
 # Package manager locks (optional - some teams commit these)
 # package-lock.json
 # yarn.lock
