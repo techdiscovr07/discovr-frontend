@@ -110,7 +110,6 @@ next-env.d.ts
 discovr-app-new/
 .next/
 backup/
-src/
 frontend/
 
 # Backend code (separate repository: discovr)
