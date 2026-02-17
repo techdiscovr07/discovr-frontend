@@ -1,0 +1,181 @@
+{
+  "overview": {
+    "stats": [
+      {
+        "label": "Active Campaigns",
+        "value": "5",
+        "change": "+2 this month"
+      },
+      {
+        "label": "Total Creators",
+        "value": "48",
+        "change": "+12 this week"
+      },
+      {
+        "label": "Content Pending",
+        "value": "8",
+        "change": "3 need review"
+      },
+      {
+        "label": "Budget Spent",
+        "value": "₹12,450",
+        "change": "62% of total"
+      }
+    ],
+    "roiData": [
+      { "month": "Jan", "spent": 2500, "revenue": 8500, "roi": 240 },
+      { "month": "Feb", "spent": 3200, "revenue": 11200, "roi": 250 },
+      { "month": "Mar", "spent": 2800, "revenue": 9800, "roi": 250 },
+      { "month": "Apr", "spent": 3500, "revenue": 14000, "roi": 300 },
+      { "month": "May", "spent": 4200, "revenue": 16800, "roi": 300 },
+      { "month": "Jun", "spent": 4500, "revenue": 18000, "roi": 300 }
+    ],
+    "engagementData": [
+      { "week": "Week 1", "posts": 12, "engagement": 45000, "reach": 120000 },
+      { "week": "Week 2", "posts": 18, "engagement": 68000, "reach": 185000 },
+      { "week": "Week 3", "posts": 15, "engagement": 52000, "reach": 145000 },
+      { "week": "Week 4", "posts": 22, "engagement": 85000, "reach": 225000 }
+    ],
+    "budgetData": [
+      { "campaign": "Summer Collection", "allocated": 8500, "spent": 6200, "remaining": 2300 },
+      { "campaign": "Product Launch", "allocated": 5200, "spent": 1800, "remaining": 3400 },
+      { "campaign": "Brand Awareness", "allocated": 6800, "spent": 4450, "remaining": 2350 }
+    ]
+  },
+  "campaigns": [
+    {
+      "id": 1,
+      "name": "Summer Collection Launch",
+      "status": "Active",
+      "creators": 15,
+      "budget": "₹8,500",
+      "spent": "₹6,200",
+      "startDate": "2026-02-01",
+      "endDate": "2026-03-31",
+      "contentPending": 5,
+      "contentApproved": 8,
+      "contentPublished": 2
+    },
+    {
+      "id": 2,
+      "name": "Product Review Series",
+      "status": "Bidding",
+      "creators": 8,
+      "budget": "₹5,200",
+      "spent": "₹1,800",
+      "startDate": "2026-03-01",
+      "endDate": "2026-04-15",
+      "contentPending": 0,
+      "contentApproved": 0,
+      "contentPublished": 0
+    },
+    {
+      "id": 3,
+      "name": "Brand Awareness Campaign",
+      "status": "Content Review",
+      "creators": 12,
+      "budget": "₹6,800",
+      "spent": "₹4,450",
+      "startDate": "2026-01-15",
+      "endDate": "2026-03-15",
+      "contentPending": 3,
+      "contentApproved": 6,
+      "contentPublished": 3
+    },
+    {
+      "id": 4,
+      "name": "Holiday Special",
+      "status": "Planning",
+      "creators": 0,
+      "budget": "₹12,000",
+      "spent": "₹0",
+      "startDate": "2026-04-01",
+      "endDate": "2026-05-31",
+      "contentPending": 0,
+      "contentApproved": 0,
+      "contentPublished": 0
+    },
+    {
+      "id": 5,
+      "name": "Influencer Partnership",
+      "status": "Completed",
+      "creators": 20,
+      "budget": "₹15,000",
+      "spent": "₹14,850",
+      "startDate": "2025-12-01",
+      "endDate": "2026-01-31",
+      "contentPending": 0,
+      "contentApproved": 0,
+      "contentPublished": 20
+    }
+  ],
+  "creators": [
+    {
+      "id": 1,
+      "name": "Sarah Johnson",
+      "avatar": "👩‍🦰",
+      "platform": "Instagram",
+      "followers": "125K",
+      "engagement": "4.8%",
+      "campaigns": 3,
+      "totalEarned": "₹2,450",
+      "status": "Active",
+      "niche": "Fashion & Lifestyle"
+    },
+    {
+      "id": 2,
+      "name": "Mike Chen",
+      "avatar": "👨",
+      "platform": "YouTube",
+      "followers": "450K",
+      "engagement": "6.2%",
+      "campaigns": 2,
+      "totalEarned": "₹3,800",
+      "status": "Active",
+      "niche": "Tech Reviews"
+    },
+    {
+      "id": 3,
+      "name": "Emma Davis",
+      "avatar": "👩",
+      "platform": "TikTok",
+      "followers": "890K",
+      "engagement": "8.5%",
+      "campaigns": 4,
+      "totalEarned": "₹5,200",
+      "status": "Active",
+      "niche": "Beauty & Makeup"
+    },
+    {
+      "id": 4,
+      "name": "Alex Rodriguez",
+      "avatar": "👨‍🦱",
+      "platform": "Instagram",
+      "followers": "320K",
+      "engagement": "5.4%",
+      "campaigns": 1,
+      "totalEarned": "₹1,850",
+      "status": "Pending",
+      "niche": "Fitness & Health"
+    },
+    {
+      "id": 5,
+      "name": "Lisa Park",
+      "avatar": "👩‍🦳",
+      "platform": "YouTube",
+      "followers": "680K",
+      "engagement": "7.1%",
+      "campaigns": 5,
+      "totalEarned": "₹6,450",
+      "status": "Active",
+      "niche": "Food & Cooking"
+    }
+  ],
+  "creatorPerformance": [
+    { "name": "Sarah J.", "engagement": 4.8, "reach": 125, "campaigns": 3 },
+    { "name": "Mike C.", "engagement": 6.2, "reach": 450, "campaigns": 2 },
+    { "name": "Emma D.", "engagement": 8.5, "reach": 890, "campaigns": 4 },
+    { "name": "Alex R.", "engagement": 5.4, "reach": 320, "campaigns": 1 },
+    { "name": "Lisa P.", "engagement": 7.1, "reach": 680, "campaigns": 5 }
+  ]
+}

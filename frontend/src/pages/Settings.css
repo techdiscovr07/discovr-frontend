@@ -1,0 +1,14 @@
+/* Settings page styles */
+.dashboard-main {
+    padding: var(--space-6);
+}
+
+@media (max-width: 768px) {
+    .dashboard-main {
+        padding: var(--space-4);
+    }
+    
+    .dashboard-main > div {
+        flex-direction: column;
+    }
+}
