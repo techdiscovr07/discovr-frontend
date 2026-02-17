@@ -116,6 +116,12 @@ backup/
 # Backend code (separate repository: discovr)
 backend/
 
+# Extra documentation and temporary files
+*.txt
+COMPLETE_BACKEND_ARCHITECTURE.md
+REMAINING_WORK.md
+UNIMPLEMENTED_FEATURES.md
+
 # Package manager locks (optional - some teams commit these)
 # package-lock.json
 # yarn.lock
