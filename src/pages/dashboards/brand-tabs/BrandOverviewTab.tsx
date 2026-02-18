@@ -5,8 +5,6 @@ import {
     Users,
     FileText,
     IndianRupee,
-    TrendingUp,
-    Activity,
     ArrowUpRight
 } from 'lucide-react';
 import {

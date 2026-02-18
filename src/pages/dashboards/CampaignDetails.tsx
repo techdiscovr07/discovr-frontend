@@ -812,8 +812,13 @@ export const CampaignDetails: React.FC = () => {
                                                                     variant="ghost" 
                                                                     size="sm"
                                                                     onClick={async () => {
+                                                                        const creatorId = bid.creator_id || bid.id;
+                                                                        if (!creatorId) {
+                                                                            showToast('Creator ID not found', 'error');
+                                                                            return;
+                                                                        }
                                                                         try {
-                                                                            await brandApi.respondToCreatorBid(id, bid.creator_id || bid.id, 'accept');
+                                                                            await brandApi.respondToCreatorBid(id, creatorId, 'accept');
                                                                             showToast('Negotiation accepted', 'success');
                                                                             // Refresh bids
                                                                             const bidsData: any = await brandApi.getCreatorBids(id);
@@ -829,8 +834,13 @@ export const CampaignDetails: React.FC = () => {
                                                                     variant="ghost" 
                                                                     size="sm"
                                                                     onClick={async () => {
+                                                                        const creatorId = bid.creator_id || bid.id;
+                                                                        if (!creatorId) {
+                                                                            showToast('Creator ID not found', 'error');
+                                                                            return;
+                                                                        }
                                                                         try {
-                                                                            await brandApi.respondToCreatorBid(id, bid.creator_id || bid.id, 'reject');
+                                                                            await brandApi.respondToCreatorBid(id, creatorId, 'reject');
                                                                             showToast('Negotiation rejected', 'success');
                                                                             // Refresh bids
                                                                             const bidsData: any = await brandApi.getCreatorBids(id);

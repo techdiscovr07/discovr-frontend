@@ -26,15 +26,15 @@ interface CreatorEarningsTabProps {
 
 export const CreatorEarningsTab: React.FC<CreatorEarningsTabProps> = ({ searchQuery: _searchQuery = '' }) => {
     const [isLoading, setIsLoading] = useState(true);
-    const [earningsStats, setEarningsStats] = useState([
+    const [earningsStats] = useState([
         { label: 'Total Earnings', value: '₹0', icon: IndianRupee, change: 'No data' },
         { label: 'Pending Payments', value: '₹0', icon: Clock, change: 'No data' },
         { label: 'Paid This Month', value: '₹0', icon: CheckCircle, change: 'No data' },
         { label: 'Average per Campaign', value: '₹0', icon: TrendingUp, change: 'No data' }
     ]);
-    const [monthlyEarnings, setMonthlyEarnings] = useState<any[]>([]);
-    const [platformEarnings, setPlatformEarnings] = useState<any[]>([]);
-    const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
+    const [monthlyEarnings] = useState<any[]>([]);
+    const [platformEarnings] = useState<any[]>([]);
+    const [paymentHistory] = useState<any[]>([]);
 
     useEffect(() => {
         // TODO: Fetch earnings data from API when endpoint is available
