@@ -1,0 +1,139 @@
+/* Input Component Styles */
+
+.input-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    width: 100%;
+}
+
+.input-label {
+    font-size: var(--text-sm);
+    font-weight: var(--font-medium);
+    color: var(--color-text-primary);
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.input-required {
+    color: var(--color-error);
+}
+
+.input-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: var(--gradient-glass);
+    backdrop-filter: blur(var(--blur-md));
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-lg);
+    transition: all var(--transition-base);
+    overflow: hidden;
+}
+
+.input-container:focus-within {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+}
+
+.input-container.input-error {
+    border-color: var(--color-error);
+}
+
+.input-container.input-error:focus-within {
+    box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.1);
+}
+
+.input {
+    flex: 1;
+    padding: var(--space-3) var(--space-4);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    color: var(--color-text-primary);
+    background: transparent;
+    border: none;
+    outline: none;
+    width: 100%;
+}
+
+.input::placeholder {
+    color: var(--color-text-tertiary);
+}
+
+.input:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.textarea {
+    min-height: 120px;
+    resize: vertical;
+    font-family: var(--font-sans);
+}
+
+.input-icon-left,
+.input-icon-right {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-text-tertiary);
+    transition: color var(--transition-fast);
+}
+
+.input-icon-left {
+    padding-left: var(--space-4);
+}
+
+.input-icon-right {
+    padding-right: var(--space-4);
+}
+
+.input-password-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 var(--space-4);
+    background: transparent;
+    border: none;
+    color: var(--color-text-tertiary);
+    cursor: pointer;
+    transition: color var(--transition-fast);
+    outline: none;
+}
+
+.input-password-toggle:hover {
+    color: var(--color-text-secondary);
+}
+
+.input-password-toggle:focus {
+    color: var(--color-accent);
+}
+
+.input-container:focus-within .input-icon-left,
+.input-container:focus-within .input-icon-right,
+.input-container:focus-within .input-password-toggle {
+    color: var(--color-accent);
+}
+
+.input-error-text {
+    font-size: var(--text-sm);
+    color: var(--color-error);
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.input-helper-text {
+    font-size: var(--text-sm);
+    color: var(--color-text-tertiary);
+}
+
+/* Autofill Styles */
+.input:-webkit-autofill,
+.input:-webkit-autofill:hover,
+.input:-webkit-autofill:focus {
+    -webkit-text-fill-color: var(--color-text-primary);
+    -webkit-box-shadow: 0 0 0 1000px var(--color-bg-secondary) inset;
+    transition: background-color 5000s ease-in-out 0s;
+}

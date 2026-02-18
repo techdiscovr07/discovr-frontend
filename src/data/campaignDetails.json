@@ -1,0 +1,94 @@
+{
+  "campaigns": [
+    {
+      "id": "1",
+      "name": "Summer Collection Launch",
+      "brand": "Discovr Fashion",
+      "status": "Active",
+      "description": "Launching our 2026 Summer collection with top lifestyle influencers focusing on beachwear and outdoor aesthetics.",
+      "stats": [
+        {
+          "label": "Total Engagement",
+          "value": "45.8K",
+          "change": "+12%"
+        },
+        {
+          "label": "Total Reach",
+          "value": "1.2M",
+          "change": "+25%"
+        },
+        {
+          "label": "Creators",
+          "value": "15",
+          "change": "Active"
+        },
+        {
+          "label": "Budget Spent",
+          "value": "₹6,200",
+          "change": "73%"
+        }
+      ],
+      "growthData": [
+        { "day": "Day 1", "engagement": 2400, "reach": 15000 },
+        { "day": "Day 2", "engagement": 3100, "reach": 22000 },
+        { "day": "Day 3", "engagement": 2800, "reach": 18000 },
+        { "day": "Day 4", "engagement": 4200, "reach": 35000 },
+        { "day": "Day 5", "engagement": 5800, "reach": 52000 },
+        { "day": "Day 6", "engagement": 8200, "reach": 85000 },
+        { "day": "Day 7", "engagement": 7400, "reach": 78000 }
+      ],
+      "contentTypePerformance": [
+        { "name": "Reels", "engagement": 28000, "reach": 750000 },
+        { "name": "Posts", "engagement": 12000, "reach": 300000 },
+        { "name": "Stories", "engagement": 18000, "reach": 450000 }
+      ],
+      "creators": [
+        {
+          "id": 1,
+          "name": "Sarah Johnson",
+          "handle": "@sarahj_style",
+          "avatar": "👩‍🦰",
+          "status": "Published",
+          "engagement": "5.2%",
+          "content": "3 Reels"
+        },
+        {
+          "id": 2,
+          "name": "Mike Chen",
+          "handle": "@mikechen_tech",
+          "avatar": "👨",
+          "status": "Review",
+          "engagement": "4.8%",
+          "content": "2 Stories"
+        },
+        {
+          "id": 3,
+          "name": "Emma Davis",
+          "handle": "@emma_davis",
+          "avatar": "👩",
+          "status": "Published",
+          "engagement": "6.1%",
+          "content": "5 Stories"
+        },
+        {
+          "id": 4,
+          "name": "Alex Rodriguez",
+          "handle": "@alex_fit",
+          "avatar": "👨‍🦱",
+          "status": "Scripting",
+          "engagement": "4.2%",
+          "content": "1 Post"
+        },
+        {
+          "id": 5,
+          "name": "Lisa Park",
+          "handle": "@lisa_p_food",
+          "avatar": "👩‍🦳",
+          "status": "Published",
+          "engagement": "7.3%",
+          "content": "4 Reels"
+        }
+      ]
+    }
+  ]
+}
