@@ -107,7 +107,6 @@ next-env.d.ts
 .temp/
 
 # Development directories
-discovr-app-new/
 .next/
 backup/
 frontend/

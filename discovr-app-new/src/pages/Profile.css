@@ -1,9 +1,0 @@
-.dashboard-main {
-    padding: var(--space-6);
-}
-
-@media (max-width: 768px) {
-    .dashboard-main {
-        padding: var(--space-4);
-    }
-}
