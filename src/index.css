@@ -596,8 +596,7 @@ a:hover {
   }
 }
 
-/* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+/* Import Google Fonts - moved to top of file */
 
 /* ===== LIGHT THEME OVERRIDES ===== */
 [data-theme="light"] {
