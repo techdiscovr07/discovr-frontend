@@ -9,6 +9,9 @@ import { ProtectedRoute, ErrorBoundary } from './components';
 import './index.css';
 
 function App() {
+  // Debug log to verify App is rendering
+  console.log('App component rendering...');
+  
   return (
     <ErrorBoundary>
       <ThemeProvider>

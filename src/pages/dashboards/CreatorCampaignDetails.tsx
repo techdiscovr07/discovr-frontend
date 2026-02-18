@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { Card, CardHeader, CardBody, Button, Modal, TextArea, Input } from '../../components';
+import { Card, CardHeader, CardBody, Button, Modal, TextArea, Input, FileUpload } from '../../components';
 import {
     ArrowLeft,
     Clock,
@@ -24,7 +24,7 @@ export const CreatorCampaignDetails: React.FC = () => {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const { showToast } = useToast();
-    const [modalType, setModalType] = useState<'script' | 'content' | 'link' | 'negotiate' | 'accept-deal' | 'reject-deal' | null>(null);
+    const [modalType, setModalType] = useState<'script' | 'content' | 'go-live' | 'link' | 'negotiate' | 'accept-deal' | 'reject-deal' | null>(null);
     const [scriptContent, setScriptContent] = useState('');
     const [contentLink, setContentLink] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,12 +36,72 @@ export const CreatorCampaignDetails: React.FC = () => {
     const [isNegotiating, setIsNegotiating] = useState(false);
     const [negotiationAmount, setNegotiationAmount] = useState('');
     const [creatorToken, setCreatorToken] = useState('');
+    const [inlineScriptContent, setInlineScriptContent] = useState('');
+    const [isSubmittingInlineScript, setIsSubmittingInlineScript] = useState(false);
+    const [contentFiles, setContentFiles] = useState<File[]>([]);
+    const [liveLink, setLiveLink] = useState('');
 
     const formatINR = (value: any) => {
         const num = typeof value === 'number' ? value : parseFloat(String(value ?? '').replace(/,/g, ''));
         if (!isFinite(num)) return '—';
         return `₹${num.toLocaleString()}`;
     };
+
+    const scriptReviewMeta = (() => {
+        const status = String(briefData?.status || campaignData?.status || '').toLowerCase();
+        if (status === 'script_approved') {
+            return { label: 'Script Accepted', tone: 'status-active', message: 'Brand has approved your script. You can move to content submission.' };
+        }
+        if (status === 'content_revision_requested') {
+            return { label: 'Script Accepted', tone: 'status-active', message: 'Your script is approved. Brand requested changes in video content only.' };
+        }
+        if (status === 'content_rejected') {
+            return { label: 'Script Accepted', tone: 'status-active', message: 'Your script is approved. Please re-upload video content based on feedback.' };
+        }
+        if (status === 'content_pending' || status === 'content_approved' || status === 'content_live') {
+            return { label: 'Script Accepted', tone: 'status-active', message: 'Your script is approved.' };
+        }
+        if (status === 'script_revision_requested' || status === 'script_rejected') {
+            return { label: 'Changes Requested', tone: 'status-content-review', message: 'Brand requested updates to your script. Please revise and submit again.' };
+        }
+        if (status === 'script_pending') {
+            return { label: 'Under Review', tone: 'status-planning', message: 'Your script is submitted and waiting for brand review.' };
+        }
+        return null;
+    })();
+
+    const scriptDeliverableStatus = (() => {
+        const status = String(briefData?.status || campaignData?.status || '').toLowerCase();
+        if (status === 'script_approved') return 'Accepted';
+        if (status === 'content_pending' || status === 'content_approved' || status === 'content_rejected' || status === 'content_revision_requested' || status === 'content_live') return 'Accepted';
+        if (status === 'script_revision_requested' || status === 'script_rejected') return 'Changes Requested';
+        if (status === 'script_pending') return 'In Review';
+        return inlineScriptContent?.trim() ? 'Draft Ready' : 'Pending';
+    })();
+
+    const currentWorkflowStatus = String(briefData?.status || campaignData?.status || '').toLowerCase();
+    const canUploadContent =
+        currentWorkflowStatus === 'script_approved' ||
+        currentWorkflowStatus === 'content_rejected' ||
+        currentWorkflowStatus === 'content_revision_requested';
+    const isContentUnderBrandReview = currentWorkflowStatus === 'content_pending';
+    const canGoLive = currentWorkflowStatus === 'content_approved';
+
+    const brandScriptFeedback =
+        (briefData?.script_feedback && String(briefData.script_feedback).trim()) ||
+        (campaignData?.script_feedback && String(campaignData.script_feedback).trim()) ||
+        '';
+    const brandContentFeedback =
+        (briefData?.content_feedback && String(briefData.content_feedback).trim()) ||
+        (campaignData?.content_feedback && String(campaignData.content_feedback).trim()) ||
+        (briefData?.video_feedback && String(briefData.video_feedback).trim()) ||
+        (campaignData?.video_feedback && String(campaignData.video_feedback).trim()) ||
+        (briefData?.feedback && String(briefData.feedback).trim()) ||
+        (campaignData?.feedback && String(campaignData.feedback).trim()) ||
+        '';
+    const isContentChangesRequested =
+        currentWorkflowStatus === 'content_rejected' ||
+        currentWorkflowStatus === 'content_revision_requested';
 
     const normalizeCampaign = (base: any, extra: any) => {
         // Merge campaign summary (list) + brief.campaign into a single object for rendering.
@@ -160,6 +220,17 @@ export const CreatorCampaignDetails: React.FC = () => {
 
         fetchCampaignData();
     }, [id, searchParams, showToast]);
+
+    useEffect(() => {
+        const template =
+            briefData?.campaign?.script_template ||
+            briefData?.script_template ||
+            campaignData?.script_template ||
+            '';
+        if (!inlineScriptContent && template) {
+            setInlineScriptContent(template);
+        }
+    }, [briefData, campaignData, inlineScriptContent]);
 
     const handleLinkCampaign = async () => {
         if (!id) return;
@@ -345,9 +416,13 @@ export const CreatorCampaignDetails: React.FC = () => {
                 await creatorApi.uploadScript(id, finalScript);
                 showToast('Script finalized and submitted successfully!', 'success');
             } else if (modalType === 'content') {
-                // For content, we'd need a file upload, but for now just use the link
-                await creatorApi.goLive(id, contentLink);
-                showToast('Content submitted successfully!', 'success');
+                if (contentFiles.length === 0) {
+                    showToast('Please upload a content video file before submitting.', 'error');
+                    setIsSubmitting(false);
+                    return;
+                }
+                await creatorApi.uploadContent(id, contentFiles[0], contentLink);
+                showToast('Content uploaded successfully! Waiting for brand review.', 'success');
             }
             setIsSuccess(true);
 
@@ -367,12 +442,74 @@ export const CreatorCampaignDetails: React.FC = () => {
                 setIsSuccess(false);
                 setScriptContent('');
                 setContentLink('');
+                setContentFiles([]);
             }, 2000);
         } catch (error: any) {
             console.error('Failed to submit:', error);
             showToast(error.message || 'Failed to submit', 'error');
         } finally {
             setIsSubmitting(false);
+        }
+    };
+
+    const handleGoLive = async () => {
+        if (!id) return;
+        const finalLiveLink = (liveLink || '').trim();
+        if (!finalLiveLink) {
+            showToast('Please add your live content link.', 'error');
+            return;
+        }
+        setIsSubmitting(true);
+        try {
+            await creatorApi.goLive(id, finalLiveLink);
+            showToast('Marked as live successfully!', 'success');
+            setModalType(null);
+            setLiveLink('');
+
+            const brief = await creatorApi.getCampaignBrief(id);
+            setBriefData(brief);
+            if (brief && brief.campaign) {
+                setCampaignData({
+                    ...brief.campaign,
+                    status: brief.status || brief.campaign.status,
+                    brand: brief.campaign.brand_name || 'Partner Brand'
+                });
+            }
+        } catch (error: any) {
+            console.error('Failed to mark content live:', error);
+            showToast(error.message || 'Failed to mark content live', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleInlineScriptSubmit = async () => {
+        if (!id) return;
+        const finalScript = (inlineScriptContent || '').trim();
+        if (!finalScript) {
+            showToast('Please add script content before submitting.', 'error');
+            return;
+        }
+
+        setIsSubmittingInlineScript(true);
+        try {
+            await creatorApi.uploadScript(id, finalScript);
+            showToast('Script submitted successfully!', 'success');
+
+            const brief = await creatorApi.getCampaignBrief(id);
+            setBriefData(brief);
+            if (brief && brief.campaign) {
+                setCampaignData({
+                    ...brief.campaign,
+                    status: brief.status || brief.campaign.status,
+                    brand: brief.campaign.brand_name || 'Partner Brand'
+                });
+            }
+        } catch (error: any) {
+            console.error('Failed to submit script:', error);
+            showToast(error.message || 'Failed to submit script', 'error');
+        } finally {
+            setIsSubmittingInlineScript(false);
         }
     };
 
@@ -462,19 +599,6 @@ export const CreatorCampaignDetails: React.FC = () => {
                             <MessageSquare size={18} />
                             Contact Brand
                         </Button>
-                        {campaignData.status === 'Active' && (
-                            <Button onClick={() => {
-                                // Pre-fill script content with brand template if available
-                                const template = briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template || '';
-                                setScriptContent(template);
-                                setModalType('script');
-                            }}>
-                                <Upload size={18} />
-                                {(briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template) 
-                                    ? 'Finalize Script' 
-                                    : 'Submit Script'}
-                            </Button>
-                        )}
                     </div>
                 </header>
 
@@ -576,8 +700,9 @@ export const CreatorCampaignDetails: React.FC = () => {
                                                 size="sm" 
                                                 variant="primary"
                                                 onClick={() => {
+                                                    const submittedScript = briefData?.script_content || campaignData?.script_content || '';
                                                     const template = briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template;
-                                                    setScriptContent(template);
+                                                    setScriptContent(submittedScript || template || '');
                                                     setModalType('script');
                                                 }}
                                             >
@@ -612,14 +737,131 @@ export const CreatorCampaignDetails: React.FC = () => {
                             </CardBody>
                         </Card>
 
+                        {/* Inline Script Submission */}
+                        {(() => {
+                            const status = String(briefData?.status || campaignData?.status || '').toLowerCase();
+                            const canSubmitScript =
+                                status === 'amount_finalized' ||
+                                status === 'script_revision_requested' ||
+                                status === 'script_rejected';
+                            return canSubmitScript;
+                        })() && (
+                            <Card className="content-card">
+                                <CardHeader>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                                        <Upload size={20} style={{ color: 'var(--color-accent)' }} />
+                                        <h3>Submit Script</h3>
+                                    </div>
+                                </CardHeader>
+                                <CardBody>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                                        {(scriptDeliverableStatus === 'Changes Requested' && brandScriptFeedback) && (
+                                            <div style={{
+                                                padding: 'var(--space-4)',
+                                                background: 'rgba(var(--color-warning-rgb), 0.1)',
+                                                border: '1px solid rgba(var(--color-warning-rgb), 0.35)',
+                                                borderRadius: 'var(--radius-md)'
+                                            }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
+                                                    <MessageSquare size={16} style={{ color: 'var(--color-warning)' }} />
+                                                    <span style={{ fontWeight: 'var(--font-semibold)' }}>Brand requested changes</span>
+                                                </div>
+                                                <p style={{ margin: 0, color: 'var(--color-text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
+                                                    {brandScriptFeedback}
+                                                </p>
+                                            </div>
+                                        )}
+                                        <TextArea
+                                            label="Script Content"
+                                            placeholder="Write your campaign script here..."
+                                            rows={8}
+                                            value={inlineScriptContent}
+                                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInlineScriptContent(e.target.value)}
+                                            required
+                                        />
+                                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                            <Button onClick={handleInlineScriptSubmit} isLoading={isSubmittingInlineScript}>
+                                                Submit Script
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </CardBody>
+                            </Card>
+                        )}
+
+                        <Card className="content-card">
+                            <CardHeader>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                                    <Upload size={20} style={{ color: 'var(--color-accent)' }} />
+                                    <h3>Upload Content</h3>
+                                </div>
+                            </CardHeader>
+                            <CardBody>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                                    {canUploadContent && (
+                                        <>
+                                            {isContentChangesRequested && (
+                                                <div style={{
+                                                    padding: 'var(--space-4)',
+                                                    background: 'rgba(251, 191, 36, 0.1)',
+                                                    border: '1px solid rgba(251, 191, 36, 0.35)',
+                                                    borderRadius: 'var(--radius-md)'
+                                                }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
+                                                        <MessageSquare size={16} style={{ color: 'var(--color-warning)' }} />
+                                                        <span style={{ fontWeight: 'var(--font-semibold)' }}>Changes required by brand</span>
+                                                    </div>
+                                                    <p style={{ margin: 0, color: 'var(--color-text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: 'var(--text-sm)' }}>
+                                                        {brandContentFeedback || 'Your uploaded content needs revision. Please update it and re-upload for review.'}
+                                                    </p>
+                                                </div>
+                                            )}
+                                            <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>
+                                                {isContentChangesRequested
+                                                    ? 'Please make the requested updates and re-upload your video.'
+                                                    : 'Your script is approved. Upload your video for brand review.'}
+                                            </p>
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                <Button onClick={() => setModalType('content')}>
+                                                    {isContentChangesRequested ? 'Re-upload Content' : 'Upload Content'}
+                                                </Button>
+                                            </div>
+                                        </>
+                                    )}
+                                    {isContentUnderBrandReview && (
+                                        <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>
+                                            Your video is uploaded and pending brand review. You can go live only after approval.
+                                        </p>
+                                    )}
+                                    {canGoLive && (
+                                        <>
+                                            <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>
+                                                Brand approved your content. You can now add your live post link.
+                                            </p>
+                                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                <Button onClick={() => setModalType('go-live')}>
+                                                    Go Live
+                                                </Button>
+                                            </div>
+                                        </>
+                                    )}
+                                    {(!canUploadContent && !isContentUnderBrandReview && !canGoLive) && (
+                                        <p style={{ margin: 0, color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)' }}>
+                                            Upload content unlocks after script approval.
+                                        </p>
+                                    )}
+                                </div>
+                            </CardBody>
+                        </Card>
+
                         {/* Negotiation Status Card */}
                         {negotiationStatus && (
-                            <Card className="content-card">
+                            <Card className="content-card" style={{ maxWidth: '440px', alignSelf: 'flex-start' }}>
                                 <CardHeader>
                                     <h3>Negotiation Status</h3>
                                 </CardHeader>
                                 <CardBody>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <span style={{ color: 'var(--color-text-secondary)' }}>Status</span>
                                             <span className={`status-badge ${negotiationStatus.status === 'amount_finalized' ? 'status-active' : negotiationStatus.status === 'rejected' ? 'status-error' : 'status-planning'}`}>
@@ -627,16 +869,17 @@ export const CreatorCampaignDetails: React.FC = () => {
                                                     negotiationStatus.status === 'bid_pending' ? 'Bid Submitted' :
                                                         negotiationStatus.status === 'amount_negotiated' ? 'Negotiating' :
                                                             negotiationStatus.status === 'amount_finalized' ? 'Deal Agreed' :
-                                                                (negotiationStatus.status || 'Pending')}
+                                                                negotiationStatus.status === 'rejected' ? 'Declined' :
+                                                                    'Pending'}
                                             </span>
                                         </div>
-                                        {negotiationStatus.bid_amount && (
+                                        {Number(negotiationStatus?.bid_amount) > 0 && (
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                 <span style={{ color: 'var(--color-text-secondary)' }}>Your Proposal</span>
                                                 <span style={{ fontWeight: 'var(--font-bold)' }}>{formatINR(negotiationStatus.bid_amount)}</span>
                                             </div>
                                         )}
-                                        {negotiationStatus.final_amount && (
+                                        {Number(negotiationStatus?.final_amount) > 0 && (
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                 <span style={{ color: 'var(--color-text-secondary)' }}>Brand's Proposal</span>
                                                 <span style={{ fontWeight: 'var(--font-bold)', color: 'var(--color-success)' }}>{formatINR(negotiationStatus.final_amount)}</span>
@@ -645,7 +888,7 @@ export const CreatorCampaignDetails: React.FC = () => {
                                         {/* Show buttons if negotiation is active (accepted, amount_negotiated, bid_pending) */}
                                         {(negotiationStatus.status === 'accepted' || negotiationStatus.status === 'amount_negotiated' || negotiationStatus.status === 'bid_pending') && (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                                                {negotiationStatus.final_amount && (
+                                                {Number(negotiationStatus?.final_amount) > 0 && (
                                                     <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
                                                         <Button onClick={() => setModalType('accept-deal')} fullWidth variant="primary">
                                                             Accept Deal
@@ -666,7 +909,7 @@ export const CreatorCampaignDetails: React.FC = () => {
                                             </div>
                                         )}
                                         {/* Show start/update negotiation button if no brand proposal yet */}
-                                        {(!negotiationStatus.final_amount || negotiationStatus.final_amount <= 0) &&
+                                        {(Number(negotiationStatus?.final_amount) <= 0) &&
                                             (negotiationStatus.status === 'bid_pending' || negotiationStatus.status === 'amount_negotiated' || !negotiationStatus.status) && (
                                                 <Button onClick={() => setModalType('negotiate')} fullWidth variant="secondary">
                                                     {negotiationStatus.bid_amount && negotiationStatus.bid_amount > 0 ? 'Update Proposal' : 'Start Negotiation'}
@@ -675,7 +918,7 @@ export const CreatorCampaignDetails: React.FC = () => {
                                         {/* Show deal finalized message when status is amount_finalized */}
                                         {negotiationStatus.status === 'amount_finalized' && negotiationStatus.final_amount && (
                                             <div style={{
-                                                padding: 'var(--space-4)',
+                                                padding: 'var(--space-3)',
                                                 background: 'rgba(34, 197, 94, 0.1)',
                                                 borderRadius: 'var(--radius-md)',
                                                 textAlign: 'center'
@@ -714,7 +957,7 @@ export const CreatorCampaignDetails: React.FC = () => {
                                         </thead>
                                         <tbody>
                                             {[
-                                                { name: 'Concept & Script Submission', date: 'Mar 15, 2026', status: 'Completed', type: 'script' },
+                                                { name: 'Concept & Script Submission', date: 'Mar 15, 2026', status: scriptDeliverableStatus, type: 'script' },
                                                 { name: 'Instagram Reel - Outdoor Shoot', date: 'Mar 18, 2026', status: 'Pending', type: 'content' },
                                                 { name: 'Instagram Story - Behind the scenes', date: 'Mar 19, 2026', status: 'Upcoming', type: 'content' },
                                                 { name: 'Final Post Submission', date: 'Mar 22, 2026', status: 'Upcoming', type: 'content' }
@@ -728,15 +971,17 @@ export const CreatorCampaignDetails: React.FC = () => {
                                                         </div>
                                                     </td>
                                                     <td>
-                                                        <span className={`status-badge ${task.status === 'Completed' ? 'status-active' :
-                                                            task.status === 'Pending' ? 'status-content-review' :
+                                                        <span className={`status-badge ${task.status === 'Completed' || task.status === 'Accepted' ? 'status-active' :
+                                                            task.status === 'Pending' || task.status === 'Changes Requested' ? 'status-content-review' :
+                                                                task.status === 'In Review' ? 'status-planning' :
                                                                 'status-planning'
                                                             }`}>
                                                             {task.status}
                                                         </span>
                                                     </td>
                                                     <td style={{ textAlign: 'right' }}>
-                                                        {task.status !== 'Completed' && (
+                                                        {(task.type !== 'script' || (task.status !== 'Accepted' && task.status !== 'In Review')) &&
+                                                            (task.type !== 'content' || canUploadContent) && (
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
@@ -758,6 +1003,55 @@ export const CreatorCampaignDetails: React.FC = () => {
 
                     {/* Right Column: Mini Stats & Action Center */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+                        {/* Script Review Status */}
+                        {scriptReviewMeta && (
+                            <Card className="content-card">
+                                <CardHeader>
+                                    <h3>Script Review</h3>
+                                </CardHeader>
+                                <CardBody>
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                                        <span className={`status-badge ${scriptReviewMeta.tone}`} style={{ width: 'fit-content' }}>
+                                            {scriptReviewMeta.label}
+                                        </span>
+                                        <p style={{ color: 'var(--color-text-secondary)', margin: 0, fontSize: 'var(--text-sm)', lineHeight: 1.5 }}>
+                                            {scriptReviewMeta.message}
+                                        </p>
+                                        {brandScriptFeedback && (
+                                            <div style={{
+                                                marginTop: 'var(--space-2)',
+                                                padding: 'var(--space-3)',
+                                                background: 'var(--color-bg-secondary)',
+                                                border: '1px solid var(--color-border-subtle)',
+                                                borderRadius: 'var(--radius-md)'
+                                            }}>
+                                                <p style={{
+                                                    margin: 0,
+                                                    marginBottom: 'var(--space-1)',
+                                                    fontSize: 'var(--text-xs)',
+                                                    letterSpacing: '0.04em',
+                                                    textTransform: 'uppercase',
+                                                    color: 'var(--color-text-tertiary)',
+                                                    fontWeight: 'var(--font-semibold)'
+                                                }}>
+                                                    Brand Comment
+                                                </p>
+                                                <p style={{
+                                                    margin: 0,
+                                                    color: 'var(--color-text-primary)',
+                                                    whiteSpace: 'pre-wrap',
+                                                    lineHeight: 1.5,
+                                                    fontSize: 'var(--text-sm)'
+                                                }}>
+                                                    {brandScriptFeedback}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </div>
+                                </CardBody>
+                            </Card>
+                        )}
+
                         {/* Campaign Stats */}
                         <Card className="content-card">
                             <CardHeader>
@@ -811,7 +1105,7 @@ export const CreatorCampaignDetails: React.FC = () => {
                                             <span style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)' }}>—</span>
                                         </div>
                                     )}
-                                    {negotiationStatus?.final_amount && (
+                                    {Number(negotiationStatus?.final_amount) > 0 && (
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 'var(--space-3)', borderTop: '1px solid var(--color-border-subtle)' }}>
                                             <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>Your Deal Amount</span>
                                             <span style={{ fontWeight: 'var(--font-bold)', color: 'var(--color-success)', fontSize: 'var(--text-lg)' }}>
@@ -819,7 +1113,7 @@ export const CreatorCampaignDetails: React.FC = () => {
                                             </span>
                                         </div>
                                     )}
-                                    {negotiationStatus?.bid_amount && !negotiationStatus?.final_amount && (
+                                    {Number(negotiationStatus?.bid_amount) > 0 && Number(negotiationStatus?.final_amount) <= 0 && (
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 'var(--space-3)', borderTop: '1px solid var(--color-border-subtle)' }}>
                                             <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>Your Proposal</span>
                                             <span style={{ fontWeight: 'var(--font-bold)', fontSize: 'var(--text-lg)' }}>
@@ -1094,21 +1388,53 @@ export const CreatorCampaignDetails: React.FC = () => {
                                 </>
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                                    {isContentChangesRequested && (
+                                        <div style={{
+                                            padding: 'var(--space-3)',
+                                            background: 'rgba(251, 191, 36, 0.1)',
+                                            border: '1px solid rgba(251, 191, 36, 0.35)',
+                                            borderRadius: 'var(--radius-md)'
+                                        }}>
+                                            <p style={{
+                                                margin: 0,
+                                                marginBottom: 'var(--space-1)',
+                                                fontSize: 'var(--text-xs)',
+                                                letterSpacing: '0.04em',
+                                                textTransform: 'uppercase',
+                                                color: 'var(--color-text-tertiary)',
+                                                fontWeight: 'var(--font-semibold)'
+                                            }}>
+                                                Required changes
+                                            </p>
+                                            <p style={{
+                                                margin: 0,
+                                                color: 'var(--color-text-primary)',
+                                                whiteSpace: 'pre-wrap',
+                                                lineHeight: 1.5,
+                                                fontSize: 'var(--text-sm)'
+                                            }}>
+                                                {brandContentFeedback || 'Brand requested content changes. Update your video and upload again.'}
+                                            </p>
+                                        </div>
+                                    )}
+                                    <FileUpload
+                                        accept="video/*"
+                                        maxSize={100}
+                                        onFileSelect={(files: File[]) => setContentFiles(files)}
+                                        label="Upload Content Video"
+                                        description="Upload the video file for this campaign"
+                                    />
                                     <Input
-                                        label="Content Link"
+                                        label="Content Link (Optional)"
                                         placeholder="https://instagram.com/p/..."
                                         value={contentLink}
                                         onChange={(e: React.ChangeEvent<HTMLInputElement>) => setContentLink(e.target.value)}
                                     />
-                                    <div style={{ border: '2px dashed var(--color-border-subtle)', borderRadius: 'var(--radius-lg)', padding: 'var(--space-10)', textAlign: 'center' }}>
-                                        <Upload size={32} style={{ color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-2)' }} />
-                                        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>Click to upload file</p>
-                                    </div>
                                 </div>
                             )}
                             <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'flex-end' }}>
                                 <Button variant="ghost" onClick={() => setModalType(null)} disabled={isSubmitting}>Cancel</Button>
-                                <Button onClick={handleAction} isLoading={isSubmitting}>
+                                <Button onClick={handleAction} isLoading={isSubmitting} disabled={modalType === 'content' && contentFiles.length === 0}>
                                     {modalType === 'script' ? 'Finalize Script' : 'Submit'}
                                 </Button>
                             </div>
@@ -1122,6 +1448,28 @@ export const CreatorCampaignDetails: React.FC = () => {
                             <p style={{ color: 'var(--color-text-secondary)' }}>Your submission has been sent to the brand for review.</p>
                         </div>
                     )}
+                </Modal>
+
+                <Modal
+                    isOpen={modalType === 'go-live'}
+                    onClose={() => !isSubmitting && setModalType(null)}
+                    title="Go Live"
+                    subtitle="Submit your published reel/post link"
+                >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                        <Input
+                            label="Live Post Link"
+                            placeholder="https://instagram.com/reel/..."
+                            value={liveLink}
+                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLiveLink(e.target.value)}
+                        />
+                        <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'flex-end' }}>
+                            <Button variant="ghost" onClick={() => setModalType(null)} disabled={isSubmitting}>Cancel</Button>
+                            <Button onClick={handleGoLive} isLoading={isSubmitting} disabled={!liveLink.trim()}>
+                                Mark as Live
+                            </Button>
+                        </div>
+                    </div>
                 </Modal>
             </main >
         </div >

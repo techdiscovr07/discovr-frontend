@@ -20,12 +20,13 @@ interface CreatorCampaignsTabProps {
 export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ searchQuery = '' }) => {
     const navigate = useNavigate();
     const { showToast } = useToast();
-    const [modalType, setModalType] = useState<'script' | 'content' | 'participate' | 'negotiate' | 'accept-deal' | null>(null);
+    const [modalType, setModalType] = useState<'script' | 'content' | 'go-live' | 'participate' | 'negotiate' | 'accept-deal' | null>(null);
     const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
     const [scriptContent, setScriptContent] = useState('');
     const [contentLink, setContentLink] = useState('');
     const [contentFiles, setContentFiles] = useState<File[]>([]);
     const [negotiationAmount, setNegotiationAmount] = useState('');
+    const [liveLink, setLiveLink] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [campaigns, setCampaigns] = useState<any[]>([]);
@@ -67,15 +68,39 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
         }
     };
 
-    const handleOpenModal = (campaign: any, type: 'script' | 'content' | 'participate' | 'negotiate' | 'accept-deal') => {
+    const handleOpenModal = (campaign: any, type: 'script' | 'content' | 'go-live' | 'participate' | 'negotiate' | 'accept-deal') => {
         setSelectedCampaign(campaign);
         setModalType(type);
         setIsSuccess(false);
-        setScriptContent('');
+        if (type === 'script') {
+            const existingScript =
+                campaign?.script_content ||
+                campaign?.script ||
+                campaign?.submitted_script ||
+                campaign?.script_template ||
+                '';
+            setScriptContent(existingScript);
+        } else {
+            setScriptContent('');
+        }
         setContentLink('');
         setContentFiles([]);
         setNegotiationAmount('');
+        setLiveLink('');
     };
+
+    const getWorkflowStatus = (campaign: any) =>
+        String(campaign?.status || '')
+            .toLowerCase()
+            .replace(/\s+/g, '_');
+    const canUploadContentForCampaign = (campaign: any) => {
+        const status = getWorkflowStatus(campaign);
+        const stage = String(campaign?.stage || '').toLowerCase();
+        if (status === 'content_pending' || status === 'content_approved' || status === 'content_live') return false;
+        if (status === 'script_approved' || status === 'content_rejected' || status === 'content_revision_requested') return true;
+        return stage === 'content';
+    };
+    const canGoLiveForCampaign = (campaign: any) => getWorkflowStatus(campaign) === 'content_approved';
 
     const handleNegotiationSubmit = async () => {
         if (!selectedCampaign || !negotiationAmount) return;
@@ -133,12 +158,14 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
             if (modalType === 'script') {
                 await creatorApi.uploadScript(selectedCampaign.id, scriptContent);
             } else if (modalType === 'content') {
-                if (contentFiles.length > 0) {
-                    await creatorApi.uploadContent(selectedCampaign.id, contentFiles[0], contentLink);
-                } else {
-                    // If no file, maybe just go live or update link
-                    await creatorApi.goLive(selectedCampaign.id, contentLink);
+                if (contentFiles.length === 0) {
+                    showToast('Please upload a video file before submitting content.', 'error');
+                    setIsSubmitting(false);
+                    return;
                 }
+                await creatorApi.uploadContent(selectedCampaign.id, contentFiles[0], contentLink);
+            } else if (modalType === 'go-live') {
+                await creatorApi.goLive(selectedCampaign.id, liveLink);
             }
 
             setIsSuccess(true);
@@ -254,14 +281,25 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
                                     Submit Script
                                 </Button>
                             )}
-                            {campaign.stage === 'content' && (
+                            {(campaign.stage === 'content' || canUploadContentForCampaign(campaign)) && (
                                 <Button
                                     size="sm"
                                     fullWidth
                                     onClick={() => handleOpenModal(campaign, 'content')}
+                                    disabled={!canUploadContentForCampaign(campaign)}
                                 >
                                     <Video size={16} />
                                     Upload Content
+                                </Button>
+                            )}
+                            {canGoLiveForCampaign(campaign) && (
+                                <Button
+                                    size="sm"
+                                    fullWidth
+                                    variant="secondary"
+                                    onClick={() => handleOpenModal(campaign, 'go-live')}
+                                >
+                                    Go Live
                                 </Button>
                             )}
                             <Button
@@ -292,6 +330,7 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
                 title={
                     modalType === 'script' ? 'Submit Script' :
                         modalType === 'content' ? 'Upload Content' :
+                            modalType === 'go-live' ? 'Go Live' :
                             modalType === 'negotiate' ? 'Negotiate Deal' :
                                 modalType === 'accept-deal' ? 'Accept Deal' :
                                     'Join Campaign'
@@ -335,6 +374,15 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
                                     />
                                 </div>
                             </div>
+                        )}
+                        {modalType === 'go-live' && (
+                            <Input
+                                label="Live Post Link"
+                                placeholder="https://instagram.com/reel/..."
+                                value={liveLink}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLiveLink(e.target.value)}
+                                required
+                            />
                         )}
                         {modalType === 'negotiate' && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
@@ -419,7 +467,8 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
                                 isLoading={isSubmitting}
                                 disabled={
                                     (modalType === 'script' && !scriptContent.trim()) ||
-                                    (modalType === 'content' && !contentLink.trim() && contentFiles.length === 0) ||
+                                    (modalType === 'content' && contentFiles.length === 0) ||
+                                    (modalType === 'go-live' && !liveLink.trim()) ||
                                     (modalType === 'negotiate' && (!negotiationAmount || parseFloat(negotiationAmount) <= 0))
                                 }
                             >

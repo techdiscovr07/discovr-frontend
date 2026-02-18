@@ -158,6 +158,120 @@
     margin: 0 auto;
 }
 
+/* Brand create campaign modal form */
+.modal-body .campaign-form {
+    max-width: 100%;
+}
+
+.modal-body .campaign-form .form-section {
+    margin-bottom: var(--space-6);
+    padding-bottom: var(--space-5);
+}
+
+.modal-body .campaign-form .form-section-title {
+    margin-bottom: var(--space-4);
+}
+
+.modal-body .campaign-form .form-group label {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    line-height: 1.35;
+}
+
+.modal-body .campaign-form .form-row {
+    gap: var(--space-5);
+}
+
+.modal-body .campaign-form .form-input[multiple] {
+    min-height: 200px;
+}
+
+.modal-body .campaign-form .form-input[multiple] option {
+    padding: 8px 10px;
+    border-radius: var(--radius-sm);
+}
+
+.modal-body .campaign-form .form-input[multiple] option:checked {
+    background: var(--color-info);
+    color: #fff;
+}
+
+.ncf-range-options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-2);
+}
+
+.ncf-range-option {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    width: 100%;
+    padding: var(--space-3);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-lg);
+    background: var(--color-bg-secondary);
+    color: var(--color-text-primary);
+    cursor: pointer;
+    text-align: left;
+    transition: all var(--transition-fast);
+}
+
+.ncf-range-option:hover {
+    border-color: var(--color-border-medium);
+    background: var(--color-surface-glass);
+    transform: translateY(-1px);
+}
+
+.ncf-range-option--active {
+    border-color: var(--color-info);
+    background: var(--color-info);
+    color: #fff;
+    box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
+}
+
+.ncf-range-option-label {
+    font-size: var(--text-sm);
+    font-weight: var(--font-semibold);
+    color: var(--color-text-primary);
+}
+
+.ncf-range-option-desc {
+    font-size: var(--text-xs);
+    color: var(--color-text-tertiary);
+}
+
+.ncf-range-option--active .ncf-range-option-label,
+.ncf-range-option--active .ncf-range-option-desc {
+    color: #fff;
+}
+
+.ncf-range-option-check {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    color: var(--color-info);
+}
+
+.ncf-range-option--active .ncf-range-option-check {
+    color: #fff;
+}
+
+.category-add-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+}
+
+.category-add-error {
+    margin-top: var(--space-1);
+    font-size: var(--text-xs);
+    color: var(--color-error);
+}
+
 /* Creators Table Styles */
 .creators-table {
     width: 100%;
@@ -294,6 +408,14 @@ select.form-input {
 
     .form-actions button {
         width: 100%;
+    }
+
+    .ncf-range-options {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .category-add-row {
+        grid-template-columns: 1fr;
     }
 }
 
@@ -645,5 +767,15 @@ select.form-input {
     .filter-right,
     .clean-select {
         width: 100%;
+    }
+
+    .ncf-range-options {
+        grid-template-columns: 1fr;
+    }
+
+    .modal-body .campaign-form .form-actions {
+        flex-direction: column;
+        align-items: stretch;
+        gap: var(--space-2);
     }
 }

@@ -63,7 +63,12 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
             throw new Error(errorMessage);
         }
 
-        return await response.json();
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            return await response.json();
+        }
+        const text = await response.text();
+        return (text as unknown as T);
     } catch (error: any) {
         console.error(`Request failed for ${endpoint}:`, error);
         throw error;
@@ -355,14 +360,25 @@ export const brandApi = {
     }),
     getCampaignCreators: (id: string) => request(`/brand/campaigns/creators?campaign_id=${id}`),
     getCreatorBids: (campaignId: string) => request<any>(`/brand/campaigns/bids?campaign_id=${campaignId}`),
-    respondToCreatorBid: (campaignId: string, creatorId: string, action: 'accept' | 'reject', proposedAmount?: number) => request<any>(`/brand/campaigns/bids/respond?campaign_id=${campaignId}`, {
-        method: 'POST',
-        body: JSON.stringify({
-            creator_id: creatorId,
-            action,
-            proposed_amount: proposedAmount
-        })
-    }),
+    respondToCreatorBid: (campaignId: string, creatorId: string, action: 'accept' | 'reject', proposedAmount?: number) => {
+        const isCounter = typeof proposedAmount === 'number' && Number.isFinite(proposedAmount) && proposedAmount > 0;
+        const status = action === 'reject'
+            ? 'rejected'
+            : (isCounter ? 'negotiated' : 'accepted');
+        return request<any>('/brand/campaigns/creators/respond', {
+            method: 'POST',
+            body: JSON.stringify({
+                campaign_id: campaignId,
+                updates: [
+                    {
+                        creator_id: creatorId,
+                        status,
+                        ...(isCounter ? { proposed_amount: proposedAmount } : {})
+                    }
+                ]
+            })
+        });
+    },
     finalizeCreatorAmounts: (campaignId: string, updates: any[]) => request<any>(`/brand/campaigns/finalize-amounts?campaign_id=${campaignId}`, {
         method: 'POST',
         body: JSON.stringify({ updates })
@@ -370,7 +386,18 @@ export const brandApi = {
     getCreatorContent: (campaignId: string) => request<any>(`/brand/campaigns/content?campaign_id=${campaignId}`),
     reviewCreatorContent: (campaignId: string, updates: any[]) => request<any>(`/brand/campaigns/review-content?campaign_id=${campaignId}`, {
         method: 'POST',
-        body: JSON.stringify({ updates })
+        body: JSON.stringify({
+            campaign_id: campaignId,
+            updates: (updates || []).map((u: any) => ({
+                creator_id: u.creator_id,
+                action:
+                    u.status === 'approved' ? 'approve' :
+                    u.status === 'rejected' ? 'reject' :
+                    u.status === 'revision_requested' ? 'request_revision' :
+                    u.action,
+                feedback: u.feedback
+            }))
+        })
     }),
     uploadCreatorsSheet: (campaignId: string, file: File) => {
         const formData = new FormData();
@@ -385,16 +412,31 @@ export const brandApi = {
         });
     },
     getCreatorScripts: (campaignId: string) => request<any>(`/brand/campaigns/scripts?campaign_id=${campaignId}`),
-    reviewCreatorScript: (campaignId: string, creatorId: string, status: 'approved' | 'rejected' | 'revision_requested', feedback?: string) => request<any>(`/brand/campaigns/review-script?campaign_id=${campaignId}`, {
-        method: 'POST',
-        body: JSON.stringify({
-            campaign_id: campaignId,
-            creator_id: creatorId,
-            status,
-            feedback
-        })
-    }),
-    updateCreatorStatuses: (campaignId: string, updates: { creator_id: string, status: string, comment?: string }[]) => request<any>('/brand/campaigns/creators/respond', {
+    reviewCreatorScript: (campaignId: string, creatorId: string, status: 'approved' | 'rejected' | 'revision_requested', feedback?: string) => {
+        const action =
+            status === 'approved' ? 'approve' :
+            status === 'rejected' ? 'reject' :
+            'request_revision';
+        return request<any>(`/brand/campaigns/review-script?campaign_id=${campaignId}`, {
+            method: 'POST',
+            body: JSON.stringify({
+                // Keep legacy keys for backward compatibility.
+                campaign_id: campaignId,
+                creator_id: creatorId,
+                status,
+                feedback,
+                // Backend currently expects batch updates + action.
+                updates: [
+                    {
+                        creator_id: creatorId,
+                        action,
+                        feedback
+                    }
+                ]
+            })
+        });
+    },
+    updateCreatorStatuses: (campaignId: string, updates: { creator_id: string, status: string, comment?: string, proposed_amount?: number }[]) => request<any>('/brand/campaigns/creators/respond', {
         method: 'POST',
         body: JSON.stringify({
             campaign_id: campaignId,

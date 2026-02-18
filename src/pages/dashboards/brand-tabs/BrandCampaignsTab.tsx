@@ -76,10 +76,13 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
             setInternalModalOpen(false);
         }
     };
-    const availableCategories = [
+    const defaultCategories = [
         'Fashion', 'Beauty', 'Lifestyle', 'Food', 'Travel',
         'Tech', 'Fitness', 'Gaming', 'Education', 'Entertainment'
     ];
+    const [availableCategories, setAvailableCategories] = useState<string[]>(defaultCategories);
+    const [newCategory, setNewCategory] = useState('');
+    const [newCategoryError, setNewCategoryError] = useState('');
 
     const followerRangeOptions = [
         { label: '1K – 10K', value: '1000-10000', desc: 'Nano' },
@@ -177,6 +180,37 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
             ...formData,
             [e.target.name]: e.target.value
         });
+    };
+
+    const handleAddCategory = () => {
+        const category = newCategory.trim();
+        if (!category) {
+            setNewCategoryError('Enter a category name');
+            return;
+        }
+
+        const exists = availableCategories.some(
+            existing => existing.toLowerCase() === category.toLowerCase()
+        );
+
+        if (exists) {
+            setNewCategoryError('This category already exists');
+            return;
+        }
+
+        const normalizedCategory = category
+            .split(' ')
+            .filter(Boolean)
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+
+        setAvailableCategories(prev => [...prev, normalizedCategory]);
+        setFormData(prev => ({
+            ...prev,
+            creatorCategories: [...prev.creatorCategories, normalizedCategory]
+        }));
+        setNewCategory('');
+        setNewCategoryError('');
     };
 
     const getStatusColor = (status: string) => {
@@ -331,6 +365,34 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
                                 }}>
                                     {formData.creatorCategories.length} categor{formData.creatorCategories.length === 1 ? 'y' : 'ies'} selected: {formData.creatorCategories.join(', ')}
                                 </p>
+                            )}
+                            <div className="category-add-row">
+                                <input
+                                    type="text"
+                                    value={newCategory}
+                                    onChange={(e) => {
+                                        setNewCategory(e.target.value);
+                                        if (newCategoryError) setNewCategoryError('');
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleAddCategory();
+                                        }
+                                    }}
+                                    placeholder="Add your own category (e.g., Finance)"
+                                    className="form-input"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={handleAddCategory}
+                                >
+                                    Add Category
+                                </Button>
+                            </div>
+                            {newCategoryError && (
+                                <p className="category-add-error">{newCategoryError}</p>
                             )}
                         </div>
 

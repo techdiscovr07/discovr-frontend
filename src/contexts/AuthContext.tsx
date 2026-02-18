@@ -50,23 +50,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-            setUser(firebaseUser);
-            if (firebaseUser) {
-                try {
-                    const profileData = await getUserProfile();
-                    setProfile(profileData);
-                } catch (error) {
-                    console.error('Failed to refresh profile on auth state change:', error);
+        // Set a timeout to ensure loading doesn't hang forever
+        const timeoutId = setTimeout(() => {
+            if (loading) {
+                console.warn('Auth state check timed out. Setting loading to false.');
+                setLoading(false);
+            }
+        }, 5000); // 5 second timeout
+
+        let unsubscribe: (() => void) | null = null;
+        
+        try {
+            unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+                clearTimeout(timeoutId);
+                setUser(firebaseUser);
+                if (firebaseUser) {
+                    try {
+                        const profileData = await getUserProfile();
+                        setProfile(profileData);
+                    } catch (error) {
+                        console.error('Failed to refresh profile on auth state change:', error);
+                        setProfile(null);
+                    }
+                } else {
                     setProfile(null);
                 }
-            } else {
-                setProfile(null);
-            }
+                setLoading(false);
+            });
+        } catch (error) {
+            console.error('Failed to set up auth state listener:', error);
+            clearTimeout(timeoutId);
             setLoading(false);
-        });
+        }
 
-        return unsubscribe;
+        return () => {
+            clearTimeout(timeoutId);
+            if (unsubscribe) {
+                unsubscribe();
+            }
+        };
     }, []);
 
     const signUp = async (email: string, password: string, name: string, role: 'admin' | 'brand_owner' | 'brand_emp' | 'creator') => {
