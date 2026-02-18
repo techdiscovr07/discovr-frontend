@@ -1,0 +1,632 @@
+import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Button, Modal, LoadingSpinner, Card, CardBody } from '../../../components';
+import {
+    Users,
+    IndianRupee,
+    Calendar,
+    Users2,
+    Tag,
+    Info,
+    Target,
+    Check,
+    AlertCircle
+} from 'lucide-react';
+import { brandApi } from '../../../lib/api';
+import { useToast } from '../../../contexts/ToastContext';
+
+interface BrandCampaignsTabProps {
+    searchQuery?: string;
+    isModalOpen?: boolean;
+    onModalClose?: () => void;
+}
+
+export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
+    searchQuery = '',
+    isModalOpen: externalModalOpen,
+    onModalClose
+}) => {
+    const navigate = useNavigate();
+    const { showToast } = useToast();
+    const [internalModalOpen, setInternalModalOpen] = useState(false);
+    const [campaigns, setCampaigns] = useState<any[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    // Use external modal state if provided, otherwise use internal state
+    const isModalOpen = externalModalOpen !== undefined ? externalModalOpen : internalModalOpen;
+
+
+    const fetchCampaigns = async () => {
+        setIsLoading(true);
+        try {
+            const data = await brandApi.getCampaigns() as any;
+            // Handle both array response and object {campaigns: []} response
+            if (Array.isArray(data)) {
+                setCampaigns(data);
+            } else if (data && Array.isArray(data.campaigns)) {
+                setCampaigns(data.campaigns);
+            } else {
+                setCampaigns([]);
+            }
+        } catch (error) {
+            console.error('Failed to fetch campaigns:', error);
+            setCampaigns([]);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const parseCurrency = (val: any): number => {
+        if (typeof val === 'number') return val;
+        if (typeof val === 'string') {
+            return parseFloat(val.replace(/[^0-9.]/g, '')) || 0;
+        }
+        return 0;
+    };
+
+    useEffect(() => {
+        fetchCampaigns();
+    }, []);
+
+    const handleModalClose = () => {
+        if (onModalClose) {
+            onModalClose();
+        } else {
+            setInternalModalOpen(false);
+        }
+    };
+    const availableCategories = [
+        'Fashion', 'Beauty', 'Lifestyle', 'Food', 'Travel',
+        'Tech', 'Fitness', 'Gaming', 'Education', 'Entertainment'
+    ];
+
+    const followerRangeOptions = [
+        { label: '1K – 10K', value: '1000-10000', desc: 'Nano' },
+        { label: '10K – 50K', value: '10000-50000', desc: 'Micro' },
+        { label: '50K – 100K', value: '50000-100000', desc: 'Mid-tier' },
+        { label: '100K – 500K', value: '100000-500000', desc: 'Macro' },
+        { label: '500K – 1M', value: '500000-1000000', desc: 'Mega' },
+        { label: '1M+', value: '1000000-10000000', desc: 'Celebrity' }
+    ];
+
+    const [formData, setFormData] = useState({
+        name: '',
+        description: '',
+        totalBudget: '',
+        creatorCount: '',
+        goLiveDate: '',
+        cpv: '',
+        creatorCategories: [] as string[],
+        platform: 'Instagram',
+        contentType: 'Posts',
+        requirements: '',
+        followerRanges: ['10000-50000'] as string[]
+    });
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+
+        // Validation
+        if (formData.creatorCategories.length === 0) {
+            showToast('Please select at least one creator category', 'error');
+            return;
+        }
+
+        if (!formData.name.trim() || !formData.description.trim()) {
+            showToast('Please fill in all required fields', 'error');
+            return;
+        }
+
+        if (parseFloat(formData.totalBudget) <= 0 || parseInt(formData.creatorCount) <= 0) {
+            showToast('Budget and creator count must be greater than 0', 'error');
+            return;
+        }
+
+        if (parseFloat(formData.cpv) <= 0) {
+            showToast('Cost Per View (CPV) must be greater than 0', 'error');
+            return;
+        }
+
+        if (formData.followerRanges.length === 0) {
+            showToast('Please select at least one follower range', 'error');
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            const campaignData = {
+                name: formData.name.trim(),
+                description: formData.description.trim(),
+                creator_categories: formData.creatorCategories,
+                total_budget: parseFloat(formData.totalBudget),
+                creator_count: parseInt(formData.creatorCount),
+                go_live_date: formData.goLiveDate,
+                cpv: parseFloat(formData.cpv),
+                follower_ranges: formData.followerRanges
+            };
+
+            await brandApi.createCampaign(campaignData);
+            handleModalClose();
+            showToast('Campaign created successfully!', 'success');
+            fetchCampaigns(); // Refresh list
+            // Reset form
+            setFormData({
+                name: '',
+                description: '',
+                totalBudget: '',
+                creatorCount: '',
+                goLiveDate: '',
+                cpv: '',
+                creatorCategories: [],
+                platform: 'Instagram',
+                contentType: 'Posts',
+                requirements: '',
+                followerRanges: ['10000-50000']
+            });
+        } catch (error: any) {
+            console.error('Failed to create campaign:', error);
+            showToast(error.message || 'Failed to create campaign. Please try again.', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+        setFormData({
+            ...formData,
+            [e.target.name]: e.target.value
+        });
+    };
+
+    const getStatusColor = (status: string) => {
+        const statusMap: Record<string, string> = {
+            'Active': 'status-active',
+            'Negotiate': 'status-negotiate',
+            'Content Review': 'status-content-review',
+            'Planning': 'status-planning',
+            'Completed': 'status-completed',
+            'Awaiting Brief': 'status-planning'
+        };
+        return statusMap[status] || 'status-default';
+    };
+
+    const filteredCampaigns = useMemo(() => {
+        const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
+        return safeCampaigns.filter(campaign =>
+            campaign.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            campaign.status?.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+    }, [campaigns, searchQuery]);
+
+    if (isLoading) {
+        return <LoadingSpinner />;
+    }
+
+    return (
+        <>
+
+            {/* New Campaign Modal */}
+            <Modal
+                isOpen={isModalOpen}
+                onClose={handleModalClose}
+                title="Create New Campaign"
+                subtitle="Set up your influencer marketing campaign"
+                size="xl"
+            >
+                <form onSubmit={handleSubmit} className="campaign-form">
+                    {/* Campaign Details */}
+                    <div className="form-section">
+                        <h3 className="form-section-title">Campaign Details</h3>
+
+                        <div className="form-group">
+                            <label htmlFor="name">
+                                Campaign Name *
+                                <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
+                                    Give your campaign a memorable name
+                                </span>
+                            </label>
+                            <input
+                                type="text"
+                                id="name"
+                                name="name"
+                                value={formData.name}
+                                onChange={handleChange}
+                                placeholder="e.g., Summer Collection Launch 2024"
+                                required
+                                className="form-input"
+                                maxLength={100}
+                            />
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="description">
+                                Description *
+                                <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
+                                    Explain your campaign goals and what you want to achieve
+                                </span>
+                            </label>
+                            <textarea
+                                id="description"
+                                name="description"
+                                value={formData.description}
+                                onChange={handleChange}
+                                placeholder="Describe your campaign goals, target audience, key messaging, and what success looks like..."
+                                rows={4}
+                                required
+                                className="form-input"
+                                maxLength={1000}
+                            />
+                            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-1)', textAlign: 'right' }}>
+                                {formData.description.length}/1000 characters
+                            </p>
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="creatorCategories">
+                                <Tag size={16} style={{ display: 'inline', marginRight: 'var(--space-2)' }} />
+                                Creator Categories *
+                                <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
+                                    Select categories that match your target creators (multiple selection)
+                                </span>
+                            </label>
+                            <select
+                                id="creatorCategories"
+                                name="creatorCategories"
+                                multiple
+                                value={formData.creatorCategories}
+                                onChange={(e) => {
+                                    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
+                                    setFormData(prev => ({
+                                        ...prev,
+                                        creatorCategories: selectedOptions
+                                    }));
+                                }}
+                                required
+                                className="form-input"
+                                style={{
+                                    minHeight: '120px',
+                                    padding: 'var(--space-3)',
+                                    background: 'var(--color-bg-secondary)',
+                                    border: formData.creatorCategories.length === 0 ? '1px solid var(--color-error)' : '1px solid var(--color-border)'
+                                }}
+                                size={availableCategories.length}
+                            >
+                                {availableCategories.map(category => (
+                                    <option key={category} value={category}>
+                                        {category}
+                                    </option>
+                                ))}
+                            </select>
+                            <p style={{
+                                marginTop: 'var(--space-2)',
+                                fontSize: 'var(--text-xs)',
+                                color: 'var(--color-text-tertiary)',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 'var(--space-1)'
+                            }}>
+                                <Info size={12} />
+                                Hold Ctrl (or Cmd on Mac) to select multiple categories
+                            </p>
+                            {formData.creatorCategories.length === 0 && (
+                                <p style={{
+                                    marginTop: 'var(--space-1)',
+                                    fontSize: 'var(--text-sm)',
+                                    color: 'var(--color-error)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 'var(--space-1)'
+                                }}>
+                                    <Info size={14} />
+                                    Please select at least one category
+                                </p>
+                            )}
+                            {formData.creatorCategories.length > 0 && (
+                                <p style={{
+                                    marginTop: 'var(--space-1)',
+                                    fontSize: 'var(--text-xs)',
+                                    color: 'var(--color-text-primary)',
+                                    fontWeight: 'var(--font-medium)'
+                                }}>
+                                    {formData.creatorCategories.length} categor{formData.creatorCategories.length === 1 ? 'y' : 'ies'} selected: {formData.creatorCategories.join(', ')}
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="form-group">
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
+                                <Users2 size={16} />
+                                Follower Range *
+                                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
+                                    Select one or more target creator tiers
+                                </span>
+                            </label>
+                            <div className="ncf-range-options">
+                                {followerRangeOptions.map(opt => {
+                                    const isActive = formData.followerRanges.includes(opt.value);
+                                    return (
+                                        <button
+                                            key={opt.value}
+                                            type="button"
+                                            className={`ncf-range-option ${isActive ? 'ncf-range-option--active' : ''}`}
+                                            onClick={() => setFormData(prev => ({
+                                                ...prev,
+                                                followerRanges: prev.followerRanges.includes(opt.value)
+                                                    ? prev.followerRanges.filter(v => v !== opt.value)
+                                                    : [...prev.followerRanges, opt.value]
+                                            }))}
+                                        >
+                                            <span className="ncf-range-option-label">{opt.label}</span>
+                                            <span className="ncf-range-option-desc">{opt.desc}</span>
+                                            {isActive && <Check size={14} className="ncf-range-option-check" />}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            {formData.followerRanges.length === 0 && (
+                                <p style={{
+                                    marginTop: 'var(--space-1)',
+                                    fontSize: 'var(--text-sm)',
+                                    color: 'var(--color-error)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 'var(--space-1)'
+                                }}>
+                                    <AlertCircle size={14} />
+                                    Please select at least one range
+                                </p>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Budget & Timeline */}
+                    <div className="form-section">
+                        <h3 className="form-section-title">Budget & Timeline</h3>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="totalBudget">
+                                    <IndianRupee size={16} />
+                                    Total Budget (INR) *
+                                    <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
+                                        Total amount allocated for this campaign
+                                    </span>
+                                </label>
+                                <input
+                                    type="number"
+                                    id="totalBudget"
+                                    name="totalBudget"
+                                    value={formData.totalBudget}
+                                    onChange={handleChange}
+                                    placeholder="50000"
+                                    min="0"
+                                    step="0.01"
+                                    required
+                                    className="form-input"
+                                />
+                                {formData.totalBudget && parseFloat(formData.totalBudget) > 0 && formData.creatorCount && parseInt(formData.creatorCount) > 0 && (
+                                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-1)' }}>
+                                        ≈ ₹{Math.round(parseFloat(formData.totalBudget) / parseInt(formData.creatorCount)).toLocaleString()} per creator
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="creatorCount">
+                                    <Users size={16} />
+                                    Number of Creators *
+                                    <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
+                                        How many creators do you want to work with?
+                                    </span>
+                                </label>
+                                <input
+                                    type="number"
+                                    id="creatorCount"
+                                    name="creatorCount"
+                                    value={formData.creatorCount}
+                                    onChange={handleChange}
+                                    placeholder="10"
+                                    min="1"
+                                    required
+                                    className="form-input"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="goLiveDate">
+                                    <Calendar size={16} />
+                                    Go Live Date *
+                                    <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
+                                        When should creators publish content?
+                                    </span>
+                                </label>
+                                <input
+                                    type="date"
+                                    id="goLiveDate"
+                                    name="goLiveDate"
+                                    value={formData.goLiveDate}
+                                    onChange={handleChange}
+                                    required
+                                    className="form-input"
+                                    min={new Date().toISOString().split('T')[0]}
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="cpv">
+                                    <Target size={16} />
+                                    Cost Per View (CPV) *
+                                    <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
+                                        Maximum cost per view in INR
+                                    </span>
+                                </label>
+                                <input
+                                    type="number"
+                                    id="cpv"
+                                    name="cpv"
+                                    value={formData.cpv}
+                                    onChange={handleChange}
+                                    placeholder="0.50"
+                                    min="0"
+                                    step="0.01"
+                                    required
+                                    className="form-input"
+                                />
+                                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-1)' }}>
+                                    The maximum amount you're willing to pay per view
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Requirements */}
+                    <div className="form-section">
+                        <h3 className="form-section-title">Content Requirements (Optional)</h3>
+
+                        <div className="form-group">
+                            <label htmlFor="requirements">
+                                Requirements & Guidelines
+                                <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
+                                    Add specific requirements, hashtags, mentions, dos and don'ts
+                                </span>
+                            </label>
+                            <textarea
+                                id="requirements"
+                                name="requirements"
+                                value={formData.requirements}
+                                onChange={handleChange}
+                                placeholder="Example:&#10;- Use hashtags: #Summer2024 #Fashion&#10;- Mention @yourbrand in caption&#10;- Include product link in bio&#10;- Do: Show product in natural settings&#10;- Don't: Use filters that change product colors"
+                                rows={6}
+                                className="form-input"
+                            />
+                            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-1)' }}>
+                                These guidelines will be shared with creators when they join your campaign
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="form-actions" style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        paddingTop: 'var(--space-4)',
+                        borderTop: '1px solid var(--color-border)',
+                        marginTop: 'var(--space-4)'
+                    }}>
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
+                            * Required fields
+                        </div>
+                        <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                            <Button type="button" variant="ghost" onClick={handleModalClose} disabled={isSubmitting}>
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                isLoading={isSubmitting}
+                                disabled={isSubmitting || formData.creatorCategories.length === 0}
+                            >
+                                {isSubmitting ? 'Creating...' : 'Create Campaign'}
+                            </Button>
+                        </div>
+                    </div>
+                </form>
+            </Modal>
+
+            <div className="campaigns-container animate-fade-in">
+                {/* Campaigns Grid */}
+                <div className="campaigns-grid">
+                    {filteredCampaigns.map((campaign) => {
+                        const budgetNum = parseCurrency(campaign.total_budget ?? campaign.budget ?? 0);
+                        const cpvNum = parseCurrency(campaign.cpv ?? 0);
+                        const goLive =
+                            campaign.go_live_date
+                                ? new Date(campaign.go_live_date).toLocaleDateString()
+                                : (campaign.startDate && campaign.endDate ? `${campaign.startDate} - ${campaign.endDate}` : '—');
+                        const categories: string[] = Array.isArray(campaign.creator_categories)
+                            ? campaign.creator_categories
+                            : [];
+                        const description: string = campaign.description || '';
+
+                        return (
+                            <Card key={campaign.id} className="campaign-list-card">
+                                <CardBody>
+                                    <div className="campaign-top-bar">
+                                        <span className={`status-pill ${getStatusColor(campaign.status)}`}>
+                                            {campaign.status}
+                                        </span>
+                                        <div className="dates-info">
+                                            <Calendar size={14} />
+                                            <span>{goLive}</span>
+                                        </div>
+                                    </div>
+
+                                    <h3 className="campaign-title-clean">{campaign.name}</h3>
+
+                                    {description && (
+                                        <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', lineHeight: 1.5, margin: 'var(--space-3) 0' }}>
+                                            {description.length > 120 ? `${description.slice(0, 120)}...` : description}
+                                        </p>
+                                    )}
+
+                                    {categories.length > 0 && (
+                                        <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap', marginBottom: 'var(--space-4)' }}>
+                                            {categories.slice(0, 4).map((cat) => (
+                                                <span
+                                                    key={cat}
+                                                    style={{
+                                                        background: 'var(--color-bg-tertiary)',
+                                                        padding: '4px 10px',
+                                                        borderRadius: '999px',
+                                                        fontSize: 'var(--text-xs)',
+                                                        color: 'var(--color-text-secondary)'
+                                                    }}
+                                                >
+                                                    {cat}
+                                                </span>
+                                            ))}
+                                            {categories.length > 4 && (
+                                                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
+                                                    +{categories.length - 4} more
+                                                </span>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    <div className="campaign-stats-row-clean">
+                                        <div className="mini-stat-clean">
+                                            <span className="label">Creators</span>
+                                            <span className="value">{campaign.creator_count ?? campaign.targetCreators ?? 0}</span>
+                                        </div>
+                                        <div className="mini-stat-clean">
+                                            <span className="label">Budget</span>
+                                            <span className="value">₹{budgetNum.toLocaleString()}</span>
+                                        </div>
+                                        <div className="mini-stat-clean">
+                                            <span className="label">CPV</span>
+                                            <span className="value">₹{cpvNum.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+
+                                    <div className="campaign-card-actions-clean">
+                                        <Button
+                                            variant="ghost"
+                                            fullWidth
+                                            size="sm"
+                                            onClick={() => navigate(`/brand/campaign/${campaign.id}`)}
+                                        >
+                                            View Campaign Details
+                                        </Button>
+                                    </div>
+                                </CardBody>
+                            </Card>
+                        );
+                    })}
+                </div>
+            </div>
+        </>
+    );
+};
