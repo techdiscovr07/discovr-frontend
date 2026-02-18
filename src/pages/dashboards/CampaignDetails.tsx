@@ -812,6 +812,10 @@ export const CampaignDetails: React.FC = () => {
                                                                     variant="ghost" 
                                                                     size="sm"
                                                                     onClick={async () => {
+                                                                        if (!id) {
+                                                                            showToast('Campaign ID not found', 'error');
+                                                                            return;
+                                                                        }
                                                                         const creatorId = bid.creator_id || bid.id;
                                                                         if (!creatorId) {
                                                                             showToast('Creator ID not found', 'error');
@@ -834,6 +838,10 @@ export const CampaignDetails: React.FC = () => {
                                                                     variant="ghost" 
                                                                     size="sm"
                                                                     onClick={async () => {
+                                                                        if (!id) {
+                                                                            showToast('Campaign ID not found', 'error');
+                                                                            return;
+                                                                        }
                                                                         const creatorId = bid.creator_id || bid.id;
                                                                         if (!creatorId) {
                                                                             showToast('Creator ID not found', 'error');
