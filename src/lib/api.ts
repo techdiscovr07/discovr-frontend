@@ -357,10 +357,10 @@ export const brandApi = {
     getCreatorBids: (campaignId: string) => request<any>(`/brand/campaigns/bids?campaign_id=${campaignId}`),
     respondToCreatorBid: (campaignId: string, creatorId: string, action: 'accept' | 'reject', proposedAmount?: number) => request<any>(`/brand/campaigns/bids/respond?campaign_id=${campaignId}`, {
         method: 'POST',
-        body: JSON.stringify({ 
-            creator_id: creatorId, 
-            action, 
-            proposed_amount: proposedAmount 
+        body: JSON.stringify({
+            creator_id: creatorId,
+            action,
+            proposed_amount: proposedAmount
         })
     }),
     finalizeCreatorAmounts: (campaignId: string, updates: any[]) => request<any>(`/brand/campaigns/finalize-amounts?campaign_id=${campaignId}`, {
@@ -495,7 +495,7 @@ export const creatorApi = {
         body: JSON.stringify({ campaign_id: campaignId, creator_token: creatorToken || '' })
     }),
     getCampaignBrief: (campaignId: string) => request<any>(`/creator/campaigns/brief?campaign_id=${campaignId}`),
-    submitBid: (campaignId: string, amount: number) => request(`/creator/campaigns/bid?campaign_id=${campaignId}`, {
+    submitBid: (campaignId: string, amount: number) => request<any>(`/creator/campaigns/bid?campaign_id=${campaignId}`, {
         method: 'POST',
         body: JSON.stringify({ bid_amount: amount })
     }),

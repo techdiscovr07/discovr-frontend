@@ -340,8 +340,10 @@ export const CreatorCampaignDetails: React.FC = () => {
         setIsSubmitting(true);
         try {
             if (modalType === 'script') {
-                await creatorApi.uploadScript(id, scriptContent);
-                showToast('Script submitted successfully!', 'success');
+                // Use scriptContent if provided, otherwise use brand template
+                const finalScript = scriptContent || briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template || '';
+                await creatorApi.uploadScript(id, finalScript);
+                showToast('Script finalized and submitted successfully!', 'success');
             } else if (modalType === 'content') {
                 // For content, we'd need a file upload, but for now just use the link
                 await creatorApi.goLive(id, contentLink);
@@ -461,9 +463,16 @@ export const CreatorCampaignDetails: React.FC = () => {
                             Contact Brand
                         </Button>
                         {campaignData.status === 'Active' && (
-                            <Button onClick={() => setModalType('script')}>
+                            <Button onClick={() => {
+                                // Pre-fill script content with brand template if available
+                                const template = briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template || '';
+                                setScriptContent(template);
+                                setModalType('script');
+                            }}>
                                 <Upload size={18} />
-                                Submit New Script
+                                {(briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template) 
+                                    ? 'Finalize Script' 
+                                    : 'Submit Script'}
                             </Button>
                         )}
                     </div>
@@ -546,6 +555,57 @@ export const CreatorCampaignDetails: React.FC = () => {
                                             </h5>
                                         </div>
                                         <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', margin: 0 }}>
+                                        </p>
+                                    </div>
+                                )}
+
+                                {/* Brand Script Template Section */}
+                                {(briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template) && (
+                                    <div style={{ 
+                                        marginTop: 'var(--space-6)', 
+                                        padding: 'var(--space-4)', 
+                                        background: 'var(--color-bg-secondary)', 
+                                        borderRadius: 'var(--radius-md)',
+                                        border: '1px solid var(--color-border-subtle)'
+                                    }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)' }}>
+                                            <h5 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: 0 }}>
+                                                Brand Script Template
+                                            </h5>
+                                            <Button 
+                                                size="sm" 
+                                                variant="primary"
+                                                onClick={() => {
+                                                    const template = briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template;
+                                                    setScriptContent(template);
+                                                    setModalType('script');
+                                                }}
+                                            >
+                                                <CheckCircle2 size={16} style={{ marginRight: 'var(--space-2)' }} />
+                                                Finalize Script
+                                            </Button>
+                                        </div>
+                                        <div style={{ 
+                                            background: 'var(--color-bg-primary)', 
+                                            padding: 'var(--space-4)', 
+                                            borderRadius: 'var(--radius-sm)',
+                                            whiteSpace: 'pre-wrap',
+                                            fontFamily: 'monospace',
+                                            fontSize: 'var(--text-sm)',
+                                            color: 'var(--color-text-primary)',
+                                            border: '1px solid var(--color-border)',
+                                            maxHeight: '300px',
+                                            overflow: 'auto'
+                                        }}>
+                                            {briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template}
+                                        </div>
+                                        <p style={{ 
+                                            marginTop: 'var(--space-2)', 
+                                            fontSize: 'var(--text-xs)', 
+                                            color: 'var(--color-text-tertiary)',
+                                            fontStyle: 'italic'
+                                        }}>
+                                            Review the script template above and click "Finalize Script" to confirm and submit it.
                                         </p>
                                     </div>
                                 )}
@@ -971,20 +1031,67 @@ export const CreatorCampaignDetails: React.FC = () => {
                 <Modal
                     isOpen={modalType === 'script' || modalType === 'content'}
                     onClose={() => !isSubmitting && setModalType(null)}
-                    title={modalType === 'script' ? 'Submit Script' : 'Upload Content'}
+                    title={modalType === 'script' ? 'Finalize Script' : 'Upload Content'}
                     size="md"
                 >
                     {!isSuccess ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
                             {modalType === 'script' ? (
-                                <TextArea
-                                    label="Script Content"
-                                    placeholder="Write your campaign script here..."
-                                    rows={10}
-                                    value={scriptContent}
-                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setScriptContent(e.target.value)}
-                                    required
-                                />
+                                <>
+                                    {(briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template) && (
+                                        <div style={{ 
+                                            padding: 'var(--space-3)', 
+                                            background: 'var(--color-bg-secondary)', 
+                                            borderRadius: 'var(--radius-md)',
+                                            border: '1px solid var(--color-border-subtle)',
+                                            marginBottom: 'var(--space-2)'
+                                        }}>
+                                            <p style={{ 
+                                                fontSize: 'var(--text-xs)', 
+                                                color: 'var(--color-text-tertiary)',
+                                                marginBottom: 'var(--space-2)',
+                                                fontWeight: 'var(--font-semibold)'
+                                            }}>
+                                                Brand Script Template:
+                                            </p>
+                                            <div style={{ 
+                                                background: 'var(--color-bg-primary)', 
+                                                padding: 'var(--space-3)', 
+                                                borderRadius: 'var(--radius-sm)',
+                                                whiteSpace: 'pre-wrap',
+                                                fontFamily: 'monospace',
+                                                fontSize: 'var(--text-sm)',
+                                                color: 'var(--color-text-primary)',
+                                                border: '1px solid var(--color-border)',
+                                                maxHeight: '200px',
+                                                overflow: 'auto'
+                                            }}>
+                                                {briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template}
+                                            </div>
+                                        </div>
+                                    )}
+                                    <TextArea
+                                        label={(briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template) 
+                                            ? "Review and Edit Script (if needed)" 
+                                            : "Script Content"}
+                                        placeholder={(briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template)
+                                            ? "Review the brand template above and make any edits if needed..."
+                                            : "Write your campaign script here..."}
+                                        rows={10}
+                                        value={scriptContent}
+                                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setScriptContent(e.target.value)}
+                                        required
+                                    />
+                                    {(briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template) && (
+                                        <p style={{ 
+                                            fontSize: 'var(--text-xs)', 
+                                            color: 'var(--color-text-tertiary)',
+                                            fontStyle: 'italic'
+                                        }}>
+                                            The brand script template is pre-filled. Review it and click "Finalize Script" to confirm and submit.
+                                        </p>
+                                    )}
+                                </>
                             ) : (
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                                     <Input
@@ -1001,7 +1108,9 @@ export const CreatorCampaignDetails: React.FC = () => {
                             )}
                             <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'flex-end' }}>
                                 <Button variant="ghost" onClick={() => setModalType(null)} disabled={isSubmitting}>Cancel</Button>
-                                <Button onClick={handleAction} isLoading={isSubmitting}>Submit</Button>
+                                <Button onClick={handleAction} isLoading={isSubmitting}>
+                                    {modalType === 'script' ? 'Finalize Script' : 'Submit'}
+                                </Button>
                             </div>
                         </div>
                     ) : (

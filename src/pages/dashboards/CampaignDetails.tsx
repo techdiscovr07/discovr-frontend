@@ -33,8 +33,12 @@ export const CampaignDetails: React.FC = () => {
         secondary_focus: '',
         dos: '',
         donts: '',
-        cta: ''
+        cta: '',
+        script_template: ''
     });
+    const [brandScriptTemplate, setBrandScriptTemplate] = useState<string>('');
+    const [isScriptTemplateModalOpen, setIsScriptTemplateModalOpen] = useState(false);
+    const [isSubmittingScriptTemplate, setIsSubmittingScriptTemplate] = useState(false);
     const [sampleVideoFiles, setSampleVideoFiles] = useState<File[]>([]);
     const [activeTab, setActiveTab] = useState<'overview' | 'creators' | 'bids' | 'scripts' | 'content'>('overview');
     const [isUploadSheetModalOpen, setIsUploadSheetModalOpen] = useState(false);
@@ -58,6 +62,7 @@ export const CampaignDetails: React.FC = () => {
                 const found = campaigns.find((c: any) => c.id === id);
                 if (found) {
                     setCampaign(found);
+                    setBrandScriptTemplate(found.script_template || '');
                 } else {
                     setCampaign(null);
                 }
@@ -84,15 +89,15 @@ export const CampaignDetails: React.FC = () => {
                         break;
                     case 'bids':
                         const bidsData: any = await brandApi.getCreatorBids(id);
-                        setBids(Array.isArray(bidsData) ? bidsData : (bidsData?.bids || []));
+                        setBids(Array.isArray(bidsData) ? bidsData : (bidsData?.bids || bidsData?.creators || []));
                         break;
                     case 'scripts':
                         const scriptsData: any = await brandApi.getCreatorScripts(id);
-                        setScripts(Array.isArray(scriptsData) ? scriptsData : (scriptsData?.scripts || []));
+                        setScripts(Array.isArray(scriptsData) ? scriptsData : (scriptsData?.scripts || scriptsData?.creators || []));
                         break;
                     case 'content':
                         const contentData: any = await brandApi.getCreatorContent(id);
-                        setContent(Array.isArray(contentData) ? contentData : (contentData?.content || []));
+                        setContent(Array.isArray(contentData) ? contentData : (contentData?.content || contentData?.creators || []));
                         break;
                 }
             } catch (error) {
@@ -156,6 +161,11 @@ export const CampaignDetails: React.FC = () => {
                 if (activeTab === 'creators') {
                     setActiveTab('bids');
                 }
+                // Refresh scripts to show finalized creators
+                if (activeTab === 'scripts' || found.review_status === 'creators_are_final') {
+                    const scriptsData: any = await brandApi.getCreatorScripts(id);
+                    setScripts(Array.isArray(scriptsData) ? scriptsData : (scriptsData?.scripts || scriptsData?.creators || []));
+                }
             }
         } catch (error: any) {
             console.error('Failed to submit selection:', error);
@@ -213,6 +223,9 @@ export const CampaignDetails: React.FC = () => {
             formData.append('dos', briefData.dos);
             formData.append('donts', briefData.donts);
             formData.append('cta', briefData.cta);
+            if (briefData.script_template) {
+                formData.append('script_template', briefData.script_template);
+            }
             if (sampleVideoFiles.length > 0) {
                 formData.append('sample_video', sampleVideoFiles[0]);
             }
@@ -222,12 +235,51 @@ export const CampaignDetails: React.FC = () => {
             setIsBriefModalOpen(false);
             // Refresh
             const data = await brandApi.getCampaigns() as any[];
-            setCampaign(data.find(c => c.id === id));
+            const updatedCampaign = data.find(c => c.id === id);
+            if (updatedCampaign) {
+                setCampaign(updatedCampaign);
+                setBrandScriptTemplate(updatedCampaign.script_template || '');
+            }
         } catch (error: any) {
             console.error('Failed to upload brief:', error);
             showToast(error.message || 'Failed to upload brief', 'error');
         } finally {
             setIsSubmittingBrief(false);
+        }
+    };
+
+    const handleScriptTemplateSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setIsSubmittingScriptTemplate(true);
+        try {
+            const formData = new FormData();
+            formData.append('campaign_id', id || '');
+            formData.append('script_template', brandScriptTemplate);
+            // Include existing brief data to preserve it
+            if (campaign) {
+                formData.append('video_title', campaign.video_title || '');
+                formData.append('primary_focus', campaign.primary_focus || '');
+                formData.append('secondary_focus', campaign.secondary_focus || '');
+                formData.append('dos', campaign.dos || '');
+                formData.append('donts', campaign.donts || '');
+                formData.append('cta', campaign.cta || '');
+            }
+
+            await brandApi.uploadBrief(formData);
+            showToast('Script template uploaded successfully!', 'success');
+            setIsScriptTemplateModalOpen(false);
+            // Refresh campaign
+            const data = await brandApi.getCampaigns() as any[];
+            const updatedCampaign = data.find(c => c.id === id);
+            if (updatedCampaign) {
+                setCampaign(updatedCampaign);
+                setBrandScriptTemplate(updatedCampaign.script_template || '');
+            }
+        } catch (error: any) {
+            console.error('Failed to upload script template:', error);
+            showToast(error.message || 'Failed to upload script template', 'error');
+        } finally {
+            setIsSubmittingScriptTemplate(false);
         }
     };
 
@@ -262,7 +314,7 @@ export const CampaignDetails: React.FC = () => {
             console.log('Updating follower ranges:', updateData);
             const response = await brandApi.updateCampaign(updateData);
             console.log('Update response:', response);
-            
+
             // Always refresh campaign data after successful update
             // The response should contain the updated campaign
             if (response) {
@@ -288,7 +340,7 @@ export const CampaignDetails: React.FC = () => {
                     setCampaign(found);
                 }
             }
-            
+
             showToast('Follower ranges updated successfully!', 'success');
             setIsEditFollowerRangesModalOpen(false);
         } catch (error: any) {
@@ -504,6 +556,30 @@ export const CampaignDetails: React.FC = () => {
                     </form>
                 </Modal>
 
+                {/* Script Template Modal */}
+                <Modal
+                    isOpen={isScriptTemplateModalOpen}
+                    onClose={() => setIsScriptTemplateModalOpen(false)}
+                    title="Script Template"
+                    subtitle="Create a script template for creators to see and finalize"
+                    size="xl"
+                >
+                    <form onSubmit={handleScriptTemplateSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+                        <TextArea
+                            label="Script Template"
+                            placeholder="Enter the script content that creators will see and finalize..."
+                            value={brandScriptTemplate}
+                            onChange={(e: any) => setBrandScriptTemplate(e.target.value)}
+                            required
+                            rows={15}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-4)', marginTop: 'var(--space-4)' }}>
+                            <Button variant="ghost" onClick={() => setIsScriptTemplateModalOpen(false)}>Cancel</Button>
+                            <Button type="submit" isLoading={isSubmittingScriptTemplate}>Upload Script Template</Button>
+                        </div>
+                    </form>
+                </Modal>
+
                 {/* Edit Follower Ranges Modal */}
                 <Modal
                     isOpen={isEditFollowerRangesModalOpen}
@@ -688,12 +764,13 @@ export const CampaignDetails: React.FC = () => {
                                             <th>Instagram</th>
                                             <th>Status</th>
                                             <th>Amount</th>
+                                            <th style={{ textAlign: 'right' }}>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {creators.length === 0 ? (
                                             <tr>
-                                                <td colSpan={4} style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--color-text-tertiary)' }}>
+                                                <td colSpan={5} style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--color-text-tertiary)' }}>
                                                     No creators added yet. Upload a creators sheet to get started.
                                                 </td>
                                             </tr>
@@ -726,11 +803,56 @@ export const CampaignDetails: React.FC = () => {
                                                         )}
                                                     </td>
                                                     <td>
-                                                        <span className={`status-badge ${creator.status === 'accepted' ? 'status-active' : 'status-planning'}`}>
+                                                        <span className={`status-badge ${creator.status === 'accepted' || creator.status === 'shortlisted' ? 'status-active' : creator.status === 'rejected' ? 'status-error' : 'status-planning'}`}>
                                                             {creator.status || 'Pending'}
                                                         </span>
                                                     </td>
                                                     <td>₹{creator.amount || creator.final_amount || '0'}</td>
+                                                    <td style={{ textAlign: 'right', display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            onClick={async () => {
+                                                                if (!id) return;
+                                                                try {
+                                                                    await brandApi.updateCreatorStatuses(id, [{
+                                                                        creator_id: creator.id || creator.creator_id,
+                                                                        status: 'accepted'
+                                                                    }]);
+                                                                    showToast('Creator accepted successfully', 'success');
+                                                                    // Refresh list
+                                                                    const creatorsData: any = await brandApi.getCampaignCreators(id);
+                                                                    setCreators(Array.isArray(creatorsData) ? creatorsData : (creatorsData?.creators || []));
+                                                                } catch (err: any) {
+                                                                    showToast('Failed to update status', 'error');
+                                                                }
+                                                            }}
+                                                        >
+                                                            Accept
+                                                        </Button>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            style={{ color: 'var(--color-error)' }}
+                                                            onClick={async () => {
+                                                                if (!id) return;
+                                                                try {
+                                                                    await brandApi.updateCreatorStatuses(id, [{
+                                                                        creator_id: creator.id || creator.creator_id,
+                                                                        status: 'rejected'
+                                                                    }]);
+                                                                    showToast('Creator rejected', 'info');
+                                                                    // Refresh list
+                                                                    const creatorsData: any = await brandApi.getCampaignCreators(id);
+                                                                    setCreators(Array.isArray(creatorsData) ? creatorsData : (creatorsData?.creators || []));
+                                                                } catch (err: any) {
+                                                                    showToast('Failed to update status', 'error');
+                                                                }
+                                                            }}
+                                                        >
+                                                            Reject
+                                                        </Button>
+                                                    </td>
                                                 </tr>
                                             ))
                                         )}
@@ -760,14 +882,12 @@ export const CampaignDetails: React.FC = () => {
                                             <th>Creator's Proposal</th>
                                             <th>Your Proposal</th>
                                             <th>Status</th>
-                                            <th>Notes</th>
-                                            <th style={{ textAlign: 'right' }}>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {bids.length === 0 ? (
                                             <tr>
-                                                <td colSpan={6} style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--color-text-tertiary)' }}>
+                                                <td colSpan={4} style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--color-text-tertiary)' }}>
                                                     No negotiation proposals received yet.
                                                 </td>
                                             </tr>
@@ -796,78 +916,94 @@ export const CampaignDetails: React.FC = () => {
                                                                 ₹{bid.final_amount.toLocaleString()}
                                                             </span>
                                                         ) : (
-                                                            <span style={{ color: 'var(--color-text-tertiary)' }}>Not proposed</span>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                                                                {bid.proposed_amount ? (
+                                                                    <span style={{ fontWeight: 'var(--font-medium)', color: 'var(--color-warning)' }}>
+                                                                        Offered: ₹{bid.proposed_amount.toLocaleString()}
+                                                                    </span>
+                                                                ) : (
+                                                                    <span style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)' }}>No offer yet</span>
+                                                                )}
+
+                                                                {(bid.status === 'bid_pending' || bid.status === 'amount_negotiated' || bid.status === 'pending') && (
+                                                                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={async () => {
+                                                                                if (!id) return;
+                                                                                const creatorId = bid.creator_id || bid.id;
+                                                                                try {
+                                                                                    await brandApi.respondToCreatorBid(id, creatorId, 'accept');
+                                                                                    showToast('Negotiation accepted', 'success');
+                                                                                    const bidsData: any = await brandApi.getCreatorBids(id);
+                                                                                    setBids(Array.isArray(bidsData) ? bidsData : (bidsData?.bids || bidsData?.creators || []));
+                                                                                } catch (error: any) {
+                                                                                    showToast(error.message || 'Failed to accept', 'error');
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            Accept
+                                                                        </Button>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            onClick={() => {
+                                                                                const amount = prompt("Enter counter offer amount:");
+                                                                                if (amount) {
+                                                                                    const numAmount = parseFloat(amount);
+                                                                                    if (isNaN(numAmount)) {
+                                                                                        showToast('Invalid amount', 'error');
+                                                                                        return;
+                                                                                    }
+                                                                                    (async () => {
+                                                                                        if (!id) return;
+                                                                                        const creatorId = bid.creator_id || bid.id;
+                                                                                        try {
+                                                                                            await brandApi.respondToCreatorBid(id, creatorId, 'accept', numAmount);
+                                                                                            showToast('Counter offer sent', 'success');
+                                                                                            const bidsData: any = await brandApi.getCreatorBids(id);
+                                                                                            setBids(Array.isArray(bidsData) ? bidsData : (bidsData?.bids || bidsData?.creators || []));
+                                                                                        } catch (error: any) {
+                                                                                            showToast(error.message || 'Failed to send counter offer', 'error');
+                                                                                        }
+                                                                                    })();
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            Counter
+                                                                        </Button>
+                                                                        <Button
+                                                                            variant="ghost"
+                                                                            size="sm"
+                                                                            style={{ color: 'var(--color-error)' }}
+                                                                            onClick={async () => {
+                                                                                if (!id) return;
+                                                                                const creatorId = bid.creator_id || bid.id;
+                                                                                try {
+                                                                                    await brandApi.respondToCreatorBid(id, creatorId, 'reject');
+                                                                                    showToast('Negotiation rejected', 'success');
+                                                                                    const bidsData: any = await brandApi.getCreatorBids(id);
+                                                                                    setBids(Array.isArray(bidsData) ? bidsData : (bidsData?.bids || bidsData?.creators || []));
+                                                                                } catch (error: any) {
+                                                                                    showToast(error.message || 'Failed to reject', 'error');
+                                                                                }
+                                                                            }}
+                                                                        >
+                                                                            Reject
+                                                                        </Button>
+                                                                    </div>
+                                                                )}
+                                                            </div>
                                                         )}
                                                     </td>
                                                     <td>
-                                                        <span className={`status-badge ${bid.status === 'accepted' ? 'status-active' : bid.status === 'rejected' ? 'status-error' : 'status-planning'}`}>
-                                                            {bid.status || 'Pending'}
+                                                        <span className={`status-badge ${bid.status === 'accepted' || bid.status === 'amount_finalized' ? 'status-active' : bid.status === 'rejected' || bid.status === 'amount_rejected' ? 'status-error' : 'status-planning'}`}>
+                                                            {bid.status === 'amount_finalized' ? 'Deal Agreed' :
+                                                                bid.status === 'amount_negotiated' ? 'Negotiating' :
+                                                                    bid.status === 'bid_pending' ? 'Bid Received' :
+                                                                        (bid.status || 'Pending')}
                                                         </span>
-                                                    </td>
-                                                    <td>{bid.notes || '-'}</td>
-                                                    <td style={{ textAlign: 'right' }}>
-                                                        {bid.status === 'pending' && (
-                                                            <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
-                                                                <Button 
-                                                                    variant="ghost" 
-                                                                    size="sm"
-                                                                    onClick={async () => {
-                                                                        if (!id) {
-                                                                            showToast('Campaign ID not found', 'error');
-                                                                            return;
-                                                                        }
-                                                                        const creatorId = bid.creator_id || bid.id;
-                                                                        if (!creatorId) {
-                                                                            showToast('Creator ID not found', 'error');
-                                                                            return;
-                                                                        }
-                                                                        try {
-                                                                            await brandApi.respondToCreatorBid(id, creatorId, 'accept');
-                                                                            showToast('Negotiation accepted', 'success');
-                                                                            // Refresh bids
-                                                                            const bidsData: any = await brandApi.getCreatorBids(id);
-                                                                            setBids(Array.isArray(bidsData) ? bidsData : (bidsData?.bids || []));
-                                                                        } catch (error: any) {
-                                                                            showToast(error.message || 'Failed to accept negotiation', 'error');
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                    Accept
-                                                                </Button>
-                                                                <Button 
-                                                                    variant="ghost" 
-                                                                    size="sm"
-                                                                    onClick={async () => {
-                                                                        if (!id) {
-                                                                            showToast('Campaign ID not found', 'error');
-                                                                            return;
-                                                                        }
-                                                                        const creatorId = bid.creator_id || bid.id;
-                                                                        if (!creatorId) {
-                                                                            showToast('Creator ID not found', 'error');
-                                                                            return;
-                                                                        }
-                                                                        try {
-                                                                            await brandApi.respondToCreatorBid(id, creatorId, 'reject');
-                                                                            showToast('Negotiation rejected', 'success');
-                                                                            // Refresh bids
-                                                                            const bidsData: any = await brandApi.getCreatorBids(id);
-                                                                            setBids(Array.isArray(bidsData) ? bidsData : (bidsData?.bids || []));
-                                                                        } catch (error: any) {
-                                                                            showToast(error.message || 'Failed to reject negotiation', 'error');
-                                                                        }
-                                                                    }}
-                                                                >
-                                                                    Reject
-                                                                </Button>
-                                                            </div>
-                                                        )}
-                                                        {bid.status !== 'pending' && (
-                                                            <Button variant="ghost" size="sm">
-                                                                <Eye size={16} />
-                                                                View
-                                                            </Button>
-                                                        )}
                                                     </td>
                                                 </tr>
                                             ))
@@ -880,71 +1016,110 @@ export const CampaignDetails: React.FC = () => {
                 )}
 
                 {activeTab === 'scripts' && (
-                    <Card className="content-card">
-                        <CardHeader>
-                            <div className="card-header-content">
-                                <h3>Creator Scripts ({scripts.length})</h3>
-                            </div>
-                        </CardHeader>
-                        <CardBody className="no-padding">
-                            <div className="table-responsive">
-                                <table className="creators-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Creator</th>
-                                            <th>Script</th>
-                                            <th>Status</th>
-                                            <th>Submitted</th>
-                                            <th style={{ textAlign: 'right' }}>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {scripts.length === 0 ? (
+                    <>
+                        <Card className="content-card">
+                            <CardHeader>
+                                <div className="card-header-content">
+                                    <h3>Script Template</h3>
+                                    <Button size="sm" onClick={() => setIsScriptTemplateModalOpen(true)}>
+                                        {campaignData?.script_template ? 'Update Script Template' : 'Create Script Template'}
+                                    </Button>
+                                </div>
+                            </CardHeader>
+                            <CardBody>
+                                {campaignData?.script_template ? (
+                                    <div style={{
+                                        background: 'var(--color-bg-secondary)',
+                                        padding: 'var(--space-4)',
+                                        borderRadius: 'var(--radius-md)',
+                                        border: '1px solid var(--color-border-subtle)',
+                                        whiteSpace: 'pre-wrap',
+                                        fontFamily: 'monospace',
+                                        fontSize: 'var(--text-sm)'
+                                    }}>
+                                        {campaignData.script_template}
+                                    </div>
+                                ) : (
+                                    <div style={{
+                                        background: 'var(--color-bg-secondary)',
+                                        padding: 'var(--space-4)',
+                                        borderRadius: 'var(--radius-md)',
+                                        border: '1px solid var(--color-border-subtle)',
+                                        textAlign: 'center',
+                                        color: 'var(--color-text-tertiary)'
+                                    }}>
+                                        No script template uploaded yet. Create one for creators to see and finalize.
+                                    </div>
+                                )}
+                            </CardBody>
+                        </Card>
+
+                        <Card className="content-card" style={{ marginTop: 'var(--space-6)' }}>
+                            <CardHeader>
+                                <div className="card-header-content">
+                                    <h3>Creator Scripts ({scripts.length})</h3>
+                                </div>
+                            </CardHeader>
+                            <CardBody className="no-padding">
+                                <div className="table-responsive">
+                                    <table className="creators-table">
+                                        <thead>
                                             <tr>
-                                                <td colSpan={5} style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--color-text-tertiary)' }}>
-                                                    No scripts submitted yet.
-                                                </td>
+                                                <th>Creator</th>
+                                                <th>Script</th>
+                                                <th>Status</th>
+                                                <th>Submitted</th>
+                                                <th style={{ textAlign: 'right' }}>Actions</th>
                                             </tr>
-                                        ) : (
-                                            scripts.map((script: any) => (
-                                                <tr key={script.id || script.creator_id}>
-                                                    <td>
-                                                        <div className="creator-cell">
-                                                            <div className="creator-avatar" style={{ width: 32, height: 32, fontSize: 16 }}>
-                                                                {script.avatar || '👤'}
-                                                            </div>
-                                                            <div>
-                                                                <div className="creator-name">{script.name || script.creator_name}</div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <div style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                            {script.script_content || script.content || '-'}
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <span className={`status-badge ${script.status === 'approved' ? 'status-active' : script.status === 'rejected' ? 'status-error' : 'status-planning'}`}>
-                                                            {script.status || 'Pending Review'}
-                                                        </span>
-                                                    </td>
-                                                    <td>{script.submitted_at || script.created_at || '-'}</td>
-                                                    <td style={{ textAlign: 'right', display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
-                                                        <Button variant="ghost" size="sm" onClick={() => handleReviewScript(script.creator_id || script.id, 'approved')}>
-                                                            ✓ Approve
-                                                        </Button>
-                                                        <Button variant="ghost" size="sm" onClick={() => handleReviewScript(script.creator_id || script.id, 'rejected')}>
-                                                            ✗ Reject
-                                                        </Button>
+                                        </thead>
+                                        <tbody>
+                                            {scripts.length === 0 ? (
+                                                <tr>
+                                                    <td colSpan={5} style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--color-text-tertiary)' }}>
+                                                        No scripts submitted yet.
                                                     </td>
                                                 </tr>
-                                            ))
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </CardBody>
-                    </Card>
+                                            ) : (
+                                                scripts.map((script: any) => (
+                                                    <tr key={script.id || script.creator_id}>
+                                                        <td>
+                                                            <div className="creator-cell">
+                                                                <div className="creator-avatar" style={{ width: 32, height: 32, fontSize: 16 }}>
+                                                                    {script.avatar || '👤'}
+                                                                </div>
+                                                                <div>
+                                                                    <div className="creator-name">{script.name || script.creator_name}</div>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <div style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                {script.script_content || script.content || '-'}
+                                                            </div>
+                                                        </td>
+                                                        <td>
+                                                            <span className={`status-badge ${script.status === 'approved' ? 'status-active' : script.status === 'rejected' ? 'status-error' : 'status-planning'}`}>
+                                                                {script.status || 'Pending Review'}
+                                                            </span>
+                                                        </td>
+                                                        <td>{script.submitted_at || script.created_at || '-'}</td>
+                                                        <td style={{ textAlign: 'right', display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
+                                                            <Button variant="ghost" size="sm" onClick={() => handleReviewScript(script.creator_id || script.id, 'approved')}>
+                                                                ✓ Approve
+                                                            </Button>
+                                                            <Button variant="ghost" size="sm" onClick={() => handleReviewScript(script.creator_id || script.id, 'rejected')}>
+                                                                ✗ Reject
+                                                            </Button>
+                                                        </td>
+                                                    </tr>
+                                                ))
+                                            )}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </CardBody>
+                        </Card>
+                    </>
                 )}
 
                 {activeTab === 'content' && (
