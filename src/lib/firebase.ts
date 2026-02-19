@@ -1,5 +1,7 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
+import type { FirebaseApp } from 'firebase/app';
+import type { Auth } from 'firebase/auth';
 
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -31,8 +33,8 @@ if (missingVars.length > 0 && import.meta.env.DEV) {
 }
 
 // Initialize Firebase (singleton pattern)
-let app;
-let auth;
+let app!: FirebaseApp;
+let auth!: Auth;
 
 try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
