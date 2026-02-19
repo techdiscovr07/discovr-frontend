@@ -53,12 +53,14 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
                 if (result.status !== 'fulfilled' || !result.value) return campaign;
                 const bid = result.value as any;
                 const status = bid?.status ?? campaign?.status;
-                const final_amount = bid?.final_amount ?? bid?.proposed_amount ?? campaign?.final_amount;
+                const final_amount = bid?.final_amount ?? campaign?.final_amount;
+                const proposed_amount = bid?.proposed_amount ?? campaign?.proposed_amount;
                 const bid_amount = bid?.bid_amount ?? campaign?.bid_amount;
                 return {
                     ...campaign,
                     status,
                     final_amount,
+                    proposed_amount,
                     bid_amount: bid_amount ?? campaign?.bid_amount,
                 };
             });
@@ -134,9 +136,24 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
             status === 'accepted'
         );
     };
+    const hasCreatorProposal = (campaign: any) => parseAmount(campaign?.bid_amount) > 0;
+    const isBrandAcceptedCreatorOffer = (campaign: any) => {
+        const status = getWorkflowStatus(campaign);
+        return status === 'accepted' && hasCreatorProposal(campaign);
+    };
     const isDealAcceptedOrFinalized = (campaign: any) => {
         const status = getWorkflowStatus(campaign);
-        return status === 'accepted' || status === 'amount_finalized';
+        return status === 'amount_finalized' || isBrandAcceptedCreatorOffer(campaign);
+    };
+    const parseAmount = (value: any): number => {
+        if (value === null || value === undefined) return 0;
+        if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+        const cleaned = String(value).replace(/[^0-9.]/g, '');
+        const parsed = Number(cleaned);
+        return Number.isFinite(parsed) ? parsed : 0;
+    };
+    const getBrandOfferAmount = (campaign: any): number => {
+        return parseAmount(campaign?.final_amount) || parseAmount(campaign?.proposed_amount) || parseAmount(campaign?.amount);
     };
     const formatINR = (value?: number | string) => {
         const num = Number(value);
@@ -155,10 +172,17 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
     };
     const getStatusLabel = (campaign: any) => {
         const status = getWorkflowStatus(campaign);
+        if (status === 'amount_finalized') return 'Deal Accepted';
+        if (status === 'accepted') return hasCreatorProposal(campaign) ? 'Deal Accepted' : 'Open to Negotiate';
         if (status === 'bid_pending') return 'Bid Submitted';
         if (status === 'amount_negotiated' || status === 'in_negotiation' || status === 'negotiation') return 'In Negotiation';
-        if (status === 'accepted' || status === 'amount_finalized') return 'Deal Accepted';
         return campaign?.status || 'Pending';
+    };
+    const getNegotiationMessage = (campaign: any) => {
+        if (isDealAcceptedOrFinalized(campaign)) return 'Brand accepted your offer.';
+        if (parseAmount(campaign?.bid_amount) > 0) return 'Brand is reviewing your amount.';
+        if (getBrandOfferAmount(campaign) > 0) return 'Brand sent an offer. You can update your proposal.';
+        return '';
     };
     const getProgressValue = (campaign: any) => {
         const progress = Number(campaign?.progress);
@@ -310,44 +334,28 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
                         <div className="creator-campaign-actions">
                             {isNegotiationStatus(campaign) && (
                                 <div className="creator-negotiation-note">
-                                    {campaign.final_amount && Number(campaign.final_amount) > 0
-                                        ? `Brand Offer: ${formatINR(campaign.final_amount)}`
-                                        : campaign.bid_amount && Number(campaign.bid_amount) > 0
-                                            ? `Your Proposal: ${formatINR(campaign.bid_amount)}`
+                                    {parseAmount(campaign?.bid_amount) > 0
+                                        ? `Your Proposal: ${formatINR(parseAmount(campaign.bid_amount))}`
+                                        : getBrandOfferAmount(campaign) > 0
+                                            ? `Brand Offer: ${formatINR(getBrandOfferAmount(campaign))}`
                                             : 'No offer yet'}
                                 </div>
                             )}
-                            {/* Show Accept/Negotiate only when brand has proposed and deal not yet accepted/finalized */}
-                            {Number(campaign.final_amount) > 0 &&
-                             isNegotiationStatus(campaign) && !isDealAcceptedOrFinalized(campaign) && (
-                                <>
-                                    <Button
-                                        size="sm"
-                                        fullWidth
-                                        variant="primary"
-                                        onClick={() => handleOpenModal(campaign, 'accept-deal')}
-                                    >
-                                        Accept Deal
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        fullWidth
-                                        variant="secondary"
-                                        onClick={() => handleOpenModal(campaign, 'negotiate')}
-                                    >
-                                        Negotiate
-                                    </Button>
-                                </>
+                            {isNegotiationStatus(campaign) && (
+                                getNegotiationMessage(campaign) ? (
+                                    <div className="creator-negotiation-note">
+                                        {getNegotiationMessage(campaign)}
+                                    </div>
+                                ) : null
                             )}
-                            {/* Show Negotiate button if in negotiate/negotiation stage but no brand proposal yet, and deal not accepted */}
-                            {isNegotiationStatus(campaign) && !isDealAcceptedOrFinalized(campaign) &&
-                             !(Number(campaign.final_amount) > 0) && (
+                            {/* Keep only negotiation/update on creator end (no accept/decline buttons). */}
+                            {isNegotiationStatus(campaign) && !isDealAcceptedOrFinalized(campaign) && (
                                 <Button
                                     size="sm"
                                     fullWidth
                                     onClick={() => handleOpenModal(campaign, 'negotiate')}
                                 >
-                                    {campaign.bid_amount && campaign.bid_amount > 0 ? 'Update Proposal' : 'Start Negotiation'}
+                                    {parseAmount(campaign?.bid_amount) > 0 ? 'Update Proposal' : 'Start Negotiation'}
                                 </Button>
                             )}
                             {campaign.stage === 'script' && (
@@ -466,11 +474,11 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
                         {modalType === 'negotiate' && (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                                 <p style={{ fontSize: 'var(--text-base)', color: 'var(--color-text-secondary)' }}>
-                                    {selectedCampaign?.final_amount 
-                                        ? `The brand has proposed ₹${selectedCampaign.final_amount.toLocaleString()}. Enter your counter-proposal amount.`
+                                    {getBrandOfferAmount(selectedCampaign) > 0
+                                        ? `The brand has proposed ₹${getBrandOfferAmount(selectedCampaign).toLocaleString('en-IN')}. Enter your counter-proposal amount.`
                                         : 'Enter your proposed amount for this campaign. The brand will review your proposal and may accept, negotiate, or reject it.'}
                                 </p>
-                                {selectedCampaign?.final_amount && (
+                                {getBrandOfferAmount(selectedCampaign) > 0 && (
                                     <div style={{ 
                                         padding: 'var(--space-4)', 
                                         background: 'var(--color-bg-secondary)', 
@@ -481,7 +489,7 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
                                             Brand's Proposal
                                         </p>
                                         <p style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-text-primary)' }}>
-                                            ₹{selectedCampaign.final_amount.toLocaleString()}
+                                            ₹{getBrandOfferAmount(selectedCampaign).toLocaleString('en-IN')}
                                         </p>
                                     </div>
                                 )}
@@ -507,7 +515,7 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
                                 <p style={{ fontSize: 'var(--text-base)', color: 'var(--color-text-secondary)' }}>
                                     Are you sure you want to accept the brand's proposed deal?
                                 </p>
-                                {selectedCampaign?.final_amount && (
+                                {getBrandOfferAmount(selectedCampaign) > 0 && (
                                     <div style={{ 
                                         padding: 'var(--space-6)', 
                                         background: 'var(--color-bg-secondary)', 
@@ -518,7 +526,7 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
                                             Deal Amount
                                         </p>
                                         <p style={{ fontSize: 'var(--text-3xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-success)' }}>
-                                            ₹{selectedCampaign.final_amount.toLocaleString()}
+                                            ₹{getBrandOfferAmount(selectedCampaign).toLocaleString('en-IN')}
                                         </p>
                                     </div>
                                 )}

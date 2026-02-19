@@ -71,6 +71,10 @@ export const CampaignDetails: React.FC = () => {
     const [isAIContentAnalyzing, setIsAIContentAnalyzing] = useState(false);
     const [contentAnalysisProgress, setContentAnalysisProgress] = useState(0);
     const [isSubmittingAIContentReview, setIsSubmittingAIContentReview] = useState(false);
+    const [isCounterModalOpen, setIsCounterModalOpen] = useState(false);
+    const [counterBid, setCounterBid] = useState<any | null>(null);
+    const [counterAmount, setCounterAmount] = useState('');
+    const [isSubmittingCounter, setIsSubmittingCounter] = useState(false);
 
     const getScriptStatusMeta = (rawStatus: string) => {
         const status = String(rawStatus || '').toLowerCase();
@@ -417,6 +421,46 @@ export const CampaignDetails: React.FC = () => {
         setIsAIContentReviewOpen(true);
         setIsAIContentAnalyzing(true);
         setContentAnalysisProgress(0);
+    };
+
+    const openCounterModal = (bid: any) => {
+        const existingOffer =
+            Number(bid?.proposed_amount) > 0
+                ? String(bid.proposed_amount)
+                : (Number(bid?.final_amount) > 0 ? String(bid.final_amount) : '');
+        setCounterBid(bid);
+        setCounterAmount(existingOffer);
+        setIsCounterModalOpen(true);
+    };
+
+    const handleSubmitCounter = async () => {
+        if (!id || !counterBid) return;
+        const creatorId = getBidCreatorId(counterBid);
+        if (!creatorId) {
+            showToast('Creator ID not found for this bid', 'error');
+            return;
+        }
+        const amount = Number(counterAmount);
+        if (!Number.isFinite(amount) || amount <= 0) {
+            showToast('Enter a valid counter amount', 'error');
+            return;
+        }
+
+        setIsSubmittingCounter(true);
+        try {
+            await brandApi.respondToCreatorBid(id, creatorId, 'accept', amount);
+            showToast('Counter offer sent', 'success');
+            setIsCounterModalOpen(false);
+            setCounterBid(null);
+            setCounterAmount('');
+
+            const bidsData: any = await brandApi.getCreatorBids(id);
+            setBids(Array.isArray(bidsData) ? bidsData : (bidsData?.bids || bidsData?.creators || []));
+        } catch (error: any) {
+            showToast(error.message || 'Failed to send counter offer', 'error');
+        } finally {
+            setIsSubmittingCounter(false);
+        }
     };
 
     const handleSubmitAIContentReview = async (action: 'approved' | 'revision_requested') => {
@@ -1109,6 +1153,51 @@ export const CampaignDetails: React.FC = () => {
                     )}
                 </Modal>
 
+                {/* Counter Offer Modal */}
+                <Modal
+                    isOpen={isCounterModalOpen}
+                    onClose={() => {
+                        if (isSubmittingCounter) return;
+                        setIsCounterModalOpen(false);
+                        setCounterBid(null);
+                        setCounterAmount('');
+                    }}
+                    title="Send Counter Offer"
+                    subtitle={counterBid ? `Creator: ${counterBid.name || counterBid.creator_name || 'Unknown'}` : 'Enter your offer amount'}
+                    size="sm"
+                >
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                        <Input
+                            label="Counter Amount (INR)"
+                            type="number"
+                            min="1"
+                            value={counterAmount}
+                            onChange={(e: any) => setCounterAmount(e.target.value)}
+                            placeholder="Enter amount"
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
+                            <Button
+                                variant="ghost"
+                                onClick={() => {
+                                    if (isSubmittingCounter) return;
+                                    setIsCounterModalOpen(false);
+                                    setCounterBid(null);
+                                    setCounterAmount('');
+                                }}
+                            >
+                                Cancel
+                            </Button>
+                            <Button
+                                onClick={handleSubmitCounter}
+                                isLoading={isSubmittingCounter}
+                                disabled={!counterAmount || Number(counterAmount) <= 0}
+                            >
+                                Send Counter
+                            </Button>
+                        </div>
+                    </div>
+                </Modal>
+
                 {/* Edit Follower Ranges Modal */}
                 <Modal
                     isOpen={isEditFollowerRangesModalOpen}
@@ -1481,6 +1570,14 @@ export const CampaignDetails: React.FC = () => {
                                                                                     }}
                                                                                 >
                                                                                     Accept
+                                                                                </Button>
+                                                                                <Button
+                                                                                    variant="ghost"
+                                                                                    size="sm"
+                                                                                    style={{ color: 'var(--color-warning)' }}
+                                                                                    onClick={() => openCounterModal(bid)}
+                                                                                >
+                                                                                    Counter
                                                                                 </Button>
                                                                                 <Button
                                                                                     variant="ghost"

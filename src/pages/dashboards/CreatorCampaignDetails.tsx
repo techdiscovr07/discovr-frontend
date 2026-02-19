@@ -80,12 +80,28 @@ export const CreatorCampaignDetails: React.FC = () => {
     })();
 
     const currentWorkflowStatus = String(briefData?.status || campaignData?.status || '').toLowerCase();
+    const parseAmount = (value: any): number => {
+        if (value === null || value === undefined) return 0;
+        if (typeof value === 'number') return Number.isFinite(value) ? value : 0;
+        const cleaned = String(value).replace(/[^0-9.]/g, '');
+        const parsed = Number(cleaned);
+        return Number.isFinite(parsed) ? parsed : 0;
+    };
     const canUploadContent =
         currentWorkflowStatus === 'script_approved' ||
         currentWorkflowStatus === 'content_rejected' ||
         currentWorkflowStatus === 'content_revision_requested';
     const isContentUnderBrandReview = currentWorkflowStatus === 'content_pending';
     const canGoLive = currentWorkflowStatus === 'content_approved';
+    const negotiationStatusKey = String(negotiationStatus?.status || '').toLowerCase();
+    const creatorBidAmount = parseAmount(negotiationStatus?.bid_amount) || parseAmount(campaignData?.bid_amount);
+    const isBrandAcceptedCreatorOffer = negotiationStatusKey === 'accepted' && creatorBidAmount > 0;
+    const brandOfferAmount =
+        parseAmount(negotiationStatus?.final_amount) ||
+        parseAmount(negotiationStatus?.proposed_amount) ||
+        parseAmount(campaignData?.final_amount) ||
+        parseAmount(campaignData?.proposed_amount) ||
+        parseAmount(campaignData?.amount);
     // Check multiple sources for final_amount
     const finalAmountFromAllSources = 
         negotiationStatus?.final_amount || 
@@ -94,13 +110,10 @@ export const CreatorCampaignDetails: React.FC = () => {
         briefData?.campaign?.final_amount;
     const dealIsFinalized =
         (finalAmountFromAllSources && Number(finalAmountFromAllSources) > 0) ||
-        negotiationStatus?.status === 'accepted' ||
+        isBrandAcceptedCreatorOffer ||
         negotiationStatus?.status === 'amount_finalized' ||
-        campaignData?.negotiation_status === 'accepted' ||
         campaignData?.negotiation_status === 'amount_finalized' ||
-        briefData?.status === 'accepted' ||
         briefData?.status === 'amount_finalized' ||
-        currentWorkflowStatus === 'accepted' ||
         currentWorkflowStatus === 'amount_finalized';
     const scriptNeedsRevision =
         currentWorkflowStatus === 'script_revision_requested' ||
@@ -744,19 +757,14 @@ export const CreatorCampaignDetails: React.FC = () => {
                                 Link Campaign
                             </Button>
                         )}
-                        {negotiationStatus && negotiationStatus.final_amount && negotiationStatus.final_amount > 0 &&
-                            (negotiationStatus.status === 'bid_pending' || negotiationStatus.status === 'amount_negotiated' || !negotiationStatus.status) && (
-                                <>
-                                    <Button variant="primary" onClick={() => setModalType('accept-deal')}>
-                                        Accept Deal
-                                    </Button>
-                                    <Button variant="secondary" onClick={() => setModalType('negotiate')}>
-                                        Negotiate
-                                    </Button>
-                                </>
+                        {negotiationStatus && !isBrandAcceptedCreatorOffer && brandOfferAmount > 0 &&
+                            (negotiationStatusKey === 'accepted' || negotiationStatusKey === 'bid_pending' || negotiationStatusKey === 'amount_negotiated' || !negotiationStatusKey) && (
+                                <Button variant="secondary" onClick={() => setModalType('negotiate')}>
+                                    {negotiationStatus.bid_amount && Number(negotiationStatus.bid_amount) > 0 ? 'Update Bid' : 'Negotiate'}
+                                </Button>
                             )}
-                        {negotiationStatus && (!negotiationStatus.final_amount || negotiationStatus.final_amount <= 0) &&
-                            (negotiationStatus.status === 'bid_pending' || negotiationStatus.status === 'amount_negotiated' || !negotiationStatus.status) && (
+                        {negotiationStatus && !isBrandAcceptedCreatorOffer && brandOfferAmount <= 0 &&
+                            (negotiationStatusKey === 'accepted' || negotiationStatusKey === 'bid_pending' || negotiationStatusKey === 'amount_negotiated' || !negotiationStatusKey) && (
                                 <Button variant="ghost" onClick={() => setModalType('negotiate')}>
                                     {negotiationStatus.bid_amount && negotiationStatus.bid_amount > 0 ? 'Update Proposal' : 'Start Negotiation'}
                                 </Button>
@@ -1042,8 +1050,8 @@ export const CreatorCampaignDetails: React.FC = () => {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <span style={{ color: 'var(--color-text-secondary)' }}>Status</span>
-                                            <span className={`status-badge ${(negotiationStatus.status === 'amount_finalized' || negotiationStatus.status === 'accepted') ? 'status-active' : negotiationStatus.status === 'rejected' ? 'status-error' : 'status-planning'}`}>
-                                                {negotiationStatus.status === 'accepted' ? 'Deal Accepted' :
+                                            <span className={`status-badge ${(negotiationStatus.status === 'amount_finalized' || isBrandAcceptedCreatorOffer) ? 'status-active' : negotiationStatus.status === 'rejected' ? 'status-error' : 'status-planning'}`}>
+                                                {negotiationStatus.status === 'accepted' ? (isBrandAcceptedCreatorOffer ? 'Deal Accepted' : 'Brand Reviewing') :
                                                     negotiationStatus.status === 'bid_pending' ? 'Bid Submitted' :
                                                         negotiationStatus.status === 'amount_negotiated' ? 'Negotiating' :
                                                             negotiationStatus.status === 'amount_finalized' ? 'Deal Agreed' :
@@ -1057,44 +1065,42 @@ export const CreatorCampaignDetails: React.FC = () => {
                                                 <span style={{ fontWeight: 'var(--font-bold)' }}>{formatINR(negotiationStatus.bid_amount)}</span>
                                             </div>
                                         )}
-                                        {Number(negotiationStatus?.final_amount) > 0 && (
+                                        {brandOfferAmount > 0 && (
                                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                                 <span style={{ color: 'var(--color-text-secondary)' }}>Brand's Proposal</span>
-                                                <span style={{ fontWeight: 'var(--font-bold)', color: 'var(--color-success)' }}>{formatINR(negotiationStatus.final_amount)}</span>
+                                                <span style={{ fontWeight: 'var(--font-bold)', color: 'var(--color-success)' }}>{formatINR(brandOfferAmount)}</span>
                                             </div>
                                         )}
                                         {/* Show Accept Deal / Decline / Update Bid only when not yet accepted by brand (not accepted and not amount_finalized) */}
-                                        {(negotiationStatus.status === 'amount_negotiated' || negotiationStatus.status === 'bid_pending') && (
+                                        {!isBrandAcceptedCreatorOffer && (negotiationStatusKey === 'accepted' || negotiationStatus.status === 'amount_negotiated' || negotiationStatus.status === 'bid_pending') && (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                                                {Number(negotiationStatus?.final_amount) > 0 && (
-                                                    <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-                                                        <Button onClick={() => setModalType('accept-deal')} fullWidth variant="primary">
-                                                            Accept Deal
-                                                        </Button>
-                                                        <Button
-                                                            onClick={() => setModalType('reject-deal')}
-                                                            fullWidth
-                                                            variant="outline"
-                                                            style={{ borderColor: 'var(--color-error)', color: 'var(--color-error)' }}
-                                                        >
-                                                            Decline
-                                                        </Button>
+                                                {Number(negotiationStatus?.bid_amount) > 0 && (
+                                                    <div style={{
+                                                        padding: 'var(--space-3)',
+                                                        background: 'rgba(59, 130, 246, 0.08)',
+                                                        borderRadius: 'var(--radius-md)',
+                                                        textAlign: 'center',
+                                                        fontSize: 'var(--text-sm)',
+                                                        color: 'var(--color-text-secondary)'
+                                                    }}>
+                                                        Brand is reviewing your amount.
                                                     </div>
                                                 )}
-                                                <Button onClick={() => setModalType('negotiate')} fullWidth variant={Number(negotiationStatus?.final_amount) > 0 ? "secondary" : "primary"}>
+                                                <Button onClick={() => setModalType('negotiate')} fullWidth variant={brandOfferAmount > 0 ? "secondary" : "primary"}>
                                                     {negotiationStatus.bid_amount ? 'Update Bid' : 'Make an Offer'}
                                                 </Button>
                                             </div>
                                         )}
                                         {/* Show start/update negotiation button if no brand proposal yet */}
-                                        {(Number(negotiationStatus?.final_amount) <= 0) &&
-                                            (negotiationStatus.status === 'bid_pending' || negotiationStatus.status === 'amount_negotiated' || !negotiationStatus.status) && (
+                                        {(brandOfferAmount <= 0) &&
+                                            !isBrandAcceptedCreatorOffer &&
+                                            (negotiationStatusKey === 'accepted' || negotiationStatus.status === 'bid_pending' || negotiationStatus.status === 'amount_negotiated' || !negotiationStatus.status) && (
                                                 <Button onClick={() => setModalType('negotiate')} fullWidth variant="secondary">
                                                     {negotiationStatus.bid_amount && negotiationStatus.bid_amount > 0 ? 'Update Proposal' : 'Start Negotiation'}
                                                 </Button>
                                             )}
                                         {/* Show deal accepted/finalized message when brand has accepted (accepted or amount_finalized) */}
-                                        {(negotiationStatus.status === 'amount_finalized' || negotiationStatus.status === 'accepted') && (
+                                        {(negotiationStatus.status === 'amount_finalized' || isBrandAcceptedCreatorOffer) && (
                                             <div style={{
                                                 padding: 'var(--space-3)',
                                                 background: 'rgba(34, 197, 94, 0.1)',
@@ -1102,11 +1108,11 @@ export const CreatorCampaignDetails: React.FC = () => {
                                                 textAlign: 'center'
                                             }}>
                                                 <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-2)' }}>
-                                                    {negotiationStatus.status === 'amount_finalized' ? 'Deal Finalized' : 'Deal Accepted'}
+                                                    {negotiationStatus.status === 'amount_finalized' ? 'Deal Finalized' : 'Brand Accepted Your Offer'}
                                                 </p>
-                                                {Number(negotiationStatus?.final_amount) > 0 && (
+                                                {brandOfferAmount > 0 && (
                                                     <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-bold)', color: 'var(--color-success)' }}>
-                                                        {formatINR(negotiationStatus.final_amount)}
+                                                        {formatINR(brandOfferAmount)}
                                                     </p>
                                                 )}
                                             </div>
@@ -1393,10 +1399,10 @@ export const CreatorCampaignDetails: React.FC = () => {
                     isOpen={modalType === 'negotiate'}
                     onClose={() => !isNegotiating && setModalType(null)}
                     title="Negotiate Deal"
-                    subtitle={negotiationStatus?.final_amount ? "Propose a counter-amount" : "Enter your proposed amount"}
+                    subtitle={brandOfferAmount > 0 ? "Propose a counter-amount" : "Enter your proposed amount"}
                 >
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                        {negotiationStatus?.final_amount && (
+                        {brandOfferAmount > 0 && (
                             <div style={{
                                 padding: 'var(--space-4)',
                                 background: 'var(--color-bg-secondary)',
@@ -1407,7 +1413,7 @@ export const CreatorCampaignDetails: React.FC = () => {
                                     Brand's Proposal
                                 </p>
                                 <p style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-text-primary)' }}>
-                                    ₹{negotiationStatus.final_amount.toLocaleString()}
+                                    ₹{brandOfferAmount.toLocaleString('en-IN')}
                                 </p>
                             </div>
                         )}
@@ -1442,7 +1448,7 @@ export const CreatorCampaignDetails: React.FC = () => {
                             <p style={{ fontSize: 'var(--text-base)', color: 'var(--color-text-secondary)' }}>
                                 Are you sure you want to accept the brand's proposed deal?
                             </p>
-                            {negotiationStatus?.final_amount && (
+                            {brandOfferAmount > 0 && (
                                 <div style={{
                                     padding: 'var(--space-6)',
                                     background: 'var(--color-bg-secondary)',
@@ -1453,7 +1459,7 @@ export const CreatorCampaignDetails: React.FC = () => {
                                         Final Amount
                                     </p>
                                     <p style={{ fontSize: 'var(--text-3xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-success)' }}>
-                                        ₹{negotiationStatus.final_amount.toLocaleString()}
+                                        ₹{brandOfferAmount.toLocaleString('en-IN')}
                                     </p>
                                 </div>
                             )}
