@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button, Modal, LoadingSpinner, Card, CardBody } from '../../../components';
 import {
     Users,
@@ -27,21 +27,23 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
     onModalClose
 }) => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { showToast } = useToast();
     const [internalModalOpen, setInternalModalOpen] = useState(false);
     const [campaigns, setCampaigns] = useState<any[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isMatchingDialogOpen, setIsMatchingDialogOpen] = useState(false);
+    const [matchingDialogCampaignName, setMatchingDialogCampaignName] = useState('');
 
     // Use external modal state if provided, otherwise use internal state
     const isModalOpen = externalModalOpen !== undefined ? externalModalOpen : internalModalOpen;
 
 
-    const fetchCampaigns = async () => {
-        setIsLoading(true);
+    const fetchCampaigns = async (silent = false) => {
+        if (!silent) setIsLoading(true);
         try {
             const data = await brandApi.getCampaigns() as any;
-            // Handle both array response and object {campaigns: []} response
             if (Array.isArray(data)) {
                 setCampaigns(data);
             } else if (data && Array.isArray(data.campaigns)) {
@@ -53,7 +55,7 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
             console.error('Failed to fetch campaigns:', error);
             setCampaigns([]);
         } finally {
-            setIsLoading(false);
+            if (!silent) setIsLoading(false);
         }
     };
 
@@ -65,9 +67,20 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
         return 0;
     };
 
+    const prevPathRef = useRef(location.pathname);
+
     useEffect(() => {
         fetchCampaigns();
     }, []);
+
+    // Refetch when returning from campaign details so status updates (e.g. after admin uploads creators) are reflected
+    useEffect(() => {
+        const prev = prevPathRef.current;
+        prevPathRef.current = location.pathname;
+        if (prev.startsWith('/brand/campaign/') && location.pathname === '/brand/dashboard') {
+            fetchCampaigns(true);
+        }
+    }, [location.pathname]);
 
     const handleModalClose = () => {
         if (onModalClose) {
@@ -75,6 +88,25 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
         } else {
             setInternalModalOpen(false);
         }
+    };
+
+    const normalizeStatus = (status: any) =>
+        String(status || '')
+            .toLowerCase()
+            .replace(/\s+/g, '_');
+
+    const isCreatorMatchingInProgress = (campaign: any) => {
+        const status = normalizeStatus(campaign?.status);
+        return status === 'awaiting_creators' || status === 'creator_review';
+    };
+
+    /** True when admin has uploaded creators and brand should review (creator_review). */
+    const hasCreatorsShortlisted = (campaign: any) =>
+        normalizeStatus(campaign?.status) === 'creator_review';
+
+    const openMatchingDialog = (campaignName: string) => {
+        setMatchingDialogCampaignName(campaignName || 'this campaign');
+        setIsMatchingDialogOpen(true);
     };
     const defaultCategories = [
         'Fashion', 'Beauty', 'Lifestyle', 'Food', 'Travel',
@@ -149,9 +181,10 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
                 follower_ranges: formData.followerRanges
             };
 
-            await brandApi.createCampaign(campaignData);
+            const createdCampaign = await brandApi.createCampaign(campaignData) as any;
             handleModalClose();
-            showToast('Campaign created successfully!', 'success');
+            showToast('Campaign created successfully', 'success');
+            openMatchingDialog(createdCampaign?.name || campaignData.name);
             fetchCampaigns(); // Refresh list
             // Reset form
             setFormData({
@@ -214,15 +247,34 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
     };
 
     const getStatusColor = (status: string) => {
+        const normalized = normalizeStatus(status);
         const statusMap: Record<string, string> = {
-            'Active': 'status-active',
-            'Negotiate': 'status-negotiate',
-            'Content Review': 'status-content-review',
-            'Planning': 'status-planning',
-            'Completed': 'status-completed',
-            'Awaiting Brief': 'status-planning'
+            active: 'status-active',
+            negotiate: 'status-negotiate',
+            content_review: 'status-content-review',
+            planning: 'status-planning',
+            completed: 'status-completed',
+            awaiting_creators: 'status-planning',
+            creator_review: 'status-planning',
+            creator_negotiation: 'status-negotiate',
+            brief_pending: 'status-planning',
+            script_review: 'status-content-review'
         };
-        return statusMap[status] || 'status-default';
+        return statusMap[normalized] || 'status-default';
+    };
+
+    const getStatusLabel = (status: string) => {
+        const normalized = normalizeStatus(status);
+        const labels: Record<string, string> = {
+            awaiting_creators: 'Awaiting Creators',
+            creator_review: 'Creator Review',
+            creator_negotiation: 'Creator Negotiation',
+            brief_pending: 'Brief Pending',
+            script_review: 'Script Review',
+            content_review: 'Content Review',
+            completed: 'Completed'
+        };
+        return labels[normalized] || status;
     };
 
     const filteredCampaigns = useMemo(() => {
@@ -598,6 +650,29 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
                 </form>
             </Modal>
 
+            <Modal
+                isOpen={isMatchingDialogOpen}
+                onClose={() => setIsMatchingDialogOpen(false)}
+                title="Campaign created successfully"
+                subtitle="Creator matching in progress"
+                size="md"
+            >
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                    <div className="campaign-matching-dialog-note">
+                        <p style={{ margin: 0, color: 'var(--color-text-primary)', lineHeight: 1.6 }}>
+                            We are finding suitable and best candidates for this campaign.
+                            Please give us some time. We are matching creators for{' '}
+                            <strong>{matchingDialogCampaignName}</strong>.
+                        </p>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <Button onClick={() => setIsMatchingDialogOpen(false)}>
+                            Got it
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
+
             <div className="campaigns-container animate-fade-in">
                 {/* Campaigns Grid */}
                 <div className="campaigns-grid">
@@ -612,13 +687,14 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
                             ? campaign.creator_categories
                             : [];
                         const description: string = campaign.description || '';
+                        const isMatching = isCreatorMatchingInProgress(campaign);
 
                         return (
                             <Card key={campaign.id} className="campaign-list-card">
                                 <CardBody>
                                     <div className="campaign-top-bar">
                                         <span className={`status-pill ${getStatusColor(campaign.status)}`}>
-                                            {campaign.status}
+                                            {getStatusLabel(campaign.status)}
                                         </span>
                                         <div className="dates-info">
                                             <Calendar size={14} />
@@ -632,6 +708,17 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
                                         <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', lineHeight: 1.5, margin: 'var(--space-3) 0' }}>
                                             {description.length > 120 ? `${description.slice(0, 120)}...` : description}
                                         </p>
+                                    )}
+
+                                    {isMatching && (
+                                        <div className="campaign-matching-note">
+                                            <Info size={14} />
+                                            <span>
+                                                {hasCreatorsShortlisted(campaign)
+                                                    ? 'Creators have been shortlisted. View campaign details to review and proceed.'
+                                                    : 'We are finding the best creators for this campaign.'}
+                                            </span>
+                                        </div>
                                     )}
 
                                     {categories.length > 0 && (
@@ -678,7 +765,13 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
                                             variant="ghost"
                                             fullWidth
                                             size="sm"
-                                            onClick={() => navigate(`/brand/campaign/${campaign.id}`)}
+                                            onClick={() => {
+                                                if (isMatching && !hasCreatorsShortlisted(campaign)) {
+                                                    openMatchingDialog(campaign.name);
+                                                    return;
+                                                }
+                                                navigate(`/brand/campaign/${campaign.id}`);
+                                            }}
                                         >
                                             View Campaign Details
                                         </Button>

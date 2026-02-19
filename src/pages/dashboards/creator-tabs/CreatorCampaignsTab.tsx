@@ -43,7 +43,26 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
             } else if (data && typeof data === 'object') {
                 campaignsArray = data.campaigns || data.data || [];
             }
-            setCampaigns(campaignsArray);
+            // Enrich each campaign with latest bid/negotiation status so brand acceptance reflects on creator tab
+            const campaignIds = campaignsArray.map((c: any) => c.id || c._id || c.campaign_id).filter(Boolean);
+            const bidStatuses = await Promise.allSettled(
+                campaignIds.map((id: string) => creatorApi.getBidStatus(id))
+            );
+            const enriched = campaignsArray.map((campaign: any, index: number) => {
+                const result = bidStatuses[index];
+                if (result.status !== 'fulfilled' || !result.value) return campaign;
+                const bid = result.value as any;
+                const status = bid?.status ?? campaign?.status;
+                const final_amount = bid?.final_amount ?? bid?.proposed_amount ?? campaign?.final_amount;
+                const bid_amount = bid?.bid_amount ?? campaign?.bid_amount;
+                return {
+                    ...campaign,
+                    status,
+                    final_amount,
+                    bid_amount: bid_amount ?? campaign?.bid_amount,
+                };
+            });
+            setCampaigns(enriched);
         } catch (error: any) {
             console.error('Failed to fetch creator campaigns:', error);
             showToast(error.message || 'Failed to fetch campaigns. Please try again.', 'error');
@@ -60,6 +79,7 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
     const getStatusClass = (status: string) => {
         switch (status) {
             case 'Active': return 'status-active';
+            case 'Deal Accepted': return 'status-active';
             case 'Negotiate': return 'status-negotiate';
             case 'Negotiation': return 'status-negotiate';
             case 'Content Approved': return 'status-active';
@@ -101,6 +121,56 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
         return stage === 'content';
     };
     const canGoLiveForCampaign = (campaign: any) => getWorkflowStatus(campaign) === 'content_approved';
+    const isNegotiationStatus = (campaign: any) => {
+        const status = getWorkflowStatus(campaign);
+        const stage = String(campaign?.stage || '').toLowerCase();
+        return (
+            stage === 'negotiate' ||
+            status === 'negotiate' ||
+            status === 'negotiation' ||
+            status === 'in_negotiation' ||
+            status === 'bid_pending' ||
+            status === 'amount_negotiated' ||
+            status === 'accepted'
+        );
+    };
+    const isDealAcceptedOrFinalized = (campaign: any) => {
+        const status = getWorkflowStatus(campaign);
+        return status === 'accepted' || status === 'amount_finalized';
+    };
+    const formatINR = (value?: number | string) => {
+        const num = Number(value);
+        if (!Number.isFinite(num) || num <= 0) return null;
+        return `₹${num.toLocaleString('en-IN')}`;
+    };
+    const getDisplayAmount = (campaign: any) => {
+        if (campaign?.final_amount && Number(campaign.final_amount) > 0) {
+            return formatINR(campaign.final_amount);
+        }
+        const raw = campaign?.amount ?? campaign?.budget ?? campaign?.total_budget;
+        if (typeof raw === 'string' && raw.trim()) {
+            return raw.includes('₹') ? raw : formatINR(raw);
+        }
+        return formatINR(raw) || '—';
+    };
+    const getStatusLabel = (campaign: any) => {
+        const status = getWorkflowStatus(campaign);
+        if (status === 'bid_pending') return 'Bid Submitted';
+        if (status === 'amount_negotiated' || status === 'in_negotiation' || status === 'negotiation') return 'In Negotiation';
+        if (status === 'accepted' || status === 'amount_finalized') return 'Deal Accepted';
+        return campaign?.status || 'Pending';
+    };
+    const getProgressValue = (campaign: any) => {
+        const progress = Number(campaign?.progress);
+        if (Number.isFinite(progress) && progress >= 0 && progress <= 100) return progress;
+        const status = getWorkflowStatus(campaign);
+        if (status === 'bid_pending' || status === 'amount_negotiated' || status === 'in_negotiation') return 20;
+        if (status === 'script_pending' || status === 'script_submitted') return 45;
+        if (status === 'script_approved') return 65;
+        if (status === 'content_pending') return 80;
+        if (status === 'content_approved' || status === 'content_live') return 100;
+        return 10;
+    };
 
     const handleNegotiationSubmit = async () => {
         if (!selectedCampaign || !negotiationAmount) return;
@@ -205,7 +275,7 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
                                     {campaign.brand}
                                 </div>
                             </div>
-                            <div className="creator-campaign-amount">{campaign.amount}</div>
+                            <div className="creator-campaign-amount">{getDisplayAmount(campaign)}</div>
                         </div>
 
                         <p className="campaign-description">{campaign.description}</p>
@@ -221,8 +291,8 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
 
                         <div className="creator-campaign-status-bar">
                             <div className="status-info">
-                                <span className={`status-badge ${getStatusClass(campaign.status)}`}>
-                                    {campaign.status}
+                                <span className={`status-badge ${getStatusClass(getStatusLabel(campaign))}`}>
+                                    {getStatusLabel(campaign)}
                                 </span>
                                 <span className="creator-campaign-deadline">
                                     <Clock size={14} />
@@ -232,15 +302,24 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
                             <div className="progress-bar" style={{ height: '4px' }}>
                                 <div
                                     className="progress-fill"
-                                    style={{ width: `${campaign.progress}%` }}
+                                    style={{ width: `${getProgressValue(campaign)}%` }}
                                 ></div>
                             </div>
                         </div>
 
                         <div className="creator-campaign-actions">
-                            {/* Show Accept/Negotiate if brand has proposed an amount (final_amount > 0) and status is in negotiation */}
-                            {campaign.final_amount && campaign.final_amount > 0 && 
-                             (campaign.status === 'In Negotiation' || campaign.status === 'Negotiate' || campaign.stage === 'negotiate') && (
+                            {isNegotiationStatus(campaign) && (
+                                <div className="creator-negotiation-note">
+                                    {campaign.final_amount && Number(campaign.final_amount) > 0
+                                        ? `Brand Offer: ${formatINR(campaign.final_amount)}`
+                                        : campaign.bid_amount && Number(campaign.bid_amount) > 0
+                                            ? `Your Proposal: ${formatINR(campaign.bid_amount)}`
+                                            : 'No offer yet'}
+                                </div>
+                            )}
+                            {/* Show Accept/Negotiate only when brand has proposed and deal not yet accepted/finalized */}
+                            {Number(campaign.final_amount) > 0 &&
+                             isNegotiationStatus(campaign) && !isDealAcceptedOrFinalized(campaign) && (
                                 <>
                                     <Button
                                         size="sm"
@@ -260,9 +339,9 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
                                     </Button>
                                 </>
                             )}
-                            {/* Show Negotiate button if in negotiate/negotiation stage but no brand proposal yet, or if no bid submitted yet */}
-                            {(campaign.stage === 'negotiate' || campaign.status === 'Negotiate' || campaign.status === 'In Negotiation' || campaign.status === 'Negotiation') && 
-                             (!campaign.final_amount || campaign.final_amount <= 0) && (
+                            {/* Show Negotiate button if in negotiate/negotiation stage but no brand proposal yet, and deal not accepted */}
+                            {isNegotiationStatus(campaign) && !isDealAcceptedOrFinalized(campaign) &&
+                             !(Number(campaign.final_amount) > 0) && (
                                 <Button
                                     size="sm"
                                     fullWidth
