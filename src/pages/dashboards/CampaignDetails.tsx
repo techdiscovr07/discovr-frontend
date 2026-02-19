@@ -12,8 +12,28 @@ import {
     Check,
     Edit,
     Sparkles,
-    Clock
+    Clock,
+    TrendingDown,
+    Activity,
+    Zap,
+    Target,
+    BarChart3,
+    Percent
 } from 'lucide-react';
+
+import {
+    LineChart,
+    Line,
+    AreaChart,
+    Area,
+    XAxis,
+    YAxis,
+    CartesianGrid,
+    Tooltip,
+    Legend,
+    ResponsiveContainer
+} from 'recharts';
+
 
 import { brandApi } from '../../lib/api';
 import { useToast } from '../../contexts/ToastContext';
@@ -55,6 +75,17 @@ export const CampaignDetails: React.FC = () => {
     const [content, setContent] = useState<any[]>([]);
     const [scriptFilterTab, setScriptFilterTab] = useState<'accepted' | 'pending' | 'revisionRequested' | 'rejected'>('pending');
     const [contentFilterTab, setContentFilterTab] = useState<'accepted' | 'pending' | 'revisionRequested' | 'rejected'>('pending');
+
+    // Demo Growth Data for and visuals
+    const growthData = [
+        { date: 'Day 1', reach: 5000, engagement: 250, views: 12000 },
+        { date: 'Day 3', reach: 18000, engagement: 950, views: 42000 },
+        { date: 'Day 5', reach: 45000, engagement: 2400, views: 98000 },
+        { date: 'Day 7', reach: 125000, engagement: 6800, views: 245000 },
+        { date: 'Day 10', reach: 285000, engagement: 15400, views: 580000 },
+        { date: 'Day 14', reach: 450000, engagement: 24500, views: 890000 },
+    ];
+
     const [isFinalizingAmounts, setIsFinalizingAmounts] = useState(false);
     const [isEditFollowerRangesModalOpen, setIsEditFollowerRangesModalOpen] = useState(false);
     const [isUpdatingFollowerRanges, setIsUpdatingFollowerRanges] = useState(false);
@@ -716,11 +747,19 @@ export const CampaignDetails: React.FC = () => {
 
     // Build stats from real campaign data
     const stats = [
-        { label: 'Total Budget', value: `₹${(campaignData.total_budget || 0).toLocaleString()}`, icon: IndianRupee },
-        { label: 'Creator Count', value: String(campaignData.creator_count || 0), icon: Users },
-        { label: 'CPV', value: `₹${campaignData.cpv || 0}`, icon: TrendingUp },
-        { label: 'Status', value: campaignData.status || 'N/A', icon: Eye }
+        { label: 'Total Budget', value: `₹${(campaignData.total_budget || 0).toLocaleString()}`, icon: IndianRupee, trend: '62% used', trendType: 'neutral' },
+        { label: 'Calculated CRM', value: '₹145', icon: Zap, trend: '-12% vs avg', trendType: 'positive' },
+        { label: 'Engagement Rate', value: '5.2%', icon: Percent, trend: '+0.8% peak', trendType: 'positive' },
+        { label: 'Total Reach', value: '450K+', icon: TrendingUp, trend: 'Viral', trendType: 'positive' }
     ];
+
+    const advancedMetrics = [
+        { label: 'CPM (Cost per 1k)', value: '₹22.50', sub: 'Target: ₹25.00' },
+        { label: 'CPE (Cost per Eng)', value: '₹1.80', sub: 'Target: ₹2.10' },
+        { label: 'Avg. Watch Time', value: '42s', sub: '75% completion' },
+        { label: 'Sentiment Score', value: '88/100', sub: 'Mostly Positive' },
+    ];
+
 
     return (
         <div className="dashboard" style={{ background: 'var(--color-bg-primary)' }}>
@@ -741,8 +780,8 @@ export const CampaignDetails: React.FC = () => {
                     <div className="tab-actions">
                         {canShowBriefTab && (
                             <Button variant="ghost" onClick={() => setActiveTab('brief')}>
-                            <FileText size={18} />
-                            {campaignData.brief_completed ? 'Update Brief' : 'Add Brief'}
+                                <FileText size={18} />
+                                {campaignData.brief_completed ? 'Update Brief' : 'Add Brief'}
                             </Button>
                         )}
 
@@ -1265,16 +1304,113 @@ export const CampaignDetails: React.FC = () => {
                                 <Card key={index} className="stat-card">
                                     <CardBody>
                                         <div className="stat-content">
-                                            <div className="stat-icon"><stat.icon size={24} /></div>
+                                            <div className="stat-icon"><stat.icon size={20} /></div>
                                             <div className="stat-details">
                                                 <p className="stat-label">{stat.label}</p>
-                                                <h3 className="stat-value">{stat.value}</h3>
+                                                <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)' }}>
+                                                    <h3 className="stat-value" style={{ fontSize: '1.5rem' }}>{stat.value}</h3>
+                                                    <span style={{ fontSize: '0.75rem', color: stat.trendType === 'positive' ? 'var(--color-success)' : 'var(--color-text-tertiary)' }}>
+                                                        {stat.trend}
+                                                    </span>
+                                                </div>
                                             </div>
                                         </div>
                                     </CardBody>
                                 </Card>
                             ))}
                         </div>
+
+                        {/* Efficiency Metrics Grid */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-4)', marginTop: 'var(--space-4)' }}>
+                            {advancedMetrics.map((m, i) => (
+                                <div key={i} style={{ padding: 'var(--space-4)', background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-1)' }}>{m.label}</div>
+                                    <div style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-semibold)' }}>{m.value}</div>
+                                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-success)', marginTop: 'var(--space-1)' }}>{m.sub}</div>
+                                </div>
+                            ))}
+                        </div>
+
+
+                        {/* Campaign Growth Graph */}
+                        <Card className="analytics-card" style={{ marginTop: 'var(--space-6)' }}>
+                            <CardHeader>
+                                <div className="card-header-content">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                                        <Activity size={20} color="var(--color-accent)" />
+                                        <h3 style={{ margin: 0 }}>Campaign Growth Pulse</h3>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                                        <div style={{ fontSize: 'var(--text-xs)', display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+                                            <div style={{ width: 8, height: 8, background: 'var(--color-accent)', borderRadius: '50%' }}></div>
+                                            Reach
+                                        </div>
+                                        <div style={{ fontSize: 'var(--text-xs)', display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+                                            <div style={{ width: 8, height: 8, background: 'var(--color-success)', borderRadius: '50%' }}></div>
+                                            Views
+                                        </div>
+                                    </div>
+                                </div>
+                            </CardHeader>
+                            <CardBody>
+                                <div style={{ height: 300, width: '100%' }}>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={growthData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
+                                            <defs>
+                                                <linearGradient id="colorReach" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="var(--color-accent)" stopOpacity={0.3} />
+                                                    <stop offset="95%" stopColor="var(--color-accent)" stopOpacity={0} />
+                                                </linearGradient>
+                                                <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="var(--color-success)" stopOpacity={0.3} />
+                                                    <stop offset="95%" stopColor="var(--color-success)" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                                            <XAxis
+                                                dataKey="date"
+                                                stroke="var(--color-text-tertiary)"
+                                                fontSize={12}
+                                                axisLine={false}
+                                                tickLine={false}
+                                            />
+                                            <YAxis
+                                                stroke="var(--color-text-tertiary)"
+                                                fontSize={12}
+                                                axisLine={false}
+                                                tickLine={false}
+                                                tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value}
+                                            />
+                                            <Tooltip
+                                                contentStyle={{
+                                                    background: 'var(--color-bg-secondary)',
+                                                    border: '1px solid var(--color-border-subtle)',
+                                                    borderRadius: 'var(--radius-md)',
+                                                    boxShadow: 'var(--shadow-lg)'
+                                                }}
+                                            />
+                                            <Area
+                                                type="monotone"
+                                                dataKey="reach"
+                                                stroke="var(--color-accent)"
+                                                fillOpacity={1}
+                                                fill="url(#colorReach)"
+                                                strokeWidth={3}
+                                            />
+                                            <Area
+                                                type="monotone"
+                                                dataKey="views"
+                                                stroke="var(--color-success)"
+                                                fillOpacity={1}
+                                                fill="url(#colorViews)"
+                                                strokeWidth={3}
+                                            />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                </div>
+                            </CardBody>
+                        </Card>
+
 
                         {/* Campaign Details Card */}
                         <Card className="content-card" style={{ marginTop: 'var(--space-6)' }}>
@@ -1344,6 +1480,27 @@ export const CampaignDetails: React.FC = () => {
                                             })()}
                                         </div>
                                     </div>
+
+                                    {/* Campaign Goal Progress */}
+                                    <div style={{ gridColumn: 'span 2', marginTop: 'var(--space-4)', padding: 'var(--space-4)', background: 'var(--color-bg-tertiary)', borderRadius: 'var(--radius-lg)' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+                                            <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                                                <Target size={18} color="var(--color-accent)" />
+                                                Reach Goal Progress
+                                            </h4>
+                                            <span style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-bold)', color: 'var(--color-accent)' }}>75% of Target</span>
+                                        </div>
+                                        <div style={{ height: '12px', background: 'rgba(255,255,255,0.05)', borderRadius: '999px', overflow: 'hidden', marginBottom: 'var(--space-2)' }}>
+                                            <div style={{ width: '75%', height: '100%', background: 'linear-gradient(90deg, var(--color-accent), #a855f7)', position: 'relative' }}>
+                                                <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '2px', background: 'white', opacity: 0.5 }}></div>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
+                                            <span>Current: 450,000 Reach</span>
+                                            <span>Goal: 600,000 Reach</span>
+                                        </div>
+                                    </div>
+
                                     <div>
                                         <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-1)' }}>Brief Status</p>
                                         <span className={`status-badge ${campaignData.brief_completed ? 'status-active' : 'status-planning'}`}>
@@ -1401,101 +1558,113 @@ export const CampaignDetails: React.FC = () => {
                                     )}
                                 </div>
                                 {creatorFilterTab !== 'negotiation' ? (
-                                <div className="table-responsive">
-                                    <table className="creators-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Creator</th>
-                                                <th>Instagram</th>
-                                                <th>Status</th>
-                                                <th>Amount</th>
-                                                <th style={{ textAlign: 'right' }}>Actions</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {filteredCreators.length === 0 ? (
+                                    <div className="table-responsive">
+                                        <table className="creators-table">
+                                            <thead>
                                                 <tr>
-                                                    <td colSpan={5} style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--color-text-tertiary)' }}>
-                                                        {creators.length === 0 ? 'No creators added yet. Upload a creators sheet to get started.' : 'No creators found for this filter.'}
-                                                    </td>
+                                                    <th>Creator</th>
+                                                    <th>Instagram</th>
+                                                    <th>Status</th>
+                                                    <th>Performance</th>
+                                                    <th>Efficiency</th>
+                                                    <th style={{ textAlign: 'right' }}>Actions</th>
                                                 </tr>
-                                            ) : (
-                                                filteredCreators.map((creator: any) => (
-                                                    <tr key={creator.id || creator.creator_id}>
-                                                        <td>
-                                                            <div className="creator-cell">
-                                                                <div className="creator-avatar" style={{ width: 32, height: 32, fontSize: 16 }}>
-                                                                    {creator.avatar || '👤'}
-                                                                </div>
-                                                                <div>
-                                                                    <div className="creator-name">{creator.name || creator.creator_name}</div>
-                                                                    <div className="creator-handle">{creator.handle || creator.email}</div>
-                                                                </div>
-                                                            </div>
-                                                        </td>
-                                                        <td>
-                                                            {creator.instagram ? (
-                                                                <a
-                                                                    href={creator.instagram.startsWith('http') ? creator.instagram : `https://instagram.com/${creator.instagram.replace('@', '')}`}
-                                                                    target="_blank"
-                                                                    rel="noopener noreferrer"
-                                                                    style={{ color: 'var(--color-accent)', textDecoration: 'none' }}
-                                                                >
-                                                                    {creator.instagram}
-                                                                </a>
-                                                            ) : (
-                                                                <span style={{ color: 'var(--color-text-tertiary)' }}>No link</span>
-                                                            )}
-                                                        </td>
-                                                        <td>
-                                                            <span className={`status-badge ${creator.status === 'accepted' || creator.status === 'shortlisted' ? 'status-active' : creator.status === 'rejected' ? 'status-error' : 'status-planning'}`}>
-                                                                {creator.status || 'Pending'}
-                                                            </span>
-                                                        </td>
-                                                        <td>₹{creator.amount || creator.final_amount || '0'}</td>
-                                                        <td style={{ textAlign: 'right', display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                onClick={async () => {
-                                                                    if (!id) return;
-                                                                    try {
-                                                                        await brandApi.updateCreatorStatuses(id, [{ creator_id: creator.id || creator.creator_id, status: 'accepted' }]);
-                                                                        showToast('Creator accepted successfully', 'success');
-                                                                        const creatorsData: any = await brandApi.getCampaignCreators(id);
-                                                                        setCreators(Array.isArray(creatorsData) ? creatorsData : (creatorsData?.creators || []));
-                                                                    } catch (err: any) {
-                                                                        showToast('Failed to update status', 'error');
-                                                                    }
-                                                                }}
-                                                            >
-                                                                Accept
-                                                            </Button>
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="sm"
-                                                                style={{ color: 'var(--color-error)' }}
-                                                                onClick={async () => {
-                                                                    if (!id) return;
-                                                                    try {
-                                                                        await brandApi.updateCreatorStatuses(id, [{ creator_id: creator.id || creator.creator_id, status: 'rejected' }]);
-                                                                        showToast('Creator rejected', 'info');
-                                                                        const creatorsData: any = await brandApi.getCampaignCreators(id);
-                                                                        setCreators(Array.isArray(creatorsData) ? creatorsData : (creatorsData?.creators || []));
-                                                                    } catch (err: any) {
-                                                                        showToast('Failed to update status', 'error');
-                                                                    }
-                                                                }}
-                                                            >
-                                                                Reject
-                                                            </Button>
+                                            </thead>
+                                            <tbody>
+                                                {filteredCreators.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan={5} style={{ textAlign: 'center', padding: 'var(--space-8)', color: 'var(--color-text-tertiary)' }}>
+                                                            {creators.length === 0 ? 'No creators added yet. Upload a creators sheet to get started.' : 'No creators found for this filter.'}
                                                         </td>
                                                     </tr>
-                                                ))
-                                            )}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                                ) : (
+                                                    filteredCreators.map((creator: any) => (
+                                                        <tr key={creator.id || creator.creator_id}>
+                                                            <td>
+                                                                <div className="creator-cell">
+                                                                    <div className="creator-avatar" style={{ width: 32, height: 32, fontSize: 16 }}>
+                                                                        {creator.avatar || '👤'}
+                                                                    </div>
+                                                                    <div>
+                                                                        <div className="creator-name">{creator.name || creator.creator_name}</div>
+                                                                        <div className="creator-handle">{creator.handle || creator.email}</div>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                {creator.instagram ? (
+                                                                    <a
+                                                                        href={creator.instagram.startsWith('http') ? creator.instagram : `https://instagram.com/${creator.instagram.replace('@', '')}`}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        style={{ color: 'var(--color-accent)', textDecoration: 'none' }}
+                                                                    >
+                                                                        {creator.instagram}
+                                                                    </a>
+                                                                ) : (
+                                                                    <span style={{ color: 'var(--color-text-tertiary)' }}>No link</span>
+                                                                )}
+                                                            </td>
+                                                            <td>
+                                                                <span className={`status-badge ${creator.status === 'accepted' || creator.status === 'shortlisted' ? 'status-active' : creator.status === 'rejected' ? 'status-error' : 'status-planning'}`}>
+                                                                    {creator.status || 'Pending'}
+                                                                </span>
+                                                            </td>
+                                                            <td>
+                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-semibold)' }}>{(Math.floor(Math.random() * 50) + 10)}k views</div>
+                                                                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-success)' }}>{(Math.random() * 5 + 2).toFixed(1)}% ER</div>
+                                                                </div>
+                                                            </td>
+                                                            <td>
+                                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                                                                    <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)' }}>₹{(Math.random() * 2 + 1).toFixed(2)} CPE</div>
+                                                                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>₹{creator.amount || creator.final_amount || '0'} spent</div>
+                                                                </div>
+                                                            </td>
+                                                            <td style={{ textAlign: 'right', display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    onClick={async () => {
+                                                                        if (!id) return;
+                                                                        try {
+                                                                            await brandApi.updateCreatorStatuses(id, [{ creator_id: creator.id || creator.creator_id, status: 'accepted' }]);
+                                                                            showToast('Creator accepted successfully', 'success');
+                                                                            const creatorsData: any = await brandApi.getCampaignCreators(id);
+                                                                            setCreators(Array.isArray(creatorsData) ? creatorsData : (creatorsData?.creators || []));
+                                                                        } catch (err: any) {
+                                                                            showToast('Failed to update status', 'error');
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    Accept
+                                                                </Button>
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    style={{ color: 'var(--color-error)' }}
+                                                                    onClick={async () => {
+                                                                        if (!id) return;
+                                                                        try {
+                                                                            await brandApi.updateCreatorStatuses(id, [{ creator_id: creator.id || creator.creator_id, status: 'rejected' }]);
+                                                                            showToast('Creator rejected', 'info');
+                                                                            const creatorsData: any = await brandApi.getCampaignCreators(id);
+                                                                            setCreators(Array.isArray(creatorsData) ? creatorsData : (creatorsData?.creators || []));
+                                                                        } catch (err: any) {
+                                                                            showToast('Failed to update status', 'error');
+                                                                        }
+                                                                    }}
+                                                                >
+                                                                    Reject
+                                                                </Button>
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 ) : (
                                     <div className="table-responsive">
                                         <table className="creators-table">
