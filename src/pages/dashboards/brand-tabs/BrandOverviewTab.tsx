@@ -20,21 +20,47 @@ import {
 } from 'recharts';
 import { brandApi } from '../../../lib/api';
 
+
 interface BrandOverviewTabProps {
     searchQuery?: string;
 }
 
 export const BrandOverviewTab: React.FC<BrandOverviewTabProps> = ({ searchQuery: _searchQuery = '' }) => {
     const [campaigns, setCampaigns] = useState<any[]>([]);
+    const [actualCreatorCount, setActualCreatorCount] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         const fetchOverviewData = async () => {
             try {
-                const camps = await brandApi.getCampaigns() as any[];
-                setCampaigns(camps || []);
+                const data = await brandApi.getCampaigns() as any;
+                const campaignsList = Array.isArray(data) ? data : (data?.campaigns || []);
+                setCampaigns(campaignsList);
+                if (campaignsList.length > 0) {
+                    const creatorsResults = await Promise.all(
+                        campaignsList.map(async (c: any) => {
+                            try {
+                                const res = await brandApi.getCampaignCreators(c.id) as any;
+                                return Array.isArray(res) ? res : (res?.creators || []);
+                            } catch (e) {
+                                console.error(`Failed to fetch creators for campaign ${c.id}:`, e);
+                                return [];
+                            }
+                        })
+                    );
+
+                    let onboardedCount = 0;
+                    creatorsResults.forEach(list => {
+                        onboardedCount += list.filter((creator: any) => {
+                            const s = String(creator?.status || '').toLowerCase();
+                            return s === 'accepted' || s === 'shortlisted' || s === 'active';
+                        }).length;
+                    });
+                    setActualCreatorCount(onboardedCount);
+                }
             } catch (error) {
                 console.error('Failed to fetch brand overview data:', error);
+                setCampaigns([]);
             } finally {
                 setIsLoading(false);
             }
@@ -50,10 +76,11 @@ export const BrandOverviewTab: React.FC<BrandOverviewTabProps> = ({ searchQuery:
 
     const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
     const activeCampaigns = safeCampaigns.filter((c: any) => String(c.status || '').toLowerCase() !== 'completed').length;
-    const totalCreators = safeCampaigns.reduce((acc: number, c: any) => acc + parseAmount(c.creator_count ?? c.targetCreators), 0);
-    const contentPending = safeCampaigns.reduce((acc: number, c: any) => acc + parseAmount(c.content_pending ?? c.pending_content), 0);
+    const totalCreators = actualCreatorCount;
+    const contentPending = safeCampaigns.reduce((acc: number, c: any) => acc + parseAmount(c.content_pending ?? c.pending_content ?? c.contentPending), 0);
     const totalSpent = safeCampaigns.reduce((acc: number, c: any) => acc + parseAmount(c.spent ?? c.amount_spent), 0);
     const totalBudget = safeCampaigns.reduce((acc: number, c: any) => acc + parseAmount(c.total_budget ?? c.budget), 0);
+
 
     const stats = [
         {
@@ -122,12 +149,7 @@ export const BrandOverviewTab: React.FC<BrandOverviewTabProps> = ({ searchQuery:
 
     return (
         <div className="overview-container">
-            <div className="dashboard-page-header animate-fade-in">
-                <div className="header-text">
-                    <h1>Dashboard Overview</h1>
-                    <p>Track your campaign performance, engagement metrics, and budget allocation in real-time.</p>
-                </div>
-            </div>
+
 
             {/* Stats Grid */}
             <div className="stats-grid">
