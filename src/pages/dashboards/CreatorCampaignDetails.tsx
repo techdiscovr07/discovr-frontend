@@ -86,6 +86,38 @@ export const CreatorCampaignDetails: React.FC = () => {
         currentWorkflowStatus === 'content_revision_requested';
     const isContentUnderBrandReview = currentWorkflowStatus === 'content_pending';
     const canGoLive = currentWorkflowStatus === 'content_approved';
+    // Check multiple sources for final_amount
+    const finalAmountFromAllSources = 
+        negotiationStatus?.final_amount || 
+        campaignData?.final_amount || 
+        briefData?.final_amount ||
+        briefData?.campaign?.final_amount;
+    const dealIsFinalized =
+        (finalAmountFromAllSources && Number(finalAmountFromAllSources) > 0) ||
+        negotiationStatus?.status === 'accepted' ||
+        negotiationStatus?.status === 'amount_finalized' ||
+        campaignData?.negotiation_status === 'accepted' ||
+        campaignData?.negotiation_status === 'amount_finalized' ||
+        briefData?.status === 'accepted' ||
+        briefData?.status === 'amount_finalized' ||
+        currentWorkflowStatus === 'accepted' ||
+        currentWorkflowStatus === 'amount_finalized';
+    const scriptNeedsRevision =
+        currentWorkflowStatus === 'script_revision_requested' ||
+        currentWorkflowStatus === 'script_rejected';
+    const scriptAlreadySubmitted =
+        currentWorkflowStatus === 'script_pending' ||
+        currentWorkflowStatus === 'script_approved' ||
+        currentWorkflowStatus === 'content_pending' ||
+        currentWorkflowStatus === 'content_approved' ||
+        currentWorkflowStatus === 'content_rejected' ||
+        currentWorkflowStatus === 'content_revision_requested' ||
+        currentWorkflowStatus === 'content_live';
+    const canSubmitScript =
+        scriptNeedsRevision ||
+        (dealIsFinalized && !scriptAlreadySubmitted);
+    const scriptSubmissionLocked = scriptAlreadySubmitted && !scriptNeedsRevision;
+    const scriptIsNextStep = canSubmitScript;
 
     const brandScriptFeedback =
         (briefData?.script_feedback && String(briefData.script_feedback).trim()) ||
@@ -102,6 +134,52 @@ export const CreatorCampaignDetails: React.FC = () => {
     const isContentChangesRequested =
         currentWorkflowStatus === 'content_rejected' ||
         currentWorkflowStatus === 'content_revision_requested';
+    const briefSources: any[] = [
+        briefData?.campaign,
+        briefData,
+        briefData?.campaign?.brief,
+        briefData?.brief,
+        briefData?.campaign_data,
+        briefData?.brief_data,
+        campaignData,
+        campaignData?.campaign,
+        campaignData?.brief,
+        campaignData?.campaign_data,
+        campaignData?.brief_data,
+    ].filter(Boolean);
+    const firstBriefValue = (...keys: string[]) => {
+        for (const source of briefSources) {
+            for (const key of keys) {
+                const val = source?.[key];
+                if (val === null || val === undefined) continue;
+                if (typeof val === 'string') {
+                    if (val.trim()) return val.trim();
+                    continue;
+                }
+                if (Array.isArray(val) && val.length > 0) {
+                    return val.join('\n');
+                }
+                if (typeof val === 'number' || typeof val === 'boolean') {
+                    return String(val);
+                }
+            }
+        }
+        return '';
+    };
+    const briefVideoTitle =
+        firstBriefValue('video_title', 'videoTitle', 'title') ||
+        campaignData?.name;
+    const briefPrimaryFocus =
+        firstBriefValue('primary_focus', 'primaryFocus');
+    const briefSecondaryFocus =
+        firstBriefValue('secondary_focus', 'secondaryFocus');
+    const briefDos =
+        firstBriefValue('dos', 'do');
+    const briefDonts =
+        firstBriefValue('donts', 'dont');
+    const briefCta =
+        firstBriefValue('cta', 'call_to_action');
+    const hasAnyBriefDetails = Boolean(briefVideoTitle || briefPrimaryFocus || briefSecondaryFocus || campaignData?.description);
 
     const normalizeCampaign = (base: any, extra: any) => {
         // Merge campaign summary (list) + brief.campaign into a single object for rendering.
@@ -163,14 +241,23 @@ export const CreatorCampaignDetails: React.FC = () => {
                         const merged = normalizeCampaign(campaignFromList, briefCampaign);
 
                         // Ensure key fields are present
+                        // campaignFromList is the raw campaign from getCampaigns() — it has
+                        // top-level brief fields (dos/donts/cta/etc.) that getCampaignBrief may omit.
+                        const cl = campaignFromList || {};
+                        const bc = briefCampaign || {};
+                        const pick = (...vals: any[]) => vals.find(v => v !== null && v !== undefined && v !== '') ?? undefined;
                         const finalCampaignData = {
                             ...merged,
                             // Brief response has status and final_amount at top level
-                            status: brief.status || merged.status || 'Active',
-                            brand: briefCampaign.brand_name || brief.brand_name || merged.brand || 'Partner Brand',
-                            video_title: briefCampaign.video_title || brief.video_title || merged.video_title,
-                            primary_focus: briefCampaign.primary_focus || brief.primary_focus || merged.primary_focus,
-                            secondary_focus: briefCampaign.secondary_focus || brief.secondary_focus || merged.secondary_focus,
+                            status: pick(brief.status, merged.status, 'Active'),
+                            brand: pick(bc.brand_name, brief.brand_name, merged.brand, 'Partner Brand'),
+                            video_title: pick(bc.video_title, brief.video_title, cl.video_title, merged.video_title),
+                            primary_focus: pick(bc.primary_focus, brief.primary_focus, cl.primary_focus, merged.primary_focus),
+                            secondary_focus: pick(bc.secondary_focus, brief.secondary_focus, cl.secondary_focus, merged.secondary_focus),
+                            dos: pick(bc.dos, brief.dos, cl.dos, merged.dos),
+                            donts: pick(bc.donts, brief.donts, cl.donts, merged.donts),
+                            cta: pick(bc.cta, brief.cta, bc.call_to_action, brief.call_to_action, cl.cta, cl.call_to_action, merged.cta),
+                            brief_completed: pick(bc.brief_completed, brief.brief_completed, cl.brief_completed, merged.brief_completed),
                             // Ensure these are passed through from brief
                             cpv: (briefCampaign.cpv !== undefined ? briefCampaign.cpv : brief.cpv) !== undefined
                                 ? (briefCampaign.cpv !== undefined ? briefCampaign.cpv : brief.cpv)
@@ -411,6 +498,43 @@ export const CreatorCampaignDetails: React.FC = () => {
         setIsSubmitting(true);
         try {
             if (modalType === 'script') {
+                if (scriptSubmissionLocked) {
+                    showToast('Script already submitted. You can submit again only when brand requests changes.', 'info');
+                    setIsSubmitting(false);
+                    return;
+                }
+
+                // Validate that deal is finalized or script revision is requested
+                // Check multiple sources for final_amount
+                const finalAmount = 
+                    negotiationStatus?.final_amount || 
+                    campaignData?.final_amount || 
+                    briefData?.final_amount ||
+                    briefData?.campaign?.final_amount;
+                const hasFinalAmount = finalAmount && Number(finalAmount) > 0;
+                
+                // Check negotiation status from multiple sources
+                const negotiationStatusValue = 
+                    negotiationStatus?.status || 
+                    campaignData?.negotiation_status ||
+                    briefData?.status;
+                
+                const isDealFinalized =
+                    hasFinalAmount ||
+                    negotiationStatusValue === 'accepted' ||
+                    negotiationStatusValue === 'amount_finalized' ||
+                    negotiationStatus?.status === 'accepted' ||
+                    negotiationStatus?.status === 'amount_finalized' ||
+                    currentWorkflowStatus === 'accepted' ||
+                    currentWorkflowStatus === 'amount_finalized';
+                const isRevisionRequested = scriptNeedsRevision;
+                
+                if (!isDealFinalized && !isRevisionRequested) {
+                    showToast('Submit script only after amount is finalized or when revision is requested', 'error');
+                    setIsSubmitting(false);
+                    return;
+                }
+
                 // Use scriptContent if provided, otherwise use brand template
                 const finalScript = scriptContent || briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template || '';
                 await creatorApi.uploadScript(id, finalScript);
@@ -446,7 +570,13 @@ export const CreatorCampaignDetails: React.FC = () => {
             }, 2000);
         } catch (error: any) {
             console.error('Failed to submit:', error);
-            showToast(error.message || 'Failed to submit', 'error');
+            const errorMessage = error.message || 'Failed to submit';
+            // If backend returns validation error, provide more context
+            if (errorMessage.includes('amount is finalized') || errorMessage.includes('revision is requested')) {
+                showToast('Unable to submit: Please ensure the deal amount is finalized by the brand before submitting your script.', 'error');
+            } else {
+                showToast(errorMessage, 'error');
+            }
         } finally {
             setIsSubmitting(false);
         }
@@ -491,6 +621,41 @@ export const CreatorCampaignDetails: React.FC = () => {
             return;
         }
 
+        if (scriptSubmissionLocked) {
+            showToast('Script already submitted. You can submit again only when brand requests changes.', 'info');
+            return;
+        }
+
+        // Validate that deal is finalized or script revision is requested
+        // Check multiple sources for final_amount
+        const finalAmount = 
+            negotiationStatus?.final_amount || 
+            campaignData?.final_amount || 
+            briefData?.final_amount ||
+            briefData?.campaign?.final_amount;
+        const hasFinalAmount = finalAmount && Number(finalAmount) > 0;
+        
+        // Check negotiation status from multiple sources
+        const negotiationStatusValue = 
+            negotiationStatus?.status || 
+            campaignData?.negotiation_status ||
+            briefData?.status;
+        
+        const isDealFinalized =
+            hasFinalAmount ||
+            negotiationStatusValue === 'accepted' ||
+            negotiationStatusValue === 'amount_finalized' ||
+            negotiationStatus?.status === 'accepted' ||
+            negotiationStatus?.status === 'amount_finalized' ||
+            currentWorkflowStatus === 'accepted' ||
+            currentWorkflowStatus === 'amount_finalized';
+        const isRevisionRequested = scriptNeedsRevision;
+        
+        if (!isDealFinalized && !isRevisionRequested) {
+            showToast('Submit script only after amount is finalized or when revision is requested', 'error');
+            return;
+        }
+
         setIsSubmittingInlineScript(true);
         try {
             await creatorApi.uploadScript(id, finalScript);
@@ -507,7 +672,13 @@ export const CreatorCampaignDetails: React.FC = () => {
             }
         } catch (error: any) {
             console.error('Failed to submit script:', error);
-            showToast(error.message || 'Failed to submit script', 'error');
+            const errorMessage = error.message || 'Failed to submit script';
+            // If backend returns validation error, provide more context
+            if (errorMessage.includes('amount is finalized') || errorMessage.includes('revision is requested')) {
+                showToast('Unable to submit: Please ensure the deal amount is finalized by the brand before submitting your script.', 'error');
+            } else {
+                showToast(errorMessage, 'error');
+            }
         } finally {
             setIsSubmittingInlineScript(false);
         }
@@ -614,72 +785,59 @@ export const CreatorCampaignDetails: React.FC = () => {
                                 </div>
                             </CardHeader>
                             <CardBody>
-                                {briefData && (
-                                    <>
-                                        <h4 style={{ marginBottom: 'var(--space-4)' }}>
-                                            {(briefData.campaign?.video_title || briefData.video_title) || campaignData.name}
-                                        </h4>
-                                        <p style={{ color: 'var(--color-text-secondary)', lineHeight: '1.6', marginBottom: 'var(--space-6)' }}>
-                                            {campaignData.description || 'No description provided.'}
-                                        </p>
-                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
-                                            {(briefData.campaign?.primary_focus || briefData.primary_focus) && (
-                                                <div>
-                                                    <h5 style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-bold)', marginBottom: 'var(--space-2)' }}>Primary Focus</h5>
-                                                    <p style={{ color: 'var(--color-text-secondary)' }}>
-                                                        {briefData.campaign?.primary_focus || briefData.primary_focus}
-                                                    </p>
-                                                </div>
-                                            )}
-                                            {(briefData.campaign?.secondary_focus || briefData.secondary_focus) && (
-                                                <div>
-                                                    <h5 style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-bold)', marginBottom: 'var(--space-2)' }}>Secondary Focus</h5>
-                                                    <p style={{ color: 'var(--color-text-secondary)' }}>
-                                                        {briefData.campaign?.secondary_focus || briefData.secondary_focus}
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </>
-                                )}
-
-                                {briefData && briefData.brief_access ? (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                                        {(briefData.campaign?.dos || briefData.dos) && (
-                                            <div>
-                                                <h5 style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-bold)', marginBottom: 'var(--space-2)' }}>Dos</h5>
-                                                <p style={{ color: 'var(--color-text-secondary)', whiteSpace: 'pre-line' }}>
-                                                    {briefData.campaign?.dos || briefData.dos}
-                                                </p>
-                                            </div>
-                                        )}
-                                        {(briefData.campaign?.donts || briefData.donts) && (
-                                            <div>
-                                                <h5 style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-bold)', marginBottom: 'var(--space-2)' }}>Don'ts</h5>
-                                                <p style={{ color: 'var(--color-text-secondary)', whiteSpace: 'pre-line' }}>
-                                                    {briefData.campaign?.donts || briefData.donts}
-                                                </p>
-                                            </div>
-                                        )}
-                                        {(briefData.campaign?.cta || briefData.cta) && (
-                                            <div>
-                                                <h5 style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-bold)', marginBottom: 'var(--space-2)' }}>Call to Action</h5>
-                                                <p style={{ color: 'var(--color-text-secondary)' }}>
-                                                    {briefData.campaign?.cta || briefData.cta}
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                ) : (
+                                {!hasAnyBriefDetails ? (
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', padding: 'var(--space-4)', background: 'rgba(var(--color-warning-rgb), 0.1)', borderRadius: 'var(--radius-md)', border: '1px dashed var(--color-warning)' }}>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
                                             <Info size={20} style={{ color: 'var(--color-warning)' }} />
                                             <h5 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--color-warning)', margin: 0 }}>
-                                                Execution Guidelines Locked
+                                                Brief Not Yet Available
                                             </h5>
                                         </div>
                                         <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', margin: 0 }}>
+                                            The brand will share the campaign brief once it is ready.
                                         </p>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)' }}>
+                                        <div>
+                                            <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-1)' }}>Video Title</p>
+                                            <p style={{ color: 'var(--color-text-primary)' }}>{briefVideoTitle || '-'}</p>
+                                        </div>
+                                        <div>
+                                            <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-1)' }}>Primary Focus</p>
+                                            <p style={{ color: 'var(--color-text-primary)' }}>{briefPrimaryFocus || '-'}</p>
+                                        </div>
+                                        <div>
+                                            <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-1)' }}>Secondary Focus</p>
+                                            <p style={{ color: 'var(--color-text-primary)' }}>{briefSecondaryFocus || '-'}</p>
+                                        </div>
+                                        <div>
+                                            <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-1)' }}>Call to Action</p>
+                                            <p style={{ color: 'var(--color-text-primary)' }}>{briefCta || '-'}</p>
+                                        </div>
+                                        <div>
+                                            <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-1)' }}>Dos</p>
+                                            <p style={{ color: 'var(--color-text-primary)', whiteSpace: 'pre-wrap' }}>{briefDos || '-'}</p>
+                                        </div>
+                                        <div>
+                                            <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-1)' }}>Don'ts</p>
+                                            <p style={{ color: 'var(--color-text-primary)', whiteSpace: 'pre-wrap' }}>{briefDonts || '-'}</p>
+                                        </div>
+                                        <div style={{ gridColumn: '1 / -1' }}>
+                                            <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-1)' }}>Sample Video</p>
+                                            {(firstBriefValue('sample_video_url', 'sampleVideoUrl', 'sample_video')) ? (
+                                                <a
+                                                    href={firstBriefValue('sample_video_url', 'sampleVideoUrl', 'sample_video')}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    style={{ color: 'var(--color-accent)', textDecoration: 'none' }}
+                                                >
+                                                    View sample video
+                                                </a>
+                                            ) : (
+                                                <p style={{ color: 'var(--color-text-primary)' }}>No sample video</p>
+                                            )}
+                                        </div>
                                     </div>
                                 )}
 
@@ -738,14 +896,7 @@ export const CreatorCampaignDetails: React.FC = () => {
                         </Card>
 
                         {/* Inline Script Submission */}
-                        {(() => {
-                            const status = String(briefData?.status || campaignData?.status || '').toLowerCase();
-                            const canSubmitScript =
-                                status === 'amount_finalized' ||
-                                status === 'script_revision_requested' ||
-                                status === 'script_rejected';
-                            return canSubmitScript;
-                        })() && (
+                        {canSubmitScript && (
                             <Card className="content-card">
                                 <CardHeader>
                                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
@@ -846,9 +997,36 @@ export const CreatorCampaignDetails: React.FC = () => {
                                         </>
                                     )}
                                     {(!canUploadContent && !isContentUnderBrandReview && !canGoLive) && (
-                                        <p style={{ margin: 0, color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)' }}>
-                                            Upload content unlocks after script approval.
-                                        </p>
+                                        <>
+                                            {scriptIsNextStep ? (
+                                                <>
+                                                    <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-3)' }}>
+                                                        Submit your script for brand review first. Upload content unlocks after script approval.
+                                                    </p>
+                                                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                                                        <Button
+                                                            variant="primary"
+                                                            onClick={() => {
+                                                                const template = briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template || '';
+                                                                const submitted = briefData?.script_content || campaignData?.script_content || '';
+                                                                setScriptContent(submitted || template);
+                                                                setModalType('script');
+                                                            }}
+                                                        >
+                                                            Submit Script
+                                                        </Button>
+                                                    </div>
+                                                </>
+                                            ) : currentWorkflowStatus === 'script_pending' ? (
+                                                <p style={{ margin: 0, color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)' }}>
+                                                    Your script is under review. Upload content unlocks after script approval.
+                                                </p>
+                                            ) : (
+                                                <p style={{ margin: 0, color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)' }}>
+                                                    Upload content unlocks after script approval.
+                                                </p>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </CardBody>
@@ -864,8 +1042,8 @@ export const CreatorCampaignDetails: React.FC = () => {
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                             <span style={{ color: 'var(--color-text-secondary)' }}>Status</span>
-                                            <span className={`status-badge ${negotiationStatus.status === 'amount_finalized' ? 'status-active' : negotiationStatus.status === 'rejected' ? 'status-error' : 'status-planning'}`}>
-                                                {negotiationStatus.status === 'accepted' ? 'Open to Negotiate' :
+                                            <span className={`status-badge ${(negotiationStatus.status === 'amount_finalized' || negotiationStatus.status === 'accepted') ? 'status-active' : negotiationStatus.status === 'rejected' ? 'status-error' : 'status-planning'}`}>
+                                                {negotiationStatus.status === 'accepted' ? 'Deal Accepted' :
                                                     negotiationStatus.status === 'bid_pending' ? 'Bid Submitted' :
                                                         negotiationStatus.status === 'amount_negotiated' ? 'Negotiating' :
                                                             negotiationStatus.status === 'amount_finalized' ? 'Deal Agreed' :
@@ -885,8 +1063,8 @@ export const CreatorCampaignDetails: React.FC = () => {
                                                 <span style={{ fontWeight: 'var(--font-bold)', color: 'var(--color-success)' }}>{formatINR(negotiationStatus.final_amount)}</span>
                                             </div>
                                         )}
-                                        {/* Show buttons if negotiation is active (accepted, amount_negotiated, bid_pending) */}
-                                        {(negotiationStatus.status === 'accepted' || negotiationStatus.status === 'amount_negotiated' || negotiationStatus.status === 'bid_pending') && (
+                                        {/* Show Accept Deal / Decline / Update Bid only when not yet accepted by brand (not accepted and not amount_finalized) */}
+                                        {(negotiationStatus.status === 'amount_negotiated' || negotiationStatus.status === 'bid_pending') && (
                                             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
                                                 {Number(negotiationStatus?.final_amount) > 0 && (
                                                     <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
@@ -903,7 +1081,7 @@ export const CreatorCampaignDetails: React.FC = () => {
                                                         </Button>
                                                     </div>
                                                 )}
-                                                <Button onClick={() => setModalType('negotiate')} fullWidth variant={negotiationStatus.final_amount ? "secondary" : "primary"}>
+                                                <Button onClick={() => setModalType('negotiate')} fullWidth variant={Number(negotiationStatus?.final_amount) > 0 ? "secondary" : "primary"}>
                                                     {negotiationStatus.bid_amount ? 'Update Bid' : 'Make an Offer'}
                                                 </Button>
                                             </div>
@@ -915,8 +1093,8 @@ export const CreatorCampaignDetails: React.FC = () => {
                                                     {negotiationStatus.bid_amount && negotiationStatus.bid_amount > 0 ? 'Update Proposal' : 'Start Negotiation'}
                                                 </Button>
                                             )}
-                                        {/* Show deal finalized message when status is amount_finalized */}
-                                        {negotiationStatus.status === 'amount_finalized' && negotiationStatus.final_amount && (
+                                        {/* Show deal accepted/finalized message when brand has accepted (accepted or amount_finalized) */}
+                                        {(negotiationStatus.status === 'amount_finalized' || negotiationStatus.status === 'accepted') && (
                                             <div style={{
                                                 padding: 'var(--space-3)',
                                                 background: 'rgba(34, 197, 94, 0.1)',
@@ -924,11 +1102,13 @@ export const CreatorCampaignDetails: React.FC = () => {
                                                 textAlign: 'center'
                                             }}>
                                                 <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-2)' }}>
-                                                    Deal Finalized
+                                                    {negotiationStatus.status === 'amount_finalized' ? 'Deal Finalized' : 'Deal Accepted'}
                                                 </p>
-                                                <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-bold)', color: 'var(--color-success)' }}>
-                                                    {formatINR(negotiationStatus.final_amount)}
-                                                </p>
+                                                {Number(negotiationStatus?.final_amount) > 0 && (
+                                                    <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-bold)', color: 'var(--color-success)' }}>
+                                                        {formatINR(negotiationStatus.final_amount)}
+                                                    </p>
+                                                )}
                                             </div>
                                         )}
                                     </div>

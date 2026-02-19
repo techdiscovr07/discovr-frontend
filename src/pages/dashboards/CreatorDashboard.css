@@ -137,8 +137,19 @@
 
 .creator-campaign-actions {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--space-3);
     padding: var(--space-5);
+}
+
+.creator-negotiation-note {
+    width: 100%;
+    font-size: var(--text-xs);
+    color: var(--color-text-secondary);
+    background: var(--color-surface-glass);
+    border: 1px solid var(--color-border-subtle);
+    border-radius: var(--radius-md);
+    padding: var(--space-2) var(--space-3);
 }
 
 /* Notice Card */

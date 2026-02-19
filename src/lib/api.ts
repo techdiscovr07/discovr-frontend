@@ -364,7 +364,7 @@ export const brandApi = {
         const isCounter = typeof proposedAmount === 'number' && Number.isFinite(proposedAmount) && proposedAmount > 0;
         const status = action === 'reject'
             ? 'rejected'
-            : (isCounter ? 'negotiated' : 'accepted');
+            : (isCounter ? 'amount_negotiated' : 'accepted');
         return request<any>('/brand/campaigns/creators/respond', {
             method: 'POST',
             body: JSON.stringify({
