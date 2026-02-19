@@ -3,36 +3,31 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Card, CardHeader, CardBody, Button, LoadingSpinner, Modal, Input, TextArea, FileUpload } from '../../components';
 import {
     ArrowLeft,
-    Users,
     TrendingUp,
     IndianRupee,
-    Eye,
     MessageSquare,
     FileText,
     Check,
     Edit,
     Sparkles,
     Clock,
-    TrendingDown,
     Activity,
     Zap,
     Target,
-    BarChart3,
     Percent
 } from 'lucide-react';
 
+
 import {
-    LineChart,
-    Line,
     AreaChart,
     Area,
     XAxis,
     YAxis,
     CartesianGrid,
     Tooltip,
-    Legend,
     ResponsiveContainer
 } from 'recharts';
+
 
 
 import { brandApi } from '../../lib/api';
