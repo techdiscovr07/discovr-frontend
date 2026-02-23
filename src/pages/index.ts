@@ -1,4 +1,6 @@
 export { LandingPage } from './LandingPage';
+export { PrivacyPolicy } from './PrivacyPolicy';
+export { TermsOfService } from './TermsOfService';
 export { AdminLogin } from './AdminLogin';
 export { AdminSignup } from './AdminSignup';
 export { BrandLogin } from './BrandLogin';
