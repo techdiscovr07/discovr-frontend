@@ -1,5 +1,5 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { LandingPage, AdminLogin, AdminSignup, BrandLogin, BrandSignup, CreatorLogin, CreatorSignup, UnauthorizedPage, Profile, Settings, ForgotPassword, ResetPassword } from './pages';
+import { LandingPage, PrivacyPolicy, TermsOfService, AdminLogin, AdminSignup, BrandLogin, BrandSignup, CreatorLogin, CreatorSignup, UnauthorizedPage, Profile, Settings, ForgotPassword, ResetPassword } from './pages';
 import { AdminDashboard, BrandDashboard, CreatorDashboard, NewCampaign, CampaignDetails, CreatorDetails, CreatorCampaignDetails } from './pages/dashboards';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
@@ -22,6 +22,8 @@ function App() {
           <Routes>
             {/* Public Routes */}
             <Route path="/" element={<LandingPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin/signup" element={<AdminSignup />} />
             <Route path="/brand/login" element={<BrandLogin />} />

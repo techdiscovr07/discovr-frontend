@@ -537,8 +537,8 @@ export const LandingPage: React.FC = () => {
                             © 2026 Discovr. All rights reserved. Built for creators, by creators.
                         </p>
                         <div className="footer-legal">
-                            <a href="#">Privacy Policy</a>
-                            <a href="#">Terms of Service</a>
+                            <Link to="/privacy-policy">Privacy Policy</Link>
+                            <Link to="/terms">Terms of Service</Link>
                             <a href="#">Cookie Policy</a>
                         </div>
                     </div>
