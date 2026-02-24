@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardBody, Button, LoadingSpinner } from '../../components';
 import { ArrowLeft, Calendar, IndianRupee, Users } from 'lucide-react';
 import { brandApi } from '../../lib/api';
-import './DashboardShared.css';
+import '../../components/DashboardShared.css';
 import './BrandDashboard.css';
 
 export const NewCampaign: React.FC = () => {

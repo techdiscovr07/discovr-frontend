@@ -24,7 +24,7 @@ import { CampaignOverviewTab } from './components/CampaignOverviewTab';
 import { CampaignCreatorsTab } from './components/CampaignCreatorsTab';
 import { brandApi } from '../../lib/api';
 import { useToast } from '../../contexts/ToastContext';
-import './DashboardShared.css';
+import '../../components/DashboardShared.css';
 import './BrandDashboard.css';
 
 export const CampaignDetails: React.FC = () => {

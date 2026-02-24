@@ -14,7 +14,7 @@ import { BrandOverviewTab, BrandCampaignsTab, BrandCreatorsTab } from './brand-t
 import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import './DashboardShared.css';
+import '../../components/DashboardShared.css';
 import './BrandDashboard.css';
 
 export const BrandDashboard: React.FC = () => {

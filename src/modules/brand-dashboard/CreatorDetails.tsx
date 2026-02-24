@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { brandApi } from '../../lib/api';
 import { useToast } from '../../contexts/ToastContext';
-import './DashboardShared.css';
+import '../../components/DashboardShared.css';
 import './BrandDashboard.css';
 
 export const CreatorDetails: React.FC = () => {

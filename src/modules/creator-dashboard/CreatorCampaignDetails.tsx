@@ -13,7 +13,7 @@ import { useToast } from '../../contexts/ToastContext';
 import { CreatorCampaignProvider } from './CreatorCampaignContext';
 import { CreatorCampaignLeftColumn } from './components/CreatorCampaignLeftColumn';
 import { CreatorCampaignRightColumn } from './components/CreatorCampaignRightColumn';
-import './DashboardShared.css';
+import '../../components/DashboardShared.css';
 import './CreatorDashboard.css';
 
 export const CreatorCampaignDetails: React.FC = () => {

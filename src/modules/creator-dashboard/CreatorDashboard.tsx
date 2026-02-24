@@ -13,7 +13,7 @@ import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { NotificationCenter, Button } from '../../components';
-import './DashboardShared.css';
+import '../../components/DashboardShared.css';
 import './CreatorDashboard.css';
 
 export const CreatorDashboard: React.FC = () => {
