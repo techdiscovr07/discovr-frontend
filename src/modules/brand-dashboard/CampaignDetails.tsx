@@ -3,33 +3,20 @@ import { CampaignScriptsTab } from './components/CampaignScriptsTab';
 import { CampaignContentTab } from './components/CampaignContentTab';
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Card, CardHeader, CardBody, Button, LoadingSpinner, Modal, Input, TextArea, FileUpload } from '../../components';
+import { Button, LoadingSpinner, Modal, Input, TextArea, FileUpload } from '../../components';
 import {
     ArrowLeft,
-    TrendingUp,
-    IndianRupee,
-    MessageSquare,
-    FileText,
     Check,
-    Edit,
     Sparkles,
     Clock,
-    Activity,
     Zap,
-    Target,
-    Percent
+    Percent,
+    IndianRupee,
+    TrendingUp,
+    FileText,
+    MessageSquare
 } from 'lucide-react';
 
-
-import {
-    AreaChart,
-    Area,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer
-} from 'recharts';
 
 
 
@@ -1309,7 +1296,7 @@ export const CampaignDetails: React.FC = () => {
                 {activeTab === 'creators' && (
                     <CampaignCreatorsTab
                         creatorFilterTab={creatorFilterTab}
-                        setCreatorFilterTab={setCreatorFilterTab}
+                        setCreatorFilterTab={(tab: string) => setCreatorFilterTab(tab as any)}
                         filteredCreators={filteredCreators}
                         creators={creators}
                         bids={bids}
@@ -1346,7 +1333,7 @@ export const CampaignDetails: React.FC = () => {
                         setIsScriptTemplateModalOpen={setIsScriptTemplateModalOpen}
                         filteredScripts={filteredScripts}
                         scriptFilterTab={scriptFilterTab}
-                        setScriptFilterTab={setScriptFilterTab}
+                        setScriptFilterTab={(tab: string) => setScriptFilterTab(tab as any)}
                         scriptReviewStats={scriptReviewStats}
                         getScriptStatusMeta={getScriptStatusMeta}
                         handleOpenAIReview={handleOpenAIReview}
@@ -1357,7 +1344,7 @@ export const CampaignDetails: React.FC = () => {
                     <CampaignContentTab
                         filteredContent={filteredContent}
                         contentFilterTab={contentFilterTab}
-                        setContentFilterTab={setContentFilterTab}
+                        setContentFilterTab={(tab: string) => setContentFilterTab(tab as any)}
                         contentReviewStats={contentReviewStats}
                         getContentStatusMeta={getContentStatusMeta}
                         handleOpenAIContentReview={handleOpenAIContentReview}

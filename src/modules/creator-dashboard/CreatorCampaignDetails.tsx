@@ -1,21 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
-import { Card, CardHeader, CardBody, Button, Modal, TextArea, Input, FileUpload } from '../../components';
+import { Button, Modal, TextArea, Input, FileUpload } from '../../components';
 import {
     ArrowLeft,
-    Clock,
     CheckCircle2,
-    Calendar,
-    FileText,
     MessageSquare,
-    Upload,
-    Info,
-    ChevronRight,
     Link as LinkIcon,
     BadgeCheck
 } from 'lucide-react';
 import { creatorApi } from '../../lib/api';
 import { useToast } from '../../contexts/ToastContext';
+import { CreatorCampaignProvider } from './CreatorCampaignContext';
+import { CreatorCampaignLeftColumn } from './components/CreatorCampaignLeftColumn';
+import { CreatorCampaignRightColumn } from './components/CreatorCampaignRightColumn';
 import './DashboardShared.css';
 import './CreatorDashboard.css';
 
@@ -731,484 +728,279 @@ export const CreatorCampaignDetails: React.FC = () => {
         );
     }
 
+    const contextValue = {
+        hasAnyBriefDetails, briefVideoTitle, briefPrimaryFocus, briefSecondaryFocus, briefCta,
+        briefDos, briefDonts, firstBriefValue, briefData, campaignData, setScriptContent,
+        setModalType, canSubmitScript, scriptDeliverableStatus, brandScriptFeedback,
+        inlineScriptContent, setInlineScriptContent, handleInlineScriptSubmit,
+        isSubmittingInlineScript, canUploadContent, isContentChangesRequested,
+        brandContentFeedback, isContentUnderBrandReview, canGoLive, scriptIsNextStep,
+        currentWorkflowStatus, negotiationStatus, isBrandAcceptedCreatorOffer,
+        negotiationStatusKey, brandOfferAmount, formatINR, scriptReviewMeta
+    };
+
     return (
-        <div className="dashboard" style={{ background: 'var(--color-bg-primary)' }}>
-            <main className="dashboard-main" style={{ marginLeft: 0, width: '100%', padding: 'var(--space-8)' }}>
-                {/* Header */}
-                <header className="dashboard-header" style={{ marginBottom: 'var(--space-8)' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-                        <Button variant="ghost" size="sm" onClick={() => navigate('/creator/dashboard')}>
-                            <ArrowLeft size={20} />
-                        </Button>
-                        <div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                                <h1 className="dashboard-title">{campaignData.name}</h1>
-                                <span className={`status-badge status-active`}>{campaignData.status}</span>
-                            </div>
-                            <p className="dashboard-subtitle">
-                                {campaignData.brand} • Creator Campaign Details
-                            </p>
-                        </div>
-                    </div>
-                    <div className="tab-actions">
-                        {!negotiationStatus && (
-                            <Button variant="ghost" onClick={() => setModalType('link')}>
-                                <LinkIcon size={18} />
-                                Link Campaign
+        <CreatorCampaignProvider value={contextValue}>
+            <div className="dashboard" style={{ background: 'var(--color-bg-primary)' }}>
+                <main className="dashboard-main" style={{ marginLeft: 0, width: '100%', padding: 'var(--space-8)' }}>
+                    {/* Header */}
+                    <header className="dashboard-header" style={{ marginBottom: 'var(--space-8)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+                            <Button variant="ghost" size="sm" onClick={() => navigate('/creator/dashboard')}>
+                                <ArrowLeft size={20} />
                             </Button>
-                        )}
-                        {negotiationStatus && !isBrandAcceptedCreatorOffer && brandOfferAmount > 0 &&
-                            (negotiationStatusKey === 'accepted' || negotiationStatusKey === 'bid_pending' || negotiationStatusKey === 'amount_negotiated' || !negotiationStatusKey) && (
-                                <Button variant="secondary" onClick={() => setModalType('negotiate')}>
-                                    {negotiationStatus.bid_amount && Number(negotiationStatus.bid_amount) > 0 ? 'Update Bid' : 'Negotiate'}
-                                </Button>
-                            )}
-                        {negotiationStatus && !isBrandAcceptedCreatorOffer && brandOfferAmount <= 0 &&
-                            (negotiationStatusKey === 'accepted' || negotiationStatusKey === 'bid_pending' || negotiationStatusKey === 'amount_negotiated' || !negotiationStatusKey) && (
-                                <Button variant="ghost" onClick={() => setModalType('negotiate')}>
-                                    {negotiationStatus.bid_amount && negotiationStatus.bid_amount > 0 ? 'Update Proposal' : 'Start Negotiation'}
-                                </Button>
-                            )}
-                        {!negotiationStatus && (campaignData?.stage === 'negotiate' || campaignData?.status === 'Negotiate' || campaignData?.status === 'In Negotiation') && (
-                            <Button variant="ghost" onClick={() => setModalType('negotiate')}>
-                                Start Negotiation
-                            </Button>
-                        )}
-                        <Button variant="ghost">
-                            <MessageSquare size={18} />
-                            Contact Brand
-                        </Button>
-                    </div>
-                </header>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-8)' }}>
-                    {/* Left Column: Brief & Tasks */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
-                        {/* Campaign Brief */}
-                        <Card className="content-card">
-                            <CardHeader>
+                            <div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                                    <FileText size={20} style={{ color: 'var(--color-accent)' }} />
-                                    <h3>Campaign Brief & Guidelines</h3>
+                                    <h1 className="dashboard-title">{campaignData.name}</h1>
+                                    <span className={`status-badge status-active`}>{campaignData.status}</span>
                                 </div>
-                            </CardHeader>
-                            <CardBody>
-                                {!hasAnyBriefDetails ? (
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)', padding: 'var(--space-4)', background: 'rgba(var(--color-warning-rgb), 0.1)', borderRadius: 'var(--radius-md)', border: '1px dashed var(--color-warning)' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                                            <Info size={20} style={{ color: 'var(--color-warning)' }} />
-                                            <h5 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', color: 'var(--color-warning)', margin: 0 }}>
-                                                Brief Not Yet Available
-                                            </h5>
-                                        </div>
-                                        <p style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', margin: 0 }}>
-                                            The brand will share the campaign brief once it is ready.
-                                        </p>
-                                    </div>
-                                ) : (
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-6)' }}>
-                                        <div>
-                                            <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-1)' }}>Video Title</p>
-                                            <p style={{ color: 'var(--color-text-primary)' }}>{briefVideoTitle || '-'}</p>
-                                        </div>
-                                        <div>
-                                            <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-1)' }}>Primary Focus</p>
-                                            <p style={{ color: 'var(--color-text-primary)' }}>{briefPrimaryFocus || '-'}</p>
-                                        </div>
-                                        <div>
-                                            <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-1)' }}>Secondary Focus</p>
-                                            <p style={{ color: 'var(--color-text-primary)' }}>{briefSecondaryFocus || '-'}</p>
-                                        </div>
-                                        <div>
-                                            <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-1)' }}>Call to Action</p>
-                                            <p style={{ color: 'var(--color-text-primary)' }}>{briefCta || '-'}</p>
-                                        </div>
-                                        <div>
-                                            <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-1)' }}>Dos</p>
-                                            <p style={{ color: 'var(--color-text-primary)', whiteSpace: 'pre-wrap' }}>{briefDos || '-'}</p>
-                                        </div>
-                                        <div>
-                                            <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-1)' }}>Don'ts</p>
-                                            <p style={{ color: 'var(--color-text-primary)', whiteSpace: 'pre-wrap' }}>{briefDonts || '-'}</p>
-                                        </div>
-                                        <div style={{ gridColumn: '1 / -1' }}>
-                                            <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-1)' }}>Sample Video</p>
-                                            {(firstBriefValue('sample_video_url', 'sampleVideoUrl', 'sample_video')) ? (
-                                                <a
-                                                    href={firstBriefValue('sample_video_url', 'sampleVideoUrl', 'sample_video')}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    style={{ color: 'var(--color-accent)', textDecoration: 'none' }}
-                                                >
-                                                    View sample video
-                                                </a>
-                                            ) : (
-                                                <p style={{ color: 'var(--color-text-primary)' }}>No sample video</p>
-                                            )}
-                                        </div>
-                                    </div>
+                                <p className="dashboard-subtitle">
+                                    {campaignData.brand} • Creator Campaign Details
+                                </p>
+                            </div>
+                        </div>
+                        <div className="tab-actions">
+                            {!negotiationStatus && (
+                                <Button variant="ghost" onClick={() => setModalType('link')}>
+                                    <LinkIcon size={18} />
+                                    Link Campaign
+                                </Button>
+                            )}
+                            {negotiationStatus && !isBrandAcceptedCreatorOffer && brandOfferAmount > 0 &&
+                                (negotiationStatusKey === 'accepted' || negotiationStatusKey === 'bid_pending' || negotiationStatusKey === 'amount_negotiated' || !negotiationStatusKey) && (
+                                    <Button variant="secondary" onClick={() => setModalType('negotiate')}>
+                                        {negotiationStatus.bid_amount && Number(negotiationStatus.bid_amount) > 0 ? 'Update Bid' : 'Negotiate'}
+                                    </Button>
                                 )}
+                            {negotiationStatus && !isBrandAcceptedCreatorOffer && brandOfferAmount <= 0 &&
+                                (negotiationStatusKey === 'accepted' || negotiationStatusKey === 'bid_pending' || negotiationStatusKey === 'amount_negotiated' || !negotiationStatusKey) && (
+                                    <Button variant="ghost" onClick={() => setModalType('negotiate')}>
+                                        {negotiationStatus.bid_amount && negotiationStatus.bid_amount > 0 ? 'Update Proposal' : 'Start Negotiation'}
+                                    </Button>
+                                )}
+                            {!negotiationStatus && (campaignData?.stage === 'negotiate' || campaignData?.status === 'Negotiate' || campaignData?.status === 'In Negotiation') && (
+                                <Button variant="ghost" onClick={() => setModalType('negotiate')}>
+                                    Start Negotiation
+                                </Button>
+                            )}
+                            <Button variant="ghost">
+                                <MessageSquare size={18} />
+                                Contact Brand
+                            </Button>
+                        </div>
+                    </header>
 
-                                {/* Brand Script Template Section */}
-                                {(briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template) && (
+                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-8)' }}>
+                        <CreatorCampaignLeftColumn />
+                        <CreatorCampaignRightColumn />
+                    </div>
+
+                    {/* Link Campaign Modal */}
+                    <Modal
+                        isOpen={modalType === 'link'}
+                        onClose={() => !isLinking && setModalType(null)}
+                        title="Link Campaign"
+                        subtitle="Link this campaign to your account"
+                    >
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                            <Input
+                                label="Creator Token (Optional)"
+                                placeholder="Token from email invitation"
+                                value={creatorToken}
+                                onChange={(e) => setCreatorToken(e.target.value)}
+                            />
+                            <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
+                                <Button variant="ghost" onClick={() => setModalType(null)} disabled={isLinking}>Cancel</Button>
+                                <Button onClick={handleLinkCampaign} isLoading={isLinking}>Link Campaign</Button>
+                            </div>
+                        </div>
+                    </Modal>
+
+                    {/* Negotiate Modal */}
+                    <Modal
+                        isOpen={modalType === 'negotiate'}
+                        onClose={() => !isNegotiating && setModalType(null)}
+                        title="Negotiate Deal"
+                        subtitle={brandOfferAmount > 0 ? "Propose a counter-amount" : "Enter your proposed amount"}
+                    >
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                            {brandOfferAmount > 0 && (
+                                <div style={{
+                                    padding: 'var(--space-4)',
+                                    background: 'var(--color-bg-secondary)',
+                                    borderRadius: 'var(--radius-md)',
+                                    marginBottom: 'var(--space-2)'
+                                }}>
+                                    <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-1)' }}>
+                                        Brand's Proposal
+                                    </p>
+                                    <p style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-text-primary)' }}>
+                                        ₹{brandOfferAmount.toLocaleString('en-IN')}
+                                    </p>
+                                </div>
+                            )}
+                            <Input
+                                label="Your Proposed Amount (INR)"
+                                type="number"
+                                placeholder="5000"
+                                value={negotiationAmount}
+                                onChange={(e) => setNegotiationAmount(e.target.value)}
+                                required
+                                min="0"
+                                step="0.01"
+                            />
+                            <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
+                                <Button variant="ghost" onClick={() => setModalType(null)} disabled={isNegotiating}>Cancel</Button>
+                                <Button onClick={handleNegotiate} isLoading={isNegotiating} disabled={!negotiationAmount || parseFloat(negotiationAmount) <= 0}>
+                                    Submit Proposal
+                                </Button>
+                            </div>
+                        </div>
+                    </Modal>
+
+                    {/* Accept Deal Modal */}
+                    <Modal
+                        isOpen={modalType === 'accept-deal'}
+                        onClose={() => !isSubmitting && setModalType(null)}
+                        title="Accept Deal"
+                        subtitle="Confirm acceptance of the brand's proposal"
+                    >
+                        {!isSuccess ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                                <p style={{ fontSize: 'var(--text-base)', color: 'var(--color-text-secondary)' }}>
+                                    Are you sure you want to accept the brand's proposed deal?
+                                </p>
+                                {brandOfferAmount > 0 && (
                                     <div style={{
-                                        marginTop: 'var(--space-6)',
-                                        padding: 'var(--space-4)',
+                                        padding: 'var(--space-6)',
                                         background: 'var(--color-bg-secondary)',
                                         borderRadius: 'var(--radius-md)',
-                                        border: '1px solid var(--color-border-subtle)'
+                                        textAlign: 'center'
                                     }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 'var(--space-3)' }}>
-                                            <h5 style={{ fontSize: 'var(--text-md)', fontWeight: 'var(--font-bold)', margin: 0 }}>
-                                                Brand Script Template
-                                            </h5>
-                                            <Button
-                                                size="sm"
-                                                variant="primary"
-                                                onClick={() => {
-                                                    const submittedScript = briefData?.script_content || campaignData?.script_content || '';
-                                                    const template = briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template;
-                                                    setScriptContent(submittedScript || template || '');
-                                                    setModalType('script');
-                                                }}
-                                            >
-                                                <CheckCircle2 size={16} style={{ marginRight: 'var(--space-2)' }} />
-                                                Finalize Script
-                                            </Button>
-                                        </div>
-                                        <div style={{
-                                            background: 'var(--color-bg-primary)',
-                                            padding: 'var(--space-4)',
-                                            borderRadius: 'var(--radius-sm)',
-                                            whiteSpace: 'pre-wrap',
-                                            fontFamily: 'monospace',
-                                            fontSize: 'var(--text-sm)',
-                                            color: 'var(--color-text-primary)',
-                                            border: '1px solid var(--color-border)',
-                                            maxHeight: '300px',
-                                            overflow: 'auto'
-                                        }}>
-                                            {briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template}
-                                        </div>
-                                        <p style={{
-                                            marginTop: 'var(--space-2)',
-                                            fontSize: 'var(--text-xs)',
-                                            color: 'var(--color-text-tertiary)',
-                                            fontStyle: 'italic'
-                                        }}>
-                                            Review the script template above and click "Finalize Script" to confirm and submit it.
+                                        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-2)' }}>
+                                            Final Amount
+                                        </p>
+                                        <p style={{ fontSize: 'var(--text-3xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-success)' }}>
+                                            ₹{brandOfferAmount.toLocaleString('en-IN')}
                                         </p>
                                     </div>
                                 )}
-                            </CardBody>
-                        </Card>
+                                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)' }}>
+                                    By accepting, you agree to the terms and conditions of this campaign.
+                                </p>
+                                <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
+                                    <Button variant="ghost" onClick={() => setModalType(null)} disabled={isSubmitting}>Cancel</Button>
+                                    <Button onClick={handleAcceptDeal} isLoading={isSubmitting} variant="primary">Confirm Acceptance</Button>
+                                </div>
+                            </div>
+                        ) : (
+                            <div style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>
+                                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--color-success)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto var(--space-4)' }}>
+                                    <BadgeCheck size={32} />
+                                </div>
+                                <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', marginBottom: 'var(--space-2)' }}>Deal Accepted!</h3>
+                                <p style={{ color: 'var(--color-text-secondary)' }}>You can now proceed to script submission.</p>
+                            </div>
+                        )}
+                    </Modal>
 
-                        {/* Inline Script Submission */}
-                        {canSubmitScript && (
-                            <Card className="content-card">
-                                <CardHeader>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                                        <Upload size={20} style={{ color: 'var(--color-accent)' }} />
-                                        <h3>Submit Script</h3>
-                                    </div>
-                                </CardHeader>
-                                <CardBody>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                                        {(scriptDeliverableStatus === 'Changes Requested' && brandScriptFeedback) && (
+                    {/* Reject Deal Modal */}
+                    <Modal
+                        isOpen={modalType === 'reject-deal'}
+                        onClose={() => !isSubmitting && setModalType(null)}
+                        title="Decline Deal"
+                        subtitle="Decline the brand's proposal"
+                    >
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                            <p style={{ fontSize: 'var(--text-base)', color: 'var(--color-text-secondary)' }}>
+                                Are you sure you want to decline this deal? This action may end the negotiation for this campaign.
+                            </p>
+                            <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
+                                <Button variant="ghost" onClick={() => setModalType(null)} disabled={isSubmitting}>Cancel</Button>
+                                <Button
+                                    onClick={handleRejectDeal}
+                                    isLoading={isSubmitting}
+                                    variant="outline"
+                                    style={{ borderColor: 'var(--color-error)', color: 'var(--color-error)' }}
+                                >
+                                    Decline Deal
+                                </Button>
+                            </div>
+                        </div>
+                    </Modal>
+
+                    {/* Modals (Integrated for completeness) */}
+                    <Modal
+                        isOpen={modalType === 'script' || modalType === 'content'}
+                        onClose={() => !isSubmitting && setModalType(null)}
+                        title={modalType === 'script' ? 'Finalize Script' : 'Upload Content'}
+                        size="md"
+                    >
+                        {!isSuccess ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+                                {modalType === 'script' ? (
+                                    <>
+                                        {(briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template) && (
                                             <div style={{
-                                                padding: 'var(--space-4)',
-                                                background: 'rgba(var(--color-warning-rgb), 0.1)',
-                                                border: '1px solid rgba(var(--color-warning-rgb), 0.35)',
-                                                borderRadius: 'var(--radius-md)'
+                                                padding: 'var(--space-3)',
+                                                background: 'var(--color-bg-secondary)',
+                                                borderRadius: 'var(--radius-md)',
+                                                border: '1px solid var(--color-border-subtle)',
+                                                marginBottom: 'var(--space-2)'
                                             }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
-                                                    <MessageSquare size={16} style={{ color: 'var(--color-warning)' }} />
-                                                    <span style={{ fontWeight: 'var(--font-semibold)' }}>Brand requested changes</span>
-                                                </div>
-                                                <p style={{ margin: 0, color: 'var(--color-text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}>
-                                                    {brandScriptFeedback}
+                                                <p style={{
+                                                    fontSize: 'var(--text-xs)',
+                                                    color: 'var(--color-text-tertiary)',
+                                                    marginBottom: 'var(--space-2)',
+                                                    fontWeight: 'var(--font-semibold)'
+                                                }}>
+                                                    Brand Script Template:
                                                 </p>
+                                                <div style={{
+                                                    background: 'var(--color-bg-primary)',
+                                                    padding: 'var(--space-3)',
+                                                    borderRadius: 'var(--radius-sm)',
+                                                    whiteSpace: 'pre-wrap',
+                                                    fontFamily: 'monospace',
+                                                    fontSize: 'var(--text-sm)',
+                                                    color: 'var(--color-text-primary)',
+                                                    border: '1px solid var(--color-border)',
+                                                    maxHeight: '200px',
+                                                    overflow: 'auto'
+                                                }}>
+                                                    {briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template}
+                                                </div>
                                             </div>
                                         )}
                                         <TextArea
-                                            label="Script Content"
-                                            placeholder="Write your campaign script here..."
-                                            rows={8}
-                                            value={inlineScriptContent}
-                                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInlineScriptContent(e.target.value)}
+                                            label={(briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template)
+                                                ? "Review and Edit Script (if needed)"
+                                                : "Script Content"}
+                                            placeholder={(briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template)
+                                                ? "Review the brand template above and make any edits if needed..."
+                                                : "Write your campaign script here..."}
+                                            rows={10}
+                                            value={scriptContent}
+                                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setScriptContent(e.target.value)}
                                             required
                                         />
-                                        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                            <Button onClick={handleInlineScriptSubmit} isLoading={isSubmittingInlineScript}>
-                                                Submit Script
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </CardBody>
-                            </Card>
-                        )}
-
-                        <Card className="content-card">
-                            <CardHeader>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                                    <Upload size={20} style={{ color: 'var(--color-accent)' }} />
-                                    <h3>Upload Content</h3>
-                                </div>
-                            </CardHeader>
-                            <CardBody>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                                    {canUploadContent && (
-                                        <>
-                                            {isContentChangesRequested && (
-                                                <div style={{
-                                                    padding: 'var(--space-4)',
-                                                    background: 'rgba(251, 191, 36, 0.1)',
-                                                    border: '1px solid rgba(251, 191, 36, 0.35)',
-                                                    borderRadius: 'var(--radius-md)'
-                                                }}>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
-                                                        <MessageSquare size={16} style={{ color: 'var(--color-warning)' }} />
-                                                        <span style={{ fontWeight: 'var(--font-semibold)' }}>Changes required by brand</span>
-                                                    </div>
-                                                    <p style={{ margin: 0, color: 'var(--color-text-primary)', whiteSpace: 'pre-wrap', lineHeight: 1.5, fontSize: 'var(--text-sm)' }}>
-                                                        {brandContentFeedback || 'Your uploaded content needs revision. Please update it and re-upload for review.'}
-                                                    </p>
-                                                </div>
-                                            )}
-                                            <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>
-                                                {isContentChangesRequested
-                                                    ? 'Please make the requested updates and re-upload your video.'
-                                                    : 'Your script is approved. Upload your video for brand review.'}
-                                            </p>
-                                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                                <Button onClick={() => setModalType('content')}>
-                                                    {isContentChangesRequested ? 'Re-upload Content' : 'Upload Content'}
-                                                </Button>
-                                            </div>
-                                        </>
-                                    )}
-                                    {isContentUnderBrandReview && (
-                                        <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>
-                                            Your video is uploaded and pending brand review. You can go live only after approval.
-                                        </p>
-                                    )}
-                                    {canGoLive && (
-                                        <>
-                                            <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>
-                                                Brand approved your content. You can now add your live post link.
-                                            </p>
-                                            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                                <Button onClick={() => setModalType('go-live')}>
-                                                    Go Live
-                                                </Button>
-                                            </div>
-                                        </>
-                                    )}
-                                    {(!canUploadContent && !isContentUnderBrandReview && !canGoLive) && (
-                                        <>
-                                            {scriptIsNextStep ? (
-                                                <>
-                                                    <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-3)' }}>
-                                                        Submit your script for brand review first. Upload content unlocks after script approval.
-                                                    </p>
-                                                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                                                        <Button
-                                                            variant="primary"
-                                                            onClick={() => {
-                                                                const template = briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template || '';
-                                                                const submitted = briefData?.script_content || campaignData?.script_content || '';
-                                                                setScriptContent(submitted || template);
-                                                                setModalType('script');
-                                                            }}
-                                                        >
-                                                            Submit Script
-                                                        </Button>
-                                                    </div>
-                                                </>
-                                            ) : currentWorkflowStatus === 'script_pending' ? (
-                                                <p style={{ margin: 0, color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)' }}>
-                                                    Your script is under review. Upload content unlocks after script approval.
-                                                </p>
-                                            ) : (
-                                                <p style={{ margin: 0, color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)' }}>
-                                                    Upload content unlocks after script approval.
-                                                </p>
-                                            )}
-                                        </>
-                                    )}
-                                </div>
-                            </CardBody>
-                        </Card>
-
-                        {/* Negotiation Status Card */}
-                        {negotiationStatus && (
-                            <Card className="content-card" style={{ maxWidth: '440px', alignSelf: 'flex-start' }}>
-                                <CardHeader>
-                                    <h3>Negotiation Status</h3>
-                                </CardHeader>
-                                <CardBody>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <span style={{ color: 'var(--color-text-secondary)' }}>Status</span>
-                                            <span className={`status-badge ${(negotiationStatus.status === 'amount_finalized' || isBrandAcceptedCreatorOffer) ? 'status-active' : negotiationStatus.status === 'rejected' ? 'status-error' : 'status-planning'}`}>
-                                                {negotiationStatus.status === 'accepted' ? (isBrandAcceptedCreatorOffer ? 'Deal Accepted' : 'Brand Reviewing') :
-                                                    negotiationStatus.status === 'bid_pending' ? 'Bid Submitted' :
-                                                        negotiationStatus.status === 'amount_negotiated' ? 'Negotiating' :
-                                                            negotiationStatus.status === 'amount_finalized' ? 'Deal Agreed' :
-                                                                negotiationStatus.status === 'rejected' ? 'Declined' :
-                                                                    'Pending'}
-                                            </span>
-                                        </div>
-                                        {Number(negotiationStatus?.bid_amount) > 0 && (
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <span style={{ color: 'var(--color-text-secondary)' }}>Your Proposal</span>
-                                                <span style={{ fontWeight: 'var(--font-bold)' }}>{formatINR(negotiationStatus.bid_amount)}</span>
-                                            </div>
-                                        )}
-                                        {brandOfferAmount > 0 && (
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                <span style={{ color: 'var(--color-text-secondary)' }}>Brand's Proposal</span>
-                                                <span style={{ fontWeight: 'var(--font-bold)', color: 'var(--color-success)' }}>{formatINR(brandOfferAmount)}</span>
-                                            </div>
-                                        )}
-                                        {/* Show Accept Deal / Decline / Update Bid only when not yet accepted by brand (not accepted and not amount_finalized) */}
-                                        {!isBrandAcceptedCreatorOffer && (negotiationStatusKey === 'accepted' || negotiationStatus.status === 'amount_negotiated' || negotiationStatus.status === 'bid_pending') && (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                                                {Number(negotiationStatus?.bid_amount) > 0 && (
-                                                    <div style={{
-                                                        padding: 'var(--space-3)',
-                                                        background: 'rgba(59, 130, 246, 0.08)',
-                                                        borderRadius: 'var(--radius-md)',
-                                                        textAlign: 'center',
-                                                        fontSize: 'var(--text-sm)',
-                                                        color: 'var(--color-text-secondary)'
-                                                    }}>
-                                                        Brand is reviewing your amount.
-                                                    </div>
-                                                )}
-                                                <Button onClick={() => setModalType('negotiate')} fullWidth variant={brandOfferAmount > 0 ? "secondary" : "primary"}>
-                                                    {negotiationStatus.bid_amount ? 'Update Bid' : 'Make an Offer'}
-                                                </Button>
-                                            </div>
-                                        )}
-                                        {/* Show start/update negotiation button if no brand proposal yet */}
-                                        {(brandOfferAmount <= 0) &&
-                                            !isBrandAcceptedCreatorOffer &&
-                                            (negotiationStatusKey === 'accepted' || negotiationStatus.status === 'bid_pending' || negotiationStatus.status === 'amount_negotiated' || !negotiationStatus.status) && (
-                                                <Button onClick={() => setModalType('negotiate')} fullWidth variant="secondary">
-                                                    {negotiationStatus.bid_amount && negotiationStatus.bid_amount > 0 ? 'Update Proposal' : 'Start Negotiation'}
-                                                </Button>
-                                            )}
-                                        {/* Show deal accepted/finalized message when brand has accepted (accepted or amount_finalized) */}
-                                        {(negotiationStatus.status === 'amount_finalized' || isBrandAcceptedCreatorOffer) && (
-                                            <div style={{
-                                                padding: 'var(--space-3)',
-                                                background: 'rgba(34, 197, 94, 0.1)',
-                                                borderRadius: 'var(--radius-md)',
-                                                textAlign: 'center'
+                                        {(briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template) && (
+                                            <p style={{
+                                                fontSize: 'var(--text-xs)',
+                                                color: 'var(--color-text-tertiary)',
+                                                fontStyle: 'italic'
                                             }}>
-                                                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-2)' }}>
-                                                    {negotiationStatus.status === 'amount_finalized' ? 'Deal Finalized' : 'Brand Accepted Your Offer'}
-                                                </p>
-                                                {brandOfferAmount > 0 && (
-                                                    <p style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-bold)', color: 'var(--color-success)' }}>
-                                                        {formatINR(brandOfferAmount)}
-                                                    </p>
-                                                )}
-                                            </div>
+                                                The brand script template is pre-filled. Review it and click "Finalize Script" to confirm and submit.
+                                            </p>
                                         )}
-                                    </div>
-                                </CardBody>
-                            </Card>
-                        )}
-
-                        {/* Deliverables Checklist */}
-                        <Card className="content-card">
-                            <CardHeader>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                                    <Clock size={20} style={{ color: 'var(--color-warning)' }} />
-                                    <h3>My Deliverables</h3>
-                                </div>
-                            </CardHeader>
-                            <CardBody className="no-padding">
-                                <div className="table-responsive">
-                                    <table className="creators-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Task</th>
-                                                <th>Deadline</th>
-                                                <th>Status</th>
-                                                <th style={{ textAlign: 'right' }}>Action</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {[
-                                                { name: 'Concept & Script Submission', date: 'Mar 15, 2026', status: scriptDeliverableStatus, type: 'script' },
-                                                { name: 'Instagram Reel - Outdoor Shoot', date: 'Mar 18, 2026', status: 'Pending', type: 'content' },
-                                                { name: 'Instagram Story - Behind the scenes', date: 'Mar 19, 2026', status: 'Upcoming', type: 'content' },
-                                                { name: 'Final Post Submission', date: 'Mar 22, 2026', status: 'Upcoming', type: 'content' }
-                                            ].map((task, i) => (
-                                                <tr key={i}>
-                                                    <td style={{ fontWeight: 'var(--font-medium)' }}>{task.name}</td>
-                                                    <td>
-                                                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)' }}>
-                                                            <Calendar size={14} />
-                                                            {task.date}
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <span className={`status-badge ${task.status === 'Completed' || task.status === 'Accepted' ? 'status-active' :
-                                                            task.status === 'Pending' || task.status === 'Changes Requested' ? 'status-content-review' :
-                                                                task.status === 'In Review' ? 'status-planning' :
-                                                                    'status-planning'
-                                                            }`}>
-                                                            {task.status}
-                                                        </span>
-                                                    </td>
-                                                    <td style={{ textAlign: 'right' }}>
-                                                        {(task.type !== 'script' || (task.status !== 'Accepted' && task.status !== 'In Review')) &&
-                                                            (task.type !== 'content' || canUploadContent) && (
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="sm"
-                                                                    onClick={() => setModalType(task.type as any)}
-                                                                >
-                                                                    {task.type === 'script' ? 'Submit' : 'Upload'}
-                                                                    <ChevronRight size={14} />
-                                                                </Button>
-                                                            )}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </CardBody>
-                        </Card>
-                    </div>
-
-                    {/* Right Column: Mini Stats & Action Center */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-                        {/* Script Review Status */}
-                        {scriptReviewMeta && (
-                            <Card className="content-card">
-                                <CardHeader>
-                                    <h3>Script Review</h3>
-                                </CardHeader>
-                                <CardBody>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                                        <span className={`status-badge ${scriptReviewMeta.tone}`} style={{ width: 'fit-content' }}>
-                                            {scriptReviewMeta.label}
-                                        </span>
-                                        <p style={{ color: 'var(--color-text-secondary)', margin: 0, fontSize: 'var(--text-sm)', lineHeight: 1.5 }}>
-                                            {scriptReviewMeta.message}
-                                        </p>
-                                        {brandScriptFeedback && (
+                                    </>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                                        {isContentChangesRequested && (
                                             <div style={{
-                                                marginTop: 'var(--space-2)',
                                                 padding: 'var(--space-3)',
-                                                background: 'var(--color-bg-secondary)',
-                                                border: '1px solid var(--color-border-subtle)',
+                                                background: 'rgba(251, 191, 36, 0.1)',
+                                                border: '1px solid rgba(251, 191, 36, 0.35)',
                                                 borderRadius: 'var(--radius-md)'
                                             }}>
                                                 <p style={{
@@ -1220,7 +1012,7 @@ export const CreatorCampaignDetails: React.FC = () => {
                                                     color: 'var(--color-text-tertiary)',
                                                     fontWeight: 'var(--font-semibold)'
                                                 }}>
-                                                    Brand Comment
+                                                    Required changes
                                                 </p>
                                                 <p style={{
                                                     margin: 0,
@@ -1229,435 +1021,66 @@ export const CreatorCampaignDetails: React.FC = () => {
                                                     lineHeight: 1.5,
                                                     fontSize: 'var(--text-sm)'
                                                 }}>
-                                                    {brandScriptFeedback}
+                                                    {brandContentFeedback || 'Brand requested content changes. Update your video and upload again.'}
                                                 </p>
                                             </div>
                                         )}
-                                    </div>
-                                </CardBody>
-                            </Card>
-                        )}
-
-                        {/* Campaign Stats */}
-                        <Card className="content-card">
-                            <CardHeader>
-                                <h3>Campaign Details</h3>
-                            </CardHeader>
-                            <CardBody>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>Total Budget</span>
-                                        <span style={{ fontWeight: 'var(--font-bold)' }}>
-                                            {campaignData.total_budget !== undefined && campaignData.total_budget !== null ? formatINR(campaignData.total_budget) : '—'}
-                                        </span>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>CPV</span>
-                                        <span style={{ fontWeight: 'var(--font-bold)' }}>
-                                            {campaignData.cpv !== undefined && campaignData.cpv !== null ? formatINR(campaignData.cpv) : '—'}
-                                        </span>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>Creator Count</span>
-                                        <span style={{ fontWeight: 'var(--font-bold)' }}>
-                                            {campaignData.creator_count !== undefined && campaignData.creator_count !== null ? campaignData.creator_count : '—'}
-                                        </span>
-                                    </div>
-                                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', paddingTop: 'var(--space-3)', borderTop: '1px solid var(--color-border-subtle)' }}>
-                                        <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>Description</span>
-                                        <span style={{ color: 'var(--color-text-primary)', fontSize: 'var(--text-sm)', lineHeight: 1.5 }}>
-                                            {campaignData.description || '—'}
-                                        </span>
-                                    </div>
-                                    {Array.isArray(campaignData.creator_categories) && campaignData.creator_categories.length > 0 && (
-                                        <div style={{ paddingTop: 'var(--space-3)', borderTop: '1px solid var(--color-border-subtle)' }}>
-                                            <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', display: 'block', marginBottom: 'var(--space-2)' }}>
-                                                Categories
-                                            </span>
-                                            <div style={{ display: 'flex', gap: 'var(--space-2)', flexWrap: 'wrap' }}>
-                                                {campaignData.creator_categories.map((cat: string) => (
-                                                    <span key={cat} style={{ background: 'var(--color-bg-tertiary)', padding: '4px 10px', borderRadius: '20px', fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>
-                                                        {cat}
-                                                    </span>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                    {(!Array.isArray(campaignData.creator_categories) || campaignData.creator_categories.length === 0) && (
-                                        <div style={{ paddingTop: 'var(--space-3)', borderTop: '1px solid var(--color-border-subtle)' }}>
-                                            <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)', display: 'block', marginBottom: 'var(--space-1)' }}>
-                                                Categories
-                                            </span>
-                                            <span style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)' }}>—</span>
-                                        </div>
-                                    )}
-                                    {Number(negotiationStatus?.final_amount) > 0 && (
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 'var(--space-3)', borderTop: '1px solid var(--color-border-subtle)' }}>
-                                            <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>Your Deal Amount</span>
-                                            <span style={{ fontWeight: 'var(--font-bold)', color: 'var(--color-success)', fontSize: 'var(--text-lg)' }}>
-                                                {formatINR(negotiationStatus.final_amount)}
-                                            </span>
-                                        </div>
-                                    )}
-                                    {Number(negotiationStatus?.bid_amount) > 0 && Number(negotiationStatus?.final_amount) <= 0 && (
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 'var(--space-3)', borderTop: '1px solid var(--color-border-subtle)' }}>
-                                            <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>Your Proposal</span>
-                                            <span style={{ fontWeight: 'var(--font-bold)', fontSize: 'var(--text-lg)' }}>
-                                                {formatINR(negotiationStatus.bid_amount)}
-                                            </span>
-                                        </div>
-                                    )}
-                                </div>
-                            </CardBody>
-                        </Card>
-
-                        {/* Status Card */}
-                        <Card style={{ background: 'linear-gradient(135deg, rgba(var(--color-accent-rgb), 0.1) 0%, transparent 100%)' }}>
-                            <CardBody>
-                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
-                                    <h4 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-bold)' }}>Current Progress</h4>
-                                    <span style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-accent)' }}>
-                                        {campaignData.progress || 0}%
-                                    </span>
-                                </div>
-                                <div className="progress-bar" style={{ height: '8px', marginBottom: 'var(--space-4)' }}>
-                                    <div className="progress-fill" style={{ width: `${campaignData.progress || 0}%` }}></div>
-                                </div>
-                                {campaignData.deadline && (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--color-warning)', fontSize: 'var(--text-xs)' }}>
-                                        <Clock size={14} />
-                                        Deadline: {new Date(campaignData.deadline).toLocaleDateString()}
+                                        <FileUpload
+                                            accept="video/*"
+                                            maxSize={100}
+                                            onFileSelect={(files: File[]) => setContentFiles(files)}
+                                            label="Upload Content Video"
+                                            description="Upload the video file for this campaign"
+                                        />
+                                        <Input
+                                            label="Content Link (Optional)"
+                                            placeholder="https://instagram.com/p/..."
+                                            value={contentLink}
+                                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setContentLink(e.target.value)}
+                                        />
                                     </div>
                                 )}
-                            </CardBody>
-                        </Card>
-
-                        {/* Payout Details */}
-                        <Card>
-                            <CardHeader>
-                                <h3>Payment Schedule</h3>
-                            </CardHeader>
-                            <CardBody>
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>Milestone 1 (Script)</span>
-                                        <span style={{ fontWeight: 'var(--font-semibold)' }}>₹150</span>
-                                    </div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ color: 'var(--color-text-secondary)', fontSize: 'var(--text-sm)' }}>Milestone 2 (Content)</span>
-                                        <span style={{ fontWeight: 'var(--font-semibold)' }}>₹350</span>
-                                    </div>
-                                    <div style={{ height: '1px', background: 'var(--color-border-subtle)', margin: 'var(--space-2) 0' }}></div>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ color: 'var(--color-text-primary)', fontWeight: 'var(--font-bold)' }}>Total Contract</span>
-                                        <span style={{ fontWeight: 'var(--font-bold)', color: 'var(--color-success)', fontSize: 'var(--text-xl)' }}>₹500</span>
-                                    </div>
+                                <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'flex-end' }}>
+                                    <Button variant="ghost" onClick={() => setModalType(null)} disabled={isSubmitting}>Cancel</Button>
+                                    <Button onClick={handleAction} isLoading={isSubmitting} disabled={modalType === 'content' && contentFiles.length === 0}>
+                                        {modalType === 'script' ? 'Finalize Script' : 'Submit'}
+                                    </Button>
                                 </div>
-                            </CardBody>
-                        </Card>
-
-                        {/* Support Card */}
-                        <Card className="notice-card" style={{ margin: 0 }}>
-                            <CardBody>
-                                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 'var(--space-3)' }}>
-                                    <Info size={20} style={{ color: 'var(--color-info)', flexShrink: 0 }} />
-                                    <div>
-                                        <h4 style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-bold)', marginBottom: 'var(--space-1)' }}>Need Help?</h4>
-                                        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', margin: 0 }}>
-                                            Read the full creator policy or contact support if you have questions about this campaign.
-                                        </p>
-                                    </div>
+                            </div>
+                        ) : (
+                            <div style={{ padding: 'var(--space-8) 0', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 'var(--space-4)' }}>
+                                <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(34, 197, 94, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-success)' }}>
+                                    <CheckCircle2 size={40} />
                                 </div>
-                            </CardBody>
-                        </Card>
-                    </div>
-                </div>
-
-                {/* Link Campaign Modal */}
-                <Modal
-                    isOpen={modalType === 'link'}
-                    onClose={() => !isLinking && setModalType(null)}
-                    title="Link Campaign"
-                    subtitle="Link this campaign to your account"
-                >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                        <Input
-                            label="Creator Token (Optional)"
-                            placeholder="Token from email invitation"
-                            value={creatorToken}
-                            onChange={(e) => setCreatorToken(e.target.value)}
-                        />
-                        <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
-                            <Button variant="ghost" onClick={() => setModalType(null)} disabled={isLinking}>Cancel</Button>
-                            <Button onClick={handleLinkCampaign} isLoading={isLinking}>Link Campaign</Button>
-                        </div>
-                    </div>
-                </Modal>
-
-                {/* Negotiate Modal */}
-                <Modal
-                    isOpen={modalType === 'negotiate'}
-                    onClose={() => !isNegotiating && setModalType(null)}
-                    title="Negotiate Deal"
-                    subtitle={brandOfferAmount > 0 ? "Propose a counter-amount" : "Enter your proposed amount"}
-                >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                        {brandOfferAmount > 0 && (
-                            <div style={{
-                                padding: 'var(--space-4)',
-                                background: 'var(--color-bg-secondary)',
-                                borderRadius: 'var(--radius-md)',
-                                marginBottom: 'var(--space-2)'
-                            }}>
-                                <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-1)' }}>
-                                    Brand's Proposal
-                                </p>
-                                <p style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-text-primary)' }}>
-                                    ₹{brandOfferAmount.toLocaleString('en-IN')}
-                                </p>
+                                <h3>Submission Successful!</h3>
+                                <p style={{ color: 'var(--color-text-secondary)' }}>Your submission has been sent to the brand for review.</p>
                             </div>
                         )}
-                        <Input
-                            label="Your Proposed Amount (INR)"
-                            type="number"
-                            placeholder="5000"
-                            value={negotiationAmount}
-                            onChange={(e) => setNegotiationAmount(e.target.value)}
-                            required
-                            min="0"
-                            step="0.01"
-                        />
-                        <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
-                            <Button variant="ghost" onClick={() => setModalType(null)} disabled={isNegotiating}>Cancel</Button>
-                            <Button onClick={handleNegotiate} isLoading={isNegotiating} disabled={!negotiationAmount || parseFloat(negotiationAmount) <= 0}>
-                                Submit Proposal
-                            </Button>
-                        </div>
-                    </div>
-                </Modal>
+                    </Modal>
 
-                {/* Accept Deal Modal */}
-                <Modal
-                    isOpen={modalType === 'accept-deal'}
-                    onClose={() => !isSubmitting && setModalType(null)}
-                    title="Accept Deal"
-                    subtitle="Confirm acceptance of the brand's proposal"
-                >
-                    {!isSuccess ? (
+                    <Modal
+                        isOpen={modalType === 'go-live'}
+                        onClose={() => !isSubmitting && setModalType(null)}
+                        title="Go Live"
+                        subtitle="Submit your published reel/post link"
+                    >
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                            <p style={{ fontSize: 'var(--text-base)', color: 'var(--color-text-secondary)' }}>
-                                Are you sure you want to accept the brand's proposed deal?
-                            </p>
-                            {brandOfferAmount > 0 && (
-                                <div style={{
-                                    padding: 'var(--space-6)',
-                                    background: 'var(--color-bg-secondary)',
-                                    borderRadius: 'var(--radius-md)',
-                                    textAlign: 'center'
-                                }}>
-                                    <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-2)' }}>
-                                        Final Amount
-                                    </p>
-                                    <p style={{ fontSize: 'var(--text-3xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-success)' }}>
-                                        ₹{brandOfferAmount.toLocaleString('en-IN')}
-                                    </p>
-                                </div>
-                            )}
-                            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)' }}>
-                                By accepting, you agree to the terms and conditions of this campaign.
-                            </p>
-                            <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
-                                <Button variant="ghost" onClick={() => setModalType(null)} disabled={isSubmitting}>Cancel</Button>
-                                <Button onClick={handleAcceptDeal} isLoading={isSubmitting} variant="primary">Confirm Acceptance</Button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div style={{ textAlign: 'center', padding: 'var(--space-8) 0' }}>
-                            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(34, 197, 94, 0.1)', color: 'var(--color-success)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto var(--space-4)' }}>
-                                <BadgeCheck size={32} />
-                            </div>
-                            <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', marginBottom: 'var(--space-2)' }}>Deal Accepted!</h3>
-                            <p style={{ color: 'var(--color-text-secondary)' }}>You can now proceed to script submission.</p>
-                        </div>
-                    )}
-                </Modal>
-
-                {/* Reject Deal Modal */}
-                <Modal
-                    isOpen={modalType === 'reject-deal'}
-                    onClose={() => !isSubmitting && setModalType(null)}
-                    title="Decline Deal"
-                    subtitle="Decline the brand's proposal"
-                >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                        <p style={{ fontSize: 'var(--text-base)', color: 'var(--color-text-secondary)' }}>
-                            Are you sure you want to decline this deal? This action may end the negotiation for this campaign.
-                        </p>
-                        <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'flex-end', marginTop: 'var(--space-4)' }}>
-                            <Button variant="ghost" onClick={() => setModalType(null)} disabled={isSubmitting}>Cancel</Button>
-                            <Button
-                                onClick={handleRejectDeal}
-                                isLoading={isSubmitting}
-                                variant="outline"
-                                style={{ borderColor: 'var(--color-error)', color: 'var(--color-error)' }}
-                            >
-                                Decline Deal
-                            </Button>
-                        </div>
-                    </div>
-                </Modal>
-
-                {/* Modals (Integrated for completeness) */}
-                <Modal
-                    isOpen={modalType === 'script' || modalType === 'content'}
-                    onClose={() => !isSubmitting && setModalType(null)}
-                    title={modalType === 'script' ? 'Finalize Script' : 'Upload Content'}
-                    size="md"
-                >
-                    {!isSuccess ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-                            {modalType === 'script' ? (
-                                <>
-                                    {(briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template) && (
-                                        <div style={{
-                                            padding: 'var(--space-3)',
-                                            background: 'var(--color-bg-secondary)',
-                                            borderRadius: 'var(--radius-md)',
-                                            border: '1px solid var(--color-border-subtle)',
-                                            marginBottom: 'var(--space-2)'
-                                        }}>
-                                            <p style={{
-                                                fontSize: 'var(--text-xs)',
-                                                color: 'var(--color-text-tertiary)',
-                                                marginBottom: 'var(--space-2)',
-                                                fontWeight: 'var(--font-semibold)'
-                                            }}>
-                                                Brand Script Template:
-                                            </p>
-                                            <div style={{
-                                                background: 'var(--color-bg-primary)',
-                                                padding: 'var(--space-3)',
-                                                borderRadius: 'var(--radius-sm)',
-                                                whiteSpace: 'pre-wrap',
-                                                fontFamily: 'monospace',
-                                                fontSize: 'var(--text-sm)',
-                                                color: 'var(--color-text-primary)',
-                                                border: '1px solid var(--color-border)',
-                                                maxHeight: '200px',
-                                                overflow: 'auto'
-                                            }}>
-                                                {briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template}
-                                            </div>
-                                        </div>
-                                    )}
-                                    <TextArea
-                                        label={(briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template)
-                                            ? "Review and Edit Script (if needed)"
-                                            : "Script Content"}
-                                        placeholder={(briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template)
-                                            ? "Review the brand template above and make any edits if needed..."
-                                            : "Write your campaign script here..."}
-                                        rows={10}
-                                        value={scriptContent}
-                                        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setScriptContent(e.target.value)}
-                                        required
-                                    />
-                                    {(briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template) && (
-                                        <p style={{
-                                            fontSize: 'var(--text-xs)',
-                                            color: 'var(--color-text-tertiary)',
-                                            fontStyle: 'italic'
-                                        }}>
-                                            The brand script template is pre-filled. Review it and click "Finalize Script" to confirm and submit.
-                                        </p>
-                                    )}
-                                </>
-                            ) : (
-                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                                    {isContentChangesRequested && (
-                                        <div style={{
-                                            padding: 'var(--space-3)',
-                                            background: 'rgba(251, 191, 36, 0.1)',
-                                            border: '1px solid rgba(251, 191, 36, 0.35)',
-                                            borderRadius: 'var(--radius-md)'
-                                        }}>
-                                            <p style={{
-                                                margin: 0,
-                                                marginBottom: 'var(--space-1)',
-                                                fontSize: 'var(--text-xs)',
-                                                letterSpacing: '0.04em',
-                                                textTransform: 'uppercase',
-                                                color: 'var(--color-text-tertiary)',
-                                                fontWeight: 'var(--font-semibold)'
-                                            }}>
-                                                Required changes
-                                            </p>
-                                            <p style={{
-                                                margin: 0,
-                                                color: 'var(--color-text-primary)',
-                                                whiteSpace: 'pre-wrap',
-                                                lineHeight: 1.5,
-                                                fontSize: 'var(--text-sm)'
-                                            }}>
-                                                {brandContentFeedback || 'Brand requested content changes. Update your video and upload again.'}
-                                            </p>
-                                        </div>
-                                    )}
-                                    <FileUpload
-                                        accept="video/*"
-                                        maxSize={100}
-                                        onFileSelect={(files: File[]) => setContentFiles(files)}
-                                        label="Upload Content Video"
-                                        description="Upload the video file for this campaign"
-                                    />
-                                    <Input
-                                        label="Content Link (Optional)"
-                                        placeholder="https://instagram.com/p/..."
-                                        value={contentLink}
-                                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => setContentLink(e.target.value)}
-                                    />
-                                </div>
-                            )}
+                            <Input
+                                label="Live Post Link"
+                                placeholder="https://instagram.com/reel/..."
+                                value={liveLink}
+                                onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLiveLink(e.target.value)}
+                            />
                             <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'flex-end' }}>
                                 <Button variant="ghost" onClick={() => setModalType(null)} disabled={isSubmitting}>Cancel</Button>
-                                <Button onClick={handleAction} isLoading={isSubmitting} disabled={modalType === 'content' && contentFiles.length === 0}>
-                                    {modalType === 'script' ? 'Finalize Script' : 'Submit'}
+                                <Button onClick={handleGoLive} isLoading={isSubmitting} disabled={!liveLink.trim()}>
+                                    Mark as Live
                                 </Button>
                             </div>
                         </div>
-                    ) : (
-                        <div style={{ padding: 'var(--space-8) 0', display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 'var(--space-4)' }}>
-                            <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(34, 197, 94, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-success)' }}>
-                                <CheckCircle2 size={40} />
-                            </div>
-                            <h3>Submission Successful!</h3>
-                            <p style={{ color: 'var(--color-text-secondary)' }}>Your submission has been sent to the brand for review.</p>
-                        </div>
-                    )}
-                </Modal>
-
-                <Modal
-                    isOpen={modalType === 'go-live'}
-                    onClose={() => !isSubmitting && setModalType(null)}
-                    title="Go Live"
-                    subtitle="Submit your published reel/post link"
-                >
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                        <Input
-                            label="Live Post Link"
-                            placeholder="https://instagram.com/reel/..."
-                            value={liveLink}
-                            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setLiveLink(e.target.value)}
-                        />
-                        <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'flex-end' }}>
-                            <Button variant="ghost" onClick={() => setModalType(null)} disabled={isSubmitting}>Cancel</Button>
-                            <Button onClick={handleGoLive} isLoading={isSubmitting} disabled={!liveLink.trim()}>
-                                Mark as Live
-                            </Button>
-                        </div>
-                    </div>
-                </Modal>
-            </main >
-        </div >
+                    </Modal>
+                </main >
+            </div >
+        </CreatorCampaignProvider>
     );
 };
