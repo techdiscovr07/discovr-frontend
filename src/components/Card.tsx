@@ -30,29 +30,32 @@ export const Card: React.FC<CardProps> = ({
     );
 };
 
-export const CardHeader: React.FC<{ children: React.ReactNode; className?: string }> = ({
+export const CardHeader: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties }> = ({
     children,
-    className = ''
+    className = '',
+    style
 }) => (
-    <div className={`card-header ${className}`}>
+    <div className={`card-header ${className}`} style={style}>
         {children}
     </div>
 );
 
-export const CardBody: React.FC<{ children: React.ReactNode; className?: string }> = ({
+export const CardBody: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties }> = ({
     children,
-    className = ''
+    className = '',
+    style
 }) => (
-    <div className={`card-body ${className}`}>
+    <div className={`card-body ${className}`} style={style}>
         {children}
     </div>
 );
 
-export const CardFooter: React.FC<{ children: React.ReactNode; className?: string }> = ({
+export const CardFooter: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties }> = ({
     children,
-    className = ''
+    className = '',
+    style
 }) => (
-    <div className={`card-footer ${className}`}>
+    <div className={`card-footer ${className}`} style={style}>
         {children}
     </div>
 );

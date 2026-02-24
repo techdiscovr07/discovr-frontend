@@ -38,15 +38,15 @@ export const Header: React.FC<HeaderProps> = ({ transparent = false }) => {
 
                     <div className="header-center">
                         <nav className="header-nav">
-                            <Link to="/admin/login" className="header-nav-link">Admin</Link>
-                            <Link to="/brand/login" className="header-nav-link">Brand</Link>
-                            <Link to="/creator/login" className="header-nav-link">Creator</Link>
+                            <Link to="/careers" className="header-nav-link">Careers</Link>
+                            <Link to="/creator" className="header-nav-link">For Creators</Link>
+                            <Link to="/brand/login" className="header-nav-link">Sign In</Link>
                         </nav>
                     </div>
 
                     <div className="header-right">
-                        <Link to="/" className="header-cta">
-                            Join Waitlist
+                        <Link to="/brand/signup" className="header-cta">
+                            Get Started
                         </Link>
                     </div>
                 </div>

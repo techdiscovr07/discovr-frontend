@@ -1,6 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { LandingPage, PrivacyPolicy, TermsOfService, AdminLogin, AdminSignup, BrandLogin, BrandSignup, CreatorLogin, CreatorSignup, UnauthorizedPage, Profile, Settings, ForgotPassword, ResetPassword } from './pages';
-import { AdminDashboard, BrandDashboard, CreatorDashboard, NewCampaign, CampaignDetails, CreatorDetails, CreatorCampaignDetails } from './pages/dashboards';
+import { LandingPage, CareersPage, CreatorLandingPage, BrandLogin, BrandSignup, CreatorLogin, CreatorSignup, UnauthorizedPage, ForgotPassword, ResetPassword } from './modules/landing';
+import { PrivacyPolicy, TermsOfService } from './modules/legal';
+import { Profile, Settings } from './modules/shared';
+import { BrandDashboard, NewCampaign, CampaignDetails, CreatorDetails } from './modules/brand-dashboard';
+import { CreatorDashboard, CreatorCampaignDetails } from './modules/creator-dashboard';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
@@ -11,7 +14,7 @@ import './index.css';
 function App() {
   // Debug log to verify App is rendering
   console.log('App component rendering...');
-  
+
   return (
     <ErrorBoundary>
       <ThemeProvider>
@@ -19,102 +22,95 @@ function App() {
           <AuthProvider>
             <NotificationProvider>
               <Router>
-          <Routes>
-            {/* Public Routes */}
-            <Route path="/" element={<LandingPage />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-            <Route path="/terms" element={<TermsOfService />} />
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin/signup" element={<AdminSignup />} />
-            <Route path="/brand/login" element={<BrandLogin />} />
-            <Route path="/brand/signup" element={<BrandSignup />} />
-            <Route path="/creator/login" element={<CreatorLogin />} />
-            <Route path="/creator/signup" element={<CreatorSignup />} />
-            <Route path="/unauthorized" element={<UnauthorizedPage />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            
-            {/* Profile & Settings (Protected) */}
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute allowedRoles={['admin', 'brand_owner', 'brand_emp', 'creator']}>
-                  <Profile />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute allowedRoles={['admin', 'brand_owner', 'brand_emp', 'creator']}>
-                  <Settings />
-                </ProtectedRoute>
-              }
-            />
+                <Routes>
+                  {/* Public Routes */}
+                  <Route path="/" element={<LandingPage />} />
+                  <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+                  <Route path="/terms" element={<TermsOfService />} />
+                  <Route path="/careers" element={<CareersPage />} />
 
-            {/* Admin Protected Routes */}
-            <Route
-              path="/admin/dashboard"
-              element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminDashboard />
-                </ProtectedRoute>
-              }
-            />
+                  <Route path="/creator" element={<CreatorLandingPage />} />
+                  <Route path="/brand/login" element={<BrandLogin />} />
+                  <Route path="/brand/signup" element={<BrandSignup />} />
+                  <Route path="/creator/login" element={<CreatorLogin />} />
+                  <Route path="/creator/signup" element={<CreatorSignup />} />
+                  <Route path="/unauthorized" element={<UnauthorizedPage />} />
+                  <Route path="/forgot-password" element={<ForgotPassword />} />
+                  <Route path="/reset-password" element={<ResetPassword />} />
 
-            {/* Brand Protected Routes */}
-            <Route
-              path="/brand/dashboard"
-              element={
-                <ProtectedRoute allowedRoles={['brand_owner', 'brand_emp']}>
-                  <BrandDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/brand/new-campaign"
-              element={
-                <ProtectedRoute allowedRoles={['brand_owner', 'brand_emp']}>
-                  <NewCampaign />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/brand/campaign/:id"
-              element={
-                <ProtectedRoute allowedRoles={['brand_owner', 'brand_emp']}>
-                  <CampaignDetails />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/brand/campaign/:id/creator/:creatorId"
-              element={
-                <ProtectedRoute allowedRoles={['brand_owner', 'brand_emp']}>
-                  <CreatorDetails />
-                </ProtectedRoute>
-              }
-            />
+                  {/* Profile & Settings (Protected) */}
+                  <Route
+                    path="/profile"
+                    element={
+                      <ProtectedRoute allowedRoles={['brand_owner', 'brand_emp', 'creator']}>
+                        <Profile />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/settings"
+                    element={
+                      <ProtectedRoute allowedRoles={['brand_owner', 'brand_emp', 'creator']}>
+                        <Settings />
+                      </ProtectedRoute>
+                    }
+                  />
 
-            {/* Creator Protected Routes */}
-            <Route
-              path="/creator/dashboard"
-              element={
-                <ProtectedRoute allowedRoles={['creator']}>
-                  <CreatorDashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/creator/campaign/:id"
-              element={
-                <ProtectedRoute allowedRoles={['creator']}>
-                  <CreatorCampaignDetails />
-                </ProtectedRoute>
-              }
-            />
-          </Routes>
-        </Router>
+
+
+                  {/* Brand Protected Routes */}
+                  <Route
+                    path="/brand/dashboard"
+                    element={
+                      <ProtectedRoute allowedRoles={['brand_owner', 'brand_emp']}>
+                        <BrandDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/brand/new-campaign"
+                    element={
+                      <ProtectedRoute allowedRoles={['brand_owner', 'brand_emp']}>
+                        <NewCampaign />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/brand/campaign/:id"
+                    element={
+                      <ProtectedRoute allowedRoles={['brand_owner', 'brand_emp']}>
+                        <CampaignDetails />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/brand/campaign/:id/creator/:creatorId"
+                    element={
+                      <ProtectedRoute allowedRoles={['brand_owner', 'brand_emp']}>
+                        <CreatorDetails />
+                      </ProtectedRoute>
+                    }
+                  />
+
+                  {/* Creator Protected Routes */}
+                  <Route
+                    path="/creator/dashboard"
+                    element={
+                      <ProtectedRoute allowedRoles={['creator']}>
+                        <CreatorDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/creator/campaign/:id"
+                    element={
+                      <ProtectedRoute allowedRoles={['creator']}>
+                        <CreatorCampaignDetails />
+                      </ProtectedRoute>
+                    }
+                  />
+                </Routes>
+              </Router>
             </NotificationProvider>
           </AuthProvider>
         </ToastProvider>
