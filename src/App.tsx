@@ -1,14 +1,22 @@
+import React, { Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { LandingPage, CareersPage, CreatorLandingPage, BrandLogin, BrandSignup, CreatorLogin, CreatorSignup, UnauthorizedPage, ForgotPassword, ResetPassword } from './modules/landing';
+import { CareersPage, BrandLogin, BrandSignup, CreatorLogin, CreatorSignup, UnauthorizedPage, ForgotPassword, ResetPassword } from './modules/landing';
+const LandingPage = React.lazy(() => import('./modules/landing').then(m => ({ default: m.LandingPage })));
+const CreatorLandingPage = React.lazy(() => import('./modules/landing').then(m => ({ default: m.CreatorLandingPage })));
 import { PrivacyPolicy, TermsOfService } from './modules/legal';
-import { Profile, Settings } from './modules/shared';
-import { BrandDashboard, NewCampaign, CampaignDetails, CreatorDetails } from './modules/brand-dashboard';
-import { CreatorDashboard, CreatorCampaignDetails } from './modules/creator-dashboard';
+const Profile = React.lazy(() => import('./modules/shared').then(m => ({ default: m.Profile })));
+const Settings = React.lazy(() => import('./modules/shared').then(m => ({ default: m.Settings })));
+const BrandDashboard = React.lazy(() => import('./modules/brand-dashboard').then(m => ({ default: m.BrandDashboard })));
+const NewCampaign = React.lazy(() => import('./modules/brand-dashboard').then(m => ({ default: m.NewCampaign })));
+const CampaignDetails = React.lazy(() => import('./modules/brand-dashboard').then(m => ({ default: m.CampaignDetails })));
+const CreatorDetails = React.lazy(() => import('./modules/brand-dashboard').then(m => ({ default: m.CreatorDetails })));
+const CreatorDashboard = React.lazy(() => import('./modules/creator-dashboard').then(m => ({ default: m.CreatorDashboard })));
+const CreatorCampaignDetails = React.lazy(() => import('./modules/creator-dashboard').then(m => ({ default: m.CreatorCampaignDetails })));
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import { NotificationProvider } from './contexts/NotificationContext';
-import { ProtectedRoute, ErrorBoundary } from './components';
+import { ProtectedRoute, ErrorBoundary, LoadingSpinner } from './components';
 import './index.css';
 
 function App() {
@@ -22,7 +30,8 @@ function App() {
           <AuthProvider>
             <NotificationProvider>
               <Router>
-                <Routes>
+                <Suspense fallback={<div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}><LoadingSpinner /></div>}>
+                  <Routes>
                   {/* Public Routes */}
                   <Route path="/" element={<LandingPage />} />
                   <Route path="/privacy-policy" element={<PrivacyPolicy />} />
@@ -110,6 +119,7 @@ function App() {
                     }
                   />
                 </Routes>
+                  </Suspense>
               </Router>
             </NotificationProvider>
           </AuthProvider>
