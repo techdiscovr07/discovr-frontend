@@ -26,6 +26,10 @@
   --color-surface-glass-hover: rgba(0, 0, 0, 0.06);
   --color-surface-glass-active: rgba(0, 0, 0, 0.08);
 
+  --color-surface: #ffffff;
+  --color-surface-hover: #f8f9fa;
+  --color-surface-elevated: #ffffff;
+
   --color-border-subtle: rgba(0, 0, 0, 0.08);
   --color-border-medium: rgba(0, 0, 0, 0.12);
   --color-border-strong: rgba(0, 0, 0, 0.2);
@@ -620,7 +624,15 @@ a:hover {
 
 /* Light theme selection */
 /* Inverted Logos */
-.header-logo-img, .footer-logo-img, .sidebar-logo { filter: invert(1); }
+.header-logo-img,
+.footer-logo-img,
+.sidebar-logo {
+  filter: invert(1);
+}
 
 /* Inverted Logos */
-.header-logo-img, .footer-logo-img, .sidebar-logo { filter: invert(1); }
+.header-logo-img,
+.footer-logo-img,
+.sidebar-logo {
+  filter: invert(1);
+}
