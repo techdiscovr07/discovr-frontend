@@ -1,10 +1,12 @@
 import React from 'react';
-import { Button, LoadingSpinner } from '../../components';
+import { Button, LoadingSpinner, NotificationCenter } from '../../components';
 import {
-    ArrowLeft,
     Check,
+    ArrowLeft,
+    FileText,
     MessageSquare,
-    FileText
+    Users,
+    Settings
 } from 'lucide-react';
 
 import { BrandCampaignProvider } from './BrandCampaignContext';
@@ -31,6 +33,7 @@ export const CampaignDetails: React.FC = () => {
         campaignStatusTone,
         campaignStatusLabel,
         canShowBriefTab,
+        canShowConfirmedCreatorsTab,
         activeTab,
         setActiveTab,
         handleBrandSubmitSelection,
@@ -41,6 +44,7 @@ export const CampaignDetails: React.FC = () => {
         creatorFilterTab,
         setCreatorFilterTab,
         filteredCreators,
+        confirmedCreators,
         creators,
         bids,
         handleFinalizeAmounts,
@@ -71,7 +75,8 @@ export const CampaignDetails: React.FC = () => {
         contentReviewStats,
         getContentStatusMeta,
         handleOpenAIContentReview,
-        handleOpenEditFollowerRanges
+        handleOpenEditFollowerRanges,
+        handleOpenCreatorProfile
     } = contextValue;
 
     if (isLoading) return <LoadingSpinner />;
@@ -79,50 +84,99 @@ export const CampaignDetails: React.FC = () => {
 
     return (
         <BrandCampaignProvider value={contextValue}>
-            <div className="dashboard" style={{ background: 'var(--color-bg-primary)' }}>
-                <main className="dashboard-main" style={{ marginLeft: 0, width: '100%' }}>
-                    <header className="dashboard-header" style={{ marginBottom: 'var(--space-8)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-                            <Button variant="ghost" size="sm" onClick={() => navigate('/brand/dashboard')}>
-                                <ArrowLeft size={20} />
+            <div className="dashboard" style={{ background: 'var(--color-bg-primary)', minHeight: '100vh' }}>
+                <main className="dashboard-main" style={{ marginLeft: 0, width: '100%', padding: '0 var(--space-8)' }}>
+                    <header className="dashboard-header" style={{
+                        margin: '0 -var(--space-8) var(--space-6)',
+                        padding: 'var(--space-4) var(--space-8)',
+                        background: 'rgba(255, 255, 255, 0.02)',
+                        backdropFilter: 'blur(10px)',
+                        borderBottom: '1px solid var(--color-border-subtle)',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        position: 'sticky',
+                        top: 0,
+                        zIndex: 10
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-5)' }}>
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => navigate('/brand/dashboard')}
+                                style={{ width: '36px', height: '36px', padding: 0, borderRadius: 'var(--radius-full)' }}
+                            >
+                                <ArrowLeft size={18} />
                             </Button>
                             <div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                                    <h1 className="dashboard-title">{campaignData.name}</h1>
-                                    <span className={`status-badge ${campaignStatusTone}`}>{campaignStatusLabel}</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)', marginBottom: '2px' }}>
+                                    <h1 style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-bold)', margin: 0 }}>{campaignData.name}</h1>
+                                    <span className={`status-badge ${campaignStatusTone}`} style={{ fontSize: '10px', padding: '2px 8px' }}>{campaignStatusLabel}</span>
                                 </div>
-                                <p className="dashboard-subtitle">{campaignData.brand || 'Your Brand'} • Campaign ID: #{id || 'SC-2026'}</p>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
+                                    <span>{campaignData.brand || 'Your Brand'}</span>
+                                    <span style={{ opacity: 0.3 }}>•</span>
+                                    <span style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>#{id?.slice(-8) || 'SC-2026'}</span>
+                                </div>
                             </div>
                         </div>
-                        <div className="tab-actions">
-                            {canShowBriefTab && (
-                                <Button variant="ghost" onClick={() => setActiveTab('brief')}>
-                                    <FileText size={18} />
-                                    {campaignData.brief_completed ? 'Update Brief' : 'Add Brief'}
-                                </Button>
-                            )}
 
-                            {(campaignData.review_status === 'creators_are_final') ? (
-                                <Button variant="ghost" onClick={() => navigate('/brand/dashboard')}>
-                                    <Check size={18} />
-                                    Selection Submitted
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-6)' }}>
+                            {/* Global Actions */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+                                <NotificationCenter />
+                                <Button variant="ghost" size="sm" onClick={() => navigate('/profile')} style={{ width: '36px', height: '36px', padding: 0 }}>
+                                    <Users size={18} />
                                 </Button>
-                            ) : (
-                                <Button onClick={handleBrandSubmitSelection} isLoading={isSubmittingSelection}>
-                                    <Check size={18} />
-                                    {campaignData.review_status === 'negotiation' ? 'Update Selection' : 'Submit Selection'}
+                                <Button variant="ghost" size="sm" onClick={() => navigate('/settings')} style={{ width: '36px', height: '36px', padding: 0 }}>
+                                    <Settings size={18} />
                                 </Button>
-                            )}
+                            </div>
 
-                            <Button>
-                                <MessageSquare size={18} />
-                                Contact Creators
-                            </Button>
+                            {/* Campaign Actions */}
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 'var(--space-2)',
+                                paddingLeft: 'var(--space-4)',
+                                borderLeft: '1px solid var(--color-border-subtle)'
+                            }}>
+                                {canShowBriefTab && (
+                                    <Button variant="ghost" size="sm" onClick={() => setActiveTab('brief')}>
+                                        <FileText size={16} />
+                                        {campaignData.brief_completed ? 'Update Brief' : 'Add Brief'}
+                                    </Button>
+                                )}
+
+                                {(campaignData.review_status === 'creators_are_final') ? (
+                                    <Button variant="ghost" size="sm" onClick={() => navigate('/brand/dashboard')}>
+                                        <Check size={16} />
+                                        Done
+                                    </Button>
+                                ) : (
+                                    <Button variant="primary" size="sm" onClick={handleBrandSubmitSelection} isLoading={isSubmittingSelection}>
+                                        <Check size={16} />
+                                        {campaignData.review_status === 'negotiation' ? 'Update Selection' : 'Submit Selection'}
+                                    </Button>
+                                )}
+
+                                <Button variant="secondary" size="sm">
+                                    <MessageSquare size={16} />
+                                    Contact
+                                </Button>
+                            </div>
                         </div>
                     </header>
 
                     {/* Tabs */}
-                    <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-6)', borderBottom: '1px solid var(--color-border-subtle)' }}>
+                    <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        gap: 'var(--space-1)',
+                        marginBottom: 'var(--space-8)',
+                        borderBottom: '1px solid var(--color-border-subtle)',
+                        paddingBottom: 'var(--space-1)',
+                        position: 'relative'
+                    }}>
                         <Button
                             variant={activeTab === 'overview' ? 'primary' : 'ghost'}
                             size="sm"
@@ -137,6 +191,15 @@ export const CampaignDetails: React.FC = () => {
                         >
                             Creators
                         </Button>
+                        {canShowConfirmedCreatorsTab && (
+                            <Button
+                                variant={activeTab === 'confirmed' ? 'primary' : 'ghost'}
+                                size="sm"
+                                onClick={() => setActiveTab('confirmed')}
+                            >
+                                Confirmed
+                            </Button>
+                        )}
                         {canShowBriefTab && (
                             <Button
                                 variant={activeTab === 'brief' ? 'primary' : 'ghost'}
@@ -193,6 +256,32 @@ export const CampaignDetails: React.FC = () => {
                             setBids={setBids}
                             getBidCreatorId={getBidCreatorId}
                             openCounterModal={openCounterModal}
+                            campaignData={campaignData}
+                            handleOpenCreatorProfile={handleOpenCreatorProfile}
+                        />
+                    )}
+
+                    {activeTab === 'confirmed' && (
+                        <CampaignCreatorsTab
+                            creatorFilterTab="accepted"
+                            setCreatorFilterTab={() => { }} // Disable internal filtering
+                            filteredCreators={confirmedCreators}
+                            creators={confirmedCreators}
+                            bids={[]}
+                            handleFinalizeAmounts={() => { }}
+                            isFinalizingAmounts={false}
+                            handleBrandSubmitSelection={() => { }}
+                            isSubmittingSelection={false}
+                            canShowNegotiationInCreators={false}
+                            id={id}
+                            showToast={showToast}
+                            setCreators={() => { }}
+                            setBids={() => { }}
+                            getBidCreatorId={() => undefined}
+                            openCounterModal={() => { }}
+                            campaignData={{ ...campaignData, review_status: 'creators_are_final' }}
+                            hideFilters={true}
+                            handleOpenCreatorProfile={handleOpenCreatorProfile}
                         />
                     )}
 

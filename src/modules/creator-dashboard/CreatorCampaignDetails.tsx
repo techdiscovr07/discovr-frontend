@@ -1,6 +1,6 @@
 import React from 'react';
 
-import { Button } from '../../components';
+import { Button, LoadingSpinner } from '../../components';
 import {
     ArrowLeft,
     MessageSquare,
@@ -24,17 +24,23 @@ export const CreatorCampaignDetails: React.FC = () => {
         isBrandAcceptedCreatorOffer,
         brandOfferAmount,
         negotiationStatusKey,
-        setModalType
+        setModalType,
+        isLoading,
+        hasAnyBriefDetails
     } = contextValue;
+
+    if (isLoading && !campaignData) {
+        return <LoadingSpinner fullPage />;
+    }
 
     if (!campaignData) {
         return (
             <div className="dashboard" style={{ background: 'var(--color-bg-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
                 <div style={{ textAlign: 'center', maxWidth: '400px' }}>
-                    <div className="loading-spinner" style={{ marginBottom: 'var(--space-4)' }}></div>
-                    <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-4)' }}>Loading campaign details...</p>
+                    <div className="status-badge status-error" style={{ marginBottom: 'var(--space-4)', display: 'inline-flex' }}>Unavailable</div>
+                    <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-4)' }}>Campaign Not Found</p>
                     <p style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', marginBottom: 'var(--space-6)' }}>
-                        If this takes too long, the campaign may not be available or you may need to link it first.
+                        This campaign may not be available or you may need to link it first using a valid creator token.
                     </p>
                     <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'center' }}>
                         <Button
@@ -64,49 +70,65 @@ export const CreatorCampaignDetails: React.FC = () => {
     return (
         <CreatorCampaignProvider value={contextValue}>
             <div className="dashboard" style={{ background: 'var(--color-bg-primary)' }}>
-                <main className="dashboard-main" style={{ marginLeft: 0, width: '100%', padding: 'var(--space-8)' }}>
-                    {/* Header */}
-                    <header className="dashboard-header" style={{ marginBottom: 'var(--space-8)' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-                            <Button variant="ghost" size="sm" onClick={() => navigate('/creator/dashboard')}>
-                                <ArrowLeft size={20} />
+                <main className="dashboard-main" style={{ marginLeft: 0, width: '100%', padding: 'var(--space-6)' }}>
+                    {/* Compact Premium Header */}
+                    <header className="campaign-details-header-premium">
+                        <div className="header-left-group">
+                            <Button
+                                variant="ghost"
+                                className="header-back-btn"
+                                onClick={() => navigate('/creator/dashboard')}
+                            >
+                                <ArrowLeft size={18} />
                             </Button>
-                            <div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
-                                    <h1 className="dashboard-title">{campaignData.name}</h1>
-                                    <span className={`status-badge status-active`}>{campaignData.status}</span>
-                                </div>
-                                <p className="dashboard-subtitle">
-                                    {campaignData.brand} • Creator Campaign Details
+
+                            <div className="header-info-group">
+                                <p className="header-breadcrumb-premium">
+                                    {campaignData.brand} • Campaigns
                                 </p>
+                                <div className="header-title-row">
+                                    <h1 className="header-title-premium">{campaignData.name}</h1>
+                                    <span className={`badge-premium live`}>
+                                        {campaignData.status || 'Active'}
+                                    </span>
+                                </div>
                             </div>
                         </div>
-                        <div className="tab-actions">
+
+                        <div className="header-actions-group">
                             {!negotiationStatus && (
-                                <Button variant="ghost" onClick={() => setModalType('link')}>
-                                    <LinkIcon size={18} />
+                                <Button variant="secondary" size="sm" onClick={() => setModalType('link')}>
+                                    <LinkIcon size={14} />
                                     Link Campaign
                                 </Button>
                             )}
+
                             {negotiationStatus && !isBrandAcceptedCreatorOffer && brandOfferAmount > 0 &&
                                 (negotiationStatusKey === 'accepted' || negotiationStatusKey === 'bid_pending' || negotiationStatusKey === 'amount_negotiated' || !negotiationStatusKey) && (
-                                    <Button variant="secondary" onClick={() => setModalType('negotiate')}>
-                                        {negotiationStatus.bid_amount && Number(negotiationStatus.bid_amount) > 0 ? 'Update Bid' : 'Negotiate'}
-                                    </Button>
+                                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                                        <Button variant="primary" size="sm" onClick={() => setModalType('accept-deal')}>
+                                            Accept Offer
+                                        </Button>
+                                        {!hasAnyBriefDetails && (
+                                            <Button variant="secondary" size="sm" onClick={() => setModalType('negotiate')}>
+                                                {negotiationStatus.bid_amount && Number(negotiationStatus.bid_amount) > 0 ? 'Update Bid' : 'Negotiate'}
+                                            </Button>
+                                        )}
+                                        <Button variant="ghost" size="sm" onClick={() => setModalType('reject-deal')} style={{ color: 'var(--color-error)' }}>
+                                            Decline
+                                        </Button>
+                                    </div>
                                 )}
-                            {negotiationStatus && !isBrandAcceptedCreatorOffer && brandOfferAmount <= 0 &&
+
+                            {negotiationStatus && !isBrandAcceptedCreatorOffer && brandOfferAmount <= 0 && !hasAnyBriefDetails &&
                                 (negotiationStatusKey === 'accepted' || negotiationStatusKey === 'bid_pending' || negotiationStatusKey === 'amount_negotiated' || !negotiationStatusKey) && (
-                                    <Button variant="ghost" onClick={() => setModalType('negotiate')}>
+                                    <Button variant="secondary" size="sm" onClick={() => setModalType('negotiate')}>
                                         {negotiationStatus.bid_amount && negotiationStatus.bid_amount > 0 ? 'Update Proposal' : 'Start Negotiation'}
                                     </Button>
                                 )}
-                            {!negotiationStatus && (campaignData?.stage === 'negotiate' || campaignData?.status === 'Negotiate' || campaignData?.status === 'In Negotiation') && (
-                                <Button variant="ghost" onClick={() => setModalType('negotiate')}>
-                                    Start Negotiation
-                                </Button>
-                            )}
-                            <Button variant="ghost">
-                                <MessageSquare size={18} />
+
+                            <Button variant="ghost" size="sm">
+                                <MessageSquare size={14} />
                                 Contact Brand
                             </Button>
                         </div>

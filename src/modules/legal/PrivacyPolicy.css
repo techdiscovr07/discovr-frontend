@@ -133,7 +133,7 @@
 }
 
 .legal-notice {
-    background: rgba(255, 62, 109, 0.08);
+    background: rgba(139, 92, 246, 0.08);
     border-left: 3px solid var(--color-accent);
     padding: var(--space-4);
 }

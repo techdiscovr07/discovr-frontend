@@ -15,6 +15,8 @@
     overflow: hidden;
     white-space: nowrap;
     user-select: none;
+    line-height: 1;
+    vertical-align: middle;
 }
 
 .btn::before {
@@ -53,6 +55,16 @@
     z-index: 1;
     display: flex;
     align-items: center;
+    justify-content: center;
+    line-height: 0;
+}
+
+.btn-content {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    height: 100%;
 }
 
 /* Sizes */
@@ -82,9 +94,9 @@
 }
 
 .btn-primary:hover {
-    background: var(--color-accent-muted);
-    box-shadow: var(--shadow-lg);
-    transform: translateY(-2px);
+    background: #7c3aed;
+    box-shadow: 0 8px 16px rgba(139, 92, 246, 0.3);
+    transform: translateY(-2px) scale(1.02);
 }
 
 .btn-secondary {

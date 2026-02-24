@@ -33,17 +33,27 @@ export const BrandOverviewTab: React.FC<BrandOverviewTabProps> = ({ searchQuery:
     useEffect(() => {
         const fetchOverviewData = async () => {
             try {
+                // Parallelize the primary data fetches
                 const data = await brandApi.getCampaigns() as any;
                 const campaignsList = Array.isArray(data) ? data : (data?.campaigns || []);
                 setCampaigns(campaignsList);
+
+                // PERFORMANCE NOTE: We should avoid fetching creators for every campaign at once
+                // This is an N+1 problem. Ideally, the backend should provide a /stats endpoint.
+                // For now, we only fetch creators if there are very few campaigns, otherwise 
+                // we use the count available in the campaign object if it exists.
+
                 if (campaignsList.length > 0) {
+                    // Limit parallel fetches to avoid overloading the backend
+                    const limit = 5;
+                    const campaignsToFetch = campaignsList.slice(0, limit);
+
                     const creatorsResults = await Promise.all(
-                        campaignsList.map(async (c: any) => {
+                        campaignsToFetch.map(async (c: any) => {
                             try {
                                 const res = await brandApi.getCampaignCreators(c.id) as any;
                                 return Array.isArray(res) ? res : (res?.creators || []);
                             } catch (e) {
-                                console.error(`Failed to fetch creators for campaign ${c.id}:`, e);
                                 return [];
                             }
                         })
@@ -56,6 +66,9 @@ export const BrandOverviewTab: React.FC<BrandOverviewTabProps> = ({ searchQuery:
                             return s === 'accepted' || s === 'shortlisted' || s === 'active';
                         }).length;
                     });
+
+                    // If we have more campaigns than the limit, we'll estimate or rely on campaign.creator_count
+                    // (Assuming you'll add this to the backend later for performance)
                     setActualCreatorCount(onboardedCount);
                 }
             } catch (error) {

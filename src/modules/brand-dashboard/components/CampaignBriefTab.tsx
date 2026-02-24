@@ -78,79 +78,100 @@ export const CampaignBriefTab: React.FC<CampaignBriefTabProps> = ({
                         </div>
                     </div>
                 ) : (
-                    <form onSubmit={handleBriefSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
-                        <Input
-                            label="Video Title"
-                            placeholder="e.g., Summer Launch Reel"
-                            value={briefData.video_title}
-                            onChange={(e: any) => setBriefData({ ...briefData, video_title: e.target.value })}
-                            required
-                        />
-                        <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
+                    <>
+                        {campaignData.review_status !== 'creators_are_final' && !campaignData.brief_completed && (
+                            <div style={{
+                                padding: 'var(--space-4)',
+                                background: 'rgba(234, 179, 8, 0.1)',
+                                border: '1px solid rgba(234, 179, 8, 0.2)',
+                                borderRadius: 'var(--radius-md)',
+                                marginBottom: 'var(--space-6)',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: 'var(--space-2)'
+                            }}>
+                                <p style={{ margin: 0, color: 'var(--color-warning)', fontWeight: 'var(--font-bold)', fontSize: 'var(--text-sm)' }}>
+                                    ⚠️ Creator Deals Not Finalized
+                                </p>
+                                <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: 'var(--text-xs)' }}>
+                                    The backend requires all creator payouts to be finalized before the brief can be submitted. Please head to the <strong>Creators</strong> tab and click <strong>Finalize All Deals</strong> first.
+                                </p>
+                            </div>
+                        )}
+                        <form onSubmit={handleBriefSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
                             <Input
-                                label="Primary Focus"
-                                placeholder="Product awareness"
-                                value={briefData.primary_focus}
-                                onChange={(e: any) => setBriefData({ ...briefData, primary_focus: e.target.value })}
+                                label="Video Title"
+                                placeholder="e.g., Summer Launch Reel"
+                                value={briefData.video_title}
+                                onChange={(e: any) => setBriefData({ ...briefData, video_title: e.target.value })}
+                                required
+                            />
+                            <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
+                                <Input
+                                    label="Primary Focus"
+                                    placeholder="Product awareness"
+                                    value={briefData.primary_focus}
+                                    onChange={(e: any) => setBriefData({ ...briefData, primary_focus: e.target.value })}
+                                    required
+                                />
+                                <Input
+                                    label="Secondary Focus"
+                                    placeholder="Drive profile visits"
+                                    value={briefData.secondary_focus}
+                                    onChange={(e: any) => setBriefData({ ...briefData, secondary_focus: e.target.value })}
+                                />
+                            </div>
+                            <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
+                                <TextArea
+                                    label="Dos"
+                                    placeholder="Show product in first 5 seconds"
+                                    value={briefData.dos}
+                                    onChange={(e: any) => setBriefData({ ...briefData, dos: e.target.value })}
+                                    required
+                                />
+                                <TextArea
+                                    label="Don'ts"
+                                    placeholder="No competitor mention"
+                                    value={briefData.donts}
+                                    onChange={(e: any) => setBriefData({ ...briefData, donts: e.target.value })}
+                                    required
+                                />
+                            </div>
+                            <Input
+                                label="Call to Action"
+                                placeholder="Follow @brand"
+                                value={briefData.cta}
+                                onChange={(e: any) => setBriefData({ ...briefData, cta: e.target.value })}
                                 required
                             />
                             <Input
-                                label="Secondary Focus"
-                                placeholder="Drive profile visits"
-                                value={briefData.secondary_focus}
-                                onChange={(e: any) => setBriefData({ ...briefData, secondary_focus: e.target.value })}
+                                label="Sample Video URL (Optional)"
+                                placeholder="https://cdn.example.com/sample.mp4"
+                                value={briefData.sample_video_url}
+                                onChange={(e: any) => setBriefData({ ...briefData, sample_video_url: e.target.value })}
                             />
-                        </div>
-                        <div style={{ display: 'flex', gap: 'var(--space-4)' }}>
-                            <TextArea
-                                label="Dos"
-                                placeholder="Show product in first 5 seconds"
-                                value={briefData.dos}
-                                onChange={(e: any) => setBriefData({ ...briefData, dos: e.target.value })}
-                                required
+                            <FileUpload
+                                accept="video/*"
+                                maxSize={50}
+                                onFileSelect={(files: File[]) => setSampleVideoFiles(files)}
+                                label="Sample Video File (Optional)"
+                                description="Upload sample file if you don't want to use URL"
                             />
-                            <TextArea
-                                label="Don'ts"
-                                placeholder="No competitor mention"
-                                value={briefData.donts}
-                                onChange={(e: any) => setBriefData({ ...briefData, donts: e.target.value })}
-                                required
-                            />
-                        </div>
-                        <Input
-                            label="Call to Action"
-                            placeholder="Follow @brand"
-                            value={briefData.cta}
-                            onChange={(e: any) => setBriefData({ ...briefData, cta: e.target.value })}
-                            required
-                        />
-                        <Input
-                            label="Sample Video URL (Optional)"
-                            placeholder="https://cdn.example.com/sample.mp4"
-                            value={briefData.sample_video_url}
-                            onChange={(e: any) => setBriefData({ ...briefData, sample_video_url: e.target.value })}
-                        />
-                        <FileUpload
-                            accept="video/*"
-                            maxSize={50}
-                            onFileSelect={(files: File[]) => setSampleVideoFiles(files)}
-                            label="Sample Video File (Optional)"
-                            description="Upload sample file if you don't want to use URL"
-                        />
 
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-4)' }}>
-                            {campaignData.brief_completed && (
-                                <Button type="button" variant="ghost" onClick={() => setIsBriefEditing(false)}>
-                                    Cancel
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-4)' }}>
+                                {campaignData.brief_completed && (
+                                    <Button type="button" variant="ghost" onClick={() => setIsBriefEditing(false)}>
+                                        Cancel
+                                    </Button>
+                                )}
+                                <Button type="submit" isLoading={isSubmittingBrief}>
+                                    {campaignData.brief_completed ? 'Update Brief' : 'Submit Brief'}
                                 </Button>
-                            )}
-                            <Button type="submit" isLoading={isSubmittingBrief}>
-                                {campaignData.brief_completed ? 'Update Brief' : 'Submit Brief'}
-                            </Button>
-                        </div>
-                    </form>
+                            </div>
+                        </form>
+                    </>
                 )}
             </CardBody>
-        </Card>
+        </Card >
     );
 };

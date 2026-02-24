@@ -24,6 +24,7 @@ export const useCreatorCampaignDetails = () => {
     const [isSubmittingInlineScript, setIsSubmittingInlineScript] = useState(false);
     const [contentFiles, setContentFiles] = useState<File[]>([]);
     const [liveLink, setLiveLink] = useState('');
+    const [isLoading, setIsLoading] = useState(true);
 
     const formatINR = (value: any) => {
         const num = typeof value === 'number' ? value : parseFloat(String(value ?? '').replace(/,/g, ''));
@@ -136,6 +137,15 @@ export const useCreatorCampaignDetails = () => {
         currentWorkflowStatus === 'content_rejected' ||
         currentWorkflowStatus === 'content_revision_requested';
 
+    const contentDeliverableStatus = (() => {
+        if (currentWorkflowStatus === 'content_live') return 'Completed';
+        if (currentWorkflowStatus === 'content_approved') return 'Accepted';
+        if (isContentUnderBrandReview) return 'In Review';
+        if (isContentChangesRequested) return 'Changes Requested';
+        if (canUploadContent) return 'Pending';
+        return 'Pending';
+    })();
+
     const briefSources: any[] = [
         briefData?.campaign,
         briefData,
@@ -201,82 +211,61 @@ export const useCreatorCampaignDetails = () => {
         return merged;
     };
 
-    useEffect(() => {
-        const fetchCampaignData = async () => {
-            if (!id) return;
-            try {
-                let campaignFromList: any = null;
-                try {
-                    const campaignsData = await creatorApi.getCampaigns() as any;
-                    const campaignsArray = Array.isArray(campaignsData)
-                        ? campaignsData
-                        : (campaignsData?.campaigns || campaignsData?.data || []);
+    const fetchCampaignData = async (isSilent = false) => {
+        if (!id) return;
+        if (!isSilent) setIsLoading(true);
+        try {
+            // Fetch everything in parallel for maximum speed
+            const [briefResult, negotiationResult] = await Promise.allSettled([
+                creatorApi.getCampaignBrief(id),
+                creatorApi.getBidStatus(id)
+            ]);
 
-                    campaignFromList = campaignsArray.find((c: any) => {
-                        const campaignId = c.id || c._id || c.campaign_id;
-                        return campaignId === id || campaignId?.toString() === id?.toString();
-                    });
-                } catch (err) {
-                    console.error('Failed to fetch campaigns list:', err);
-                }
-
-                try {
-                    const brief = await creatorApi.getCampaignBrief(id);
-                    setBriefData(brief);
-
-                    if (brief) {
-                        const briefCampaign = brief.campaign || brief;
-                        const merged = normalizeCampaign(campaignFromList, briefCampaign);
-
-                        const cl = campaignFromList || {};
-                        const bc = briefCampaign || {};
-                        const pick = (...vals: any[]) => vals.find(v => v !== null && v !== undefined && v !== '') ?? undefined;
-                        const finalCampaignData = {
-                            ...merged,
-                            status: pick(brief.status, merged.status, 'Active'),
-                            brand: pick(bc.brand_name, brief.brand_name, merged.brand, 'Partner Brand'),
-                            video_title: pick(bc.video_title, brief.video_title, cl.video_title, merged.video_title),
-                            primary_focus: pick(bc.primary_focus, brief.primary_focus, cl.primary_focus, merged.primary_focus),
-                            secondary_focus: pick(bc.secondary_focus, brief.secondary_focus, cl.secondary_focus, merged.secondary_focus),
-                            dos: pick(bc.dos, brief.dos, cl.dos, merged.dos),
-                            donts: pick(bc.donts, brief.donts, cl.donts, merged.donts),
-                            cta: pick(bc.cta, brief.cta, bc.call_to_action, brief.call_to_action, cl.cta, cl.call_to_action, merged.cta),
-                            brief_completed: pick(bc.brief_completed, brief.brief_completed, cl.brief_completed, merged.brief_completed),
-                            cpv: (briefCampaign.cpv !== undefined ? briefCampaign.cpv : brief.cpv) !== undefined
-                                ? (briefCampaign.cpv !== undefined ? briefCampaign.cpv : brief.cpv)
-                                : merged.cpv,
-                            total_budget: (briefCampaign.total_budget !== undefined ? briefCampaign.total_budget : brief.total_budget) !== undefined
-                                ? (briefCampaign.total_budget !== undefined ? briefCampaign.total_budget : brief.total_budget)
-                                : merged.total_budget,
-                            creator_categories: briefCampaign.creator_categories || brief.creator_categories || merged.creator_categories,
-                            follower_ranges: briefCampaign.follower_ranges || brief.follower_ranges || merged.follower_ranges
-                        };
-
-                        setCampaignData(finalCampaignData);
-                    } else if (campaignFromList) {
-                        setCampaignData(normalizeCampaign(campaignFromList, null));
-                    }
-                } catch (briefError) {
-                    console.error('Failed to fetch campaign brief:', briefError);
-                    if (campaignFromList) {
-                        setCampaignData(normalizeCampaign(campaignFromList, null));
-                    } else {
-                        showToast('Failed to load campaign details. You may need to link the campaign first.', 'info');
-                    }
-                }
-
-                try {
-                    const negotiationData = await creatorApi.getBidStatus(id);
-                    setNegotiationStatus(negotiationData);
-                } catch (negotiationError) {
-                    console.error('Failed to fetch negotiation status:', negotiationError);
-                }
-            } catch (error) {
-                console.error('Failed to fetch campaign data:', error);
-                showToast('Failed to load campaign details. Please try again.', 'error');
+            if (negotiationResult.status === 'fulfilled') {
+                setNegotiationStatus(negotiationResult.value);
             }
-        };
 
+            if (briefResult.status === 'fulfilled' && briefResult.value) {
+                const brief = briefResult.value;
+                setBriefData(brief);
+                const briefCampaign = brief.campaign || brief;
+                const merged = normalizeCampaign(null, briefCampaign);
+
+                const bc = briefCampaign || {};
+                const pick = (...vals: any[]) => vals.find(v => v !== null && v !== undefined && v !== '') ?? undefined;
+
+                const finalCampaignData = {
+                    ...merged,
+                    status: pick(brief.status, merged.status, 'Active'),
+                    brand: pick(bc.brand_name, brief.brand_name, merged.brand, 'Partner Brand'),
+                    video_title: pick(bc.video_title, brief.video_title, merged.video_title),
+                    primary_focus: pick(bc.primary_focus, brief.primary_focus, merged.primary_focus),
+                    secondary_focus: pick(bc.secondary_focus, brief.secondary_focus, merged.secondary_focus),
+                    dos: pick(bc.dos, brief.dos, merged.dos),
+                    donts: pick(bc.donts, brief.donts, merged.donts),
+                    cta: pick(bc.cta, brief.cta, bc.call_to_action, brief.call_to_action, merged.cta),
+                    brief_completed: pick(bc.brief_completed, brief.brief_completed, merged.brief_completed),
+                    cpv: (briefCampaign.cpv !== undefined ? briefCampaign.cpv : brief.cpv) !== undefined
+                        ? (briefCampaign.cpv !== undefined ? briefCampaign.cpv : brief.cpv)
+                        : merged.cpv,
+                    total_budget: (briefCampaign.total_budget !== undefined ? briefCampaign.total_budget : brief.total_budget) !== undefined
+                        ? (briefCampaign.total_budget !== undefined ? briefCampaign.total_budget : brief.total_budget)
+                        : merged.total_budget,
+                    creator_categories: briefCampaign.creator_categories || brief.creator_categories || merged.creator_categories,
+                    follower_ranges: briefCampaign.follower_ranges || brief.follower_ranges || merged.follower_ranges
+                };
+
+                setCampaignData(finalCampaignData);
+            }
+        } catch (error) {
+            console.error('Failed to fetch campaign data:', error);
+            if (!isSilent) showToast('Failed to load campaign details. Please try again.', 'error');
+        } finally {
+            if (!isSilent) setIsLoading(false);
+        }
+    };
+
+    useEffect(() => {
         const token = searchParams.get('token');
         if (token && id) {
             setCreatorToken(token);
@@ -284,7 +273,14 @@ export const useCreatorCampaignDetails = () => {
         }
 
         fetchCampaignData();
-    }, [id, searchParams, showToast]);
+
+        // Background polling for "real-time" updates every 10 seconds
+        const intervalId = setInterval(() => {
+            fetchCampaignData(true);
+        }, 10000);
+
+        return () => clearInterval(intervalId);
+    }, [id, searchParams]);
 
     useEffect(() => {
         const template =
@@ -305,15 +301,7 @@ export const useCreatorCampaignDetails = () => {
             showToast('Campaign linked successfully!', 'success');
             setModalType(null);
             setCreatorToken('');
-            const brief = await creatorApi.getCampaignBrief(id);
-            setBriefData(brief);
-            if (brief && brief.campaign) {
-                setCampaignData({
-                    ...brief.campaign,
-                    status: brief.status || brief.campaign.status,
-                    brand: brief.campaign.brand_name || 'Partner Brand'
-                });
-            }
+            await fetchCampaignData(true);
         } catch (error: any) {
             console.error('Failed to link campaign:', error);
             showToast(error.message || 'Failed to link campaign', 'error');
@@ -330,39 +318,7 @@ export const useCreatorCampaignDetails = () => {
             showToast('Negotiation proposal submitted successfully!', 'success');
             setModalType(null);
             setNegotiationAmount('');
-            const negotiationData = await creatorApi.getBidStatus(id);
-            setNegotiationStatus(negotiationData);
-            const brief = await creatorApi.getCampaignBrief(id);
-            setBriefData(brief);
-
-            try {
-                const campaignsData = await creatorApi.getCampaigns() as any;
-                const campaignsArray = Array.isArray(campaignsData)
-                    ? campaignsData
-                    : (campaignsData?.campaigns || campaignsData?.data || []);
-                const updatedCampaign = campaignsArray.find((c: any) => {
-                    const campaignId = c.id || c._id || c.campaign_id;
-                    return campaignId === id || campaignId?.toString() === id?.toString();
-                });
-
-                if (brief) {
-                    const merged = normalizeCampaign(updatedCampaign, brief);
-                    const finalCampaignData = {
-                        ...merged,
-                        status: brief.status || merged.status || 'Active',
-                        brand: brief.brand_name || merged.brand || 'Partner Brand',
-                        cpv: brief.cpv !== undefined ? brief.cpv : merged.cpv,
-                        total_budget: brief.total_budget !== undefined ? brief.total_budget : merged.total_budget,
-                        creator_categories: brief.creator_categories || merged.creator_categories,
-                        follower_ranges: brief.follower_ranges || merged.follower_ranges
-                    };
-                    setCampaignData(finalCampaignData);
-                } else if (updatedCampaign) {
-                    setCampaignData(normalizeCampaign(updatedCampaign, null));
-                }
-            } catch (err) {
-                console.error('Failed to refresh campaign list:', err);
-            }
+            await fetchCampaignData(true);
         } catch (error: any) {
             console.error('Failed to submit negotiation:', error);
             showToast(error.message || 'Failed to submit negotiation', 'error');
@@ -379,39 +335,7 @@ export const useCreatorCampaignDetails = () => {
             showToast('Deal accepted successfully!', 'success');
             setIsSuccess(true);
             setModalType(null);
-            const negotiationData = await creatorApi.getBidStatus(id);
-            setNegotiationStatus(negotiationData);
-            const brief = await creatorApi.getCampaignBrief(id);
-            setBriefData(brief);
-
-            try {
-                const campaignsData = await creatorApi.getCampaigns() as any;
-                const campaignsArray = Array.isArray(campaignsData)
-                    ? campaignsData
-                    : (campaignsData?.campaigns || campaignsData?.data || []);
-                const updatedCampaign = campaignsArray.find((c: any) => {
-                    const campaignId = c.id || c._id || c.campaign_id;
-                    return campaignId === id || campaignId?.toString() === id?.toString();
-                });
-
-                if (brief) {
-                    const merged = normalizeCampaign(updatedCampaign, brief);
-                    const finalCampaignData = {
-                        ...merged,
-                        status: brief.status || merged.status || 'Active',
-                        brand: brief.brand_name || merged.brand || 'Partner Brand',
-                        cpv: brief.cpv !== undefined ? brief.cpv : merged.cpv,
-                        total_budget: brief.total_budget !== undefined ? brief.total_budget : merged.total_budget,
-                        creator_categories: brief.creator_categories || merged.creator_categories,
-                        follower_ranges: brief.follower_ranges || merged.follower_ranges
-                    };
-                    setCampaignData(finalCampaignData);
-                } else if (updatedCampaign) {
-                    setCampaignData(normalizeCampaign(updatedCampaign, null));
-                }
-            } catch (err) {
-                console.error('Failed to refresh campaign list:', err);
-            }
+            await fetchCampaignData(true);
 
             setTimeout(() => {
                 setIsSuccess(false);
@@ -431,26 +355,7 @@ export const useCreatorCampaignDetails = () => {
             await creatorApi.respondToBid(id, 'reject');
             showToast('Deal declined successfully.', 'info');
             setModalType(null);
-
-            const negotiationStatusData = await creatorApi.getBidStatus(id);
-            setNegotiationStatus(negotiationStatusData);
-
-            const brief = await creatorApi.getCampaignBrief(id);
-            setBriefData(brief);
-            if (brief && brief.campaign) {
-                setCampaignData({
-                    ...brief.campaign,
-                    status: brief.status || brief.campaign.status,
-                    brand: brief.campaign.brand_name || 'Partner Brand'
-                });
-            } else if (brief) {
-                const merged = normalizeCampaign(null, brief);
-                setCampaignData({
-                    ...merged,
-                    status: brief.status,
-                    brand: brief.brand_name
-                });
-            }
+            await fetchCampaignData(true);
         } catch (error: any) {
             console.error('Failed to decline deal:', error);
             showToast(error.message || 'Failed to decline deal', 'error');
@@ -502,25 +407,17 @@ export const useCreatorCampaignDetails = () => {
                 await creatorApi.uploadScript(id, finalScript);
                 showToast('Script finalized and submitted successfully!', 'success');
             } else if (modalType === 'content') {
-                if (contentFiles.length === 0) {
-                    showToast('Please upload a content video file before submitting.', 'error');
+                if (contentFiles.length === 0 && !contentLink.trim()) {
+                    showToast('Please upload a video file or provide a content link.', 'error');
                     setIsSubmitting(false);
                     return;
                 }
                 await creatorApi.uploadContent(id, contentFiles[0], contentLink);
-                showToast('Content uploaded successfully! Waiting for brand review.', 'success');
+                showToast('Content submitted successfully! Waiting for brand review.', 'success');
             }
             setIsSuccess(true);
 
-            const brief = await creatorApi.getCampaignBrief(id);
-            setBriefData(brief);
-            if (brief && brief.campaign) {
-                setCampaignData({
-                    ...brief.campaign,
-                    status: brief.status || brief.campaign.status,
-                    brand: brief.campaign.brand_name || 'Partner Brand'
-                });
-            }
+            await fetchCampaignData(true);
 
             setTimeout(() => {
                 setModalType(null);
@@ -556,15 +453,7 @@ export const useCreatorCampaignDetails = () => {
             setModalType(null);
             setLiveLink('');
 
-            const brief = await creatorApi.getCampaignBrief(id);
-            setBriefData(brief);
-            if (brief && brief.campaign) {
-                setCampaignData({
-                    ...brief.campaign,
-                    status: brief.status || brief.campaign.status,
-                    brand: brief.campaign.brand_name || 'Partner Brand'
-                });
-            }
+            await fetchCampaignData(true);
         } catch (error: any) {
             console.error('Failed to mark content live:', error);
             showToast(error.message || 'Failed to mark content live', 'error');
@@ -618,15 +507,7 @@ export const useCreatorCampaignDetails = () => {
             await creatorApi.uploadScript(id, finalScript);
             showToast('Script submitted successfully!', 'success');
 
-            const brief = await creatorApi.getCampaignBrief(id);
-            setBriefData(brief);
-            if (brief && brief.campaign) {
-                setCampaignData({
-                    ...brief.campaign,
-                    status: brief.status || brief.campaign.status,
-                    brand: brief.campaign.brand_name || 'Partner Brand'
-                });
-            }
+            await fetchCampaignData(true);
         } catch (error: any) {
             console.error('Failed to submit script:', error);
             const errorMessage = error.message || 'Failed to submit script';
@@ -648,6 +529,7 @@ export const useCreatorCampaignDetails = () => {
         setModalType, canSubmitScript, scriptDeliverableStatus, brandScriptFeedback,
         inlineScriptContent, setInlineScriptContent, handleInlineScriptSubmit,
         isSubmittingInlineScript, canUploadContent, isContentChangesRequested,
+        contentDeliverableStatus,
         brandContentFeedback, isContentUnderBrandReview, canGoLive, scriptIsNextStep,
         currentWorkflowStatus, negotiationStatus, isBrandAcceptedCreatorOffer,
         negotiationStatusKey, brandOfferAmount, formatINR, scriptReviewMeta,
@@ -655,7 +537,7 @@ export const useCreatorCampaignDetails = () => {
         isNegotiating, negotiationAmount, setNegotiationAmount, handleNegotiate,
         isSubmitting, isSuccess, handleAcceptDeal, handleRejectDeal,
         scriptContent, contentFiles, setContentFiles, contentLink, setContentLink, handleAction,
-        liveLink, setLiveLink, handleGoLive
+        liveLink, setLiveLink, handleGoLive, isLoading
     };
 
     return contextValue;

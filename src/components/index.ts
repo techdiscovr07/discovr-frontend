@@ -11,3 +11,4 @@ export { FileUpload } from "./FileUpload";
 export { NotificationCenter } from './NotificationCenter';
 export { Skeleton, SkeletonText, SkeletonCard, SkeletonTable } from './Skeleton';
 export { AdvancedSearch, type SearchFilters } from './AdvancedSearch';
+export { Sidebar } from './Sidebar';

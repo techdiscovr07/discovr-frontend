@@ -3,7 +3,7 @@ import { Button, Modal, TextArea, Input, FileUpload } from '../../../components'
 import { CheckCircle2 } from 'lucide-react';
 
 interface CreatorActionModalProps {
-    modalType: 'script' | 'content' | 'go-live' | 'participate' | 'negotiate' | 'accept-deal' | null;
+    modalType: 'script' | 'content' | 'go-live' | 'participate' | 'negotiate' | 'accept-deal' | 'reject-deal' | null;
     isSubmitting: boolean;
     isSuccess: boolean;
     selectedCampaign: any;
@@ -61,7 +61,8 @@ export const CreatorActionModal: React.FC<CreatorActionModalProps> = ({
                         modalType === 'go-live' ? 'Go Live' :
                             modalType === 'negotiate' ? 'Negotiate Deal' :
                                 modalType === 'accept-deal' ? 'Accept Deal' :
-                                    'Join Campaign'
+                                    modalType === 'reject-deal' ? 'Decline Deal' :
+                                        'Join Campaign'
             }
             subtitle={selectedCampaign?.name}
             size="md"
@@ -176,6 +177,16 @@ export const CreatorActionModal: React.FC<CreatorActionModalProps> = ({
                             </p>
                         </div>
                     )}
+                    {modalType === 'reject-deal' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                            <p style={{ fontSize: 'var(--text-base)', color: 'var(--color-text-secondary)' }}>
+                                Are you sure you want to decline this deal?
+                            </p>
+                            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)' }}>
+                                This will notify the brand that you've declined the current offer. You can still negotiate for a different amount.
+                            </p>
+                        </div>
+                    )}
                     {modalType === 'participate' && (
                         <p style={{ fontSize: 'var(--text-base)', color: 'var(--color-text-secondary)' }}>
                             Are you sure you want to participate in this campaign? By clicking join, you agree to the brand's requirements and deadlines.
@@ -195,14 +206,15 @@ export const CreatorActionModal: React.FC<CreatorActionModalProps> = ({
                             isLoading={isSubmitting}
                             disabled={
                                 (modalType === 'script' && (!scriptContent || !scriptContent.trim())) ||
-                                (modalType === 'content' && contentFiles.length === 0) ||
+                                (modalType === 'content' && contentFiles.length === 0 && !contentLink.trim()) ||
                                 (modalType === 'go-live' && (!liveLink || !liveLink.trim())) ||
                                 (modalType === 'negotiate' && (!negotiationAmount || parseFloat(negotiationAmount) <= 0))
                             }
                         >
                             {modalType === 'participate' ? 'Join Campaign' :
                                 modalType === 'negotiate' ? 'Submit Proposal' :
-                                    modalType === 'accept-deal' ? 'Accept Deal' : 'Submit'}
+                                    modalType === 'accept-deal' ? 'Accept Deal' :
+                                        modalType === 'reject-deal' ? 'Decline Deal' : 'Submit'}
                         </Button>
                     </div>
                 </div>
@@ -233,14 +245,16 @@ export const CreatorActionModal: React.FC<CreatorActionModalProps> = ({
                             modalType === 'content' ? 'Content Uploaded!' :
                                 modalType === 'negotiate' ? 'Proposal Submitted!' :
                                     modalType === 'accept-deal' ? 'Deal Accepted!' :
-                                        'Joined Campaign!'}
+                                        modalType === 'reject-deal' ? 'Deal Declined' :
+                                            'Joined Campaign!'}
                     </h3>
                     <p style={{ color: 'var(--color-text-secondary)' }}>
                         {modalType === 'script' ? 'Your script has been sent for review.' :
                             modalType === 'content' ? 'Your content has been shared with the brand.' :
                                 modalType === 'negotiate' ? `Your proposal of ₹${parseFloat(negotiationAmount).toLocaleString()} has been submitted. The brand will review it shortly.` :
                                     modalType === 'accept-deal' ? 'You have accepted the deal. The brand will be notified.' :
-                                        'You have successfully joined the campaign.'}
+                                        modalType === 'reject-deal' ? 'You have declined the offer. The brand will be notified.' :
+                                            'You have successfully joined the campaign.'}
                     </p>
                 </div>
             )}

@@ -28,7 +28,7 @@ export const useCampaignDetails = () => {
     const [isSubmittingScriptTemplate, setIsSubmittingScriptTemplate] = useState(false);
     const [sampleVideoFiles, setSampleVideoFiles] = useState<File[]>([]);
     const [isBriefEditing, setIsBriefEditing] = useState(false);
-    const [activeTab, setActiveTab] = useState<'overview' | 'creators' | 'brief' | 'scripts' | 'content'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'creators' | 'confirmed' | 'brief' | 'scripts' | 'content'>('overview');
     const [isUploadSheetModalOpen, setIsUploadSheetModalOpen] = useState(false);
     const [creatorsSheetFile, setCreatorsSheetFile] = useState<File[]>([]);
     const [isUploadingSheet, setIsUploadingSheet] = useState(false);
@@ -70,6 +70,30 @@ export const useCampaignDetails = () => {
     const [counterBid, setCounterBid] = useState<any | null>(null);
     const [counterAmount, setCounterAmount] = useState('');
     const [isSubmittingCounter, setIsSubmittingCounter] = useState(false);
+
+    // Sidebar/Modal for Creator Profile
+    const [isCreatorProfileSidebarOpen, setIsCreatorProfileSidebarOpen] = useState(false);
+    const [selectedProfileCreator, setSelectedProfileCreator] = useState<any | null>(null);
+    const [isAnalyzingCreator, setIsAnalyzingCreator] = useState(false);
+
+    const handleOpenCreatorProfile = (creator: any) => {
+        setSelectedProfileCreator(creator);
+        setIsCreatorProfileSidebarOpen(true);
+    };
+
+    const handleAnalyzeCreator = async (profileUrl: string) => {
+        if (!profileUrl) return;
+        setIsAnalyzingCreator(true);
+        try {
+            const result = await brandApi.analyzeCreator(profileUrl);
+            setSelectedProfileCreator((prev: any) => ({ ...prev, ...result }));
+            showToast('Creator data updated from profile link', 'success');
+        } catch (error: any) {
+            showToast(error.message || 'Failed to analyze profile', 'error');
+        } finally {
+            setIsAnalyzingCreator(false);
+        }
+    };
 
     const getScriptStatusMeta = (rawStatus: string) => {
         const status = String(rawStatus || '').toLowerCase();
@@ -144,67 +168,79 @@ export const useCampaignDetails = () => {
         return { label: status ? status.replace(/_/g, ' ') : 'Pending Review', tone: 'status-planning' };
     };
 
-    useEffect(() => {
-        const fetchCampaign = async () => {
-            try {
-                const response = await brandApi.getCampaigns() as any;
-                const campaigns = Array.isArray(response) ? response : (response?.campaigns || []);
-                const found = campaigns.find((c: any) => c.id === id);
-                if (found) {
-                    setCampaign(found);
-                    setBrandScriptTemplate(found.script_template || '');
-                    setIsBriefEditing(!found.brief_completed);
-                    setBriefData({
-                        video_title: found.video_title || '',
-                        primary_focus: found.primary_focus || '',
-                        secondary_focus: found.secondary_focus || '',
-                        dos: found.dos || '',
-                        donts: found.donts || '',
-                        cta: found.cta || '',
-                        script_template: found.script_template || '',
-                        sample_video_url: found.sample_video_url || ''
-                    });
-                } else {
-                    setCampaign(null);
-                }
-            } catch (error) {
-                console.error('Failed to fetch campaign:', error);
+    const fetchCampaign = async (isSilent = false) => {
+        try {
+            if (!isSilent) setIsLoading(true);
+            const response = await brandApi.getCampaigns() as any;
+            const campaigns = Array.isArray(response) ? response : (response?.campaigns || []);
+            const found = campaigns.find((c: any) => c.id === id);
+            if (found) {
+                setCampaign(found);
+                setBrandScriptTemplate(found.script_template || '');
+                setIsBriefEditing(!found.brief_completed);
+                setBriefData({
+                    video_title: found.video_title || '',
+                    primary_focus: found.primary_focus || '',
+                    secondary_focus: found.secondary_focus || '',
+                    dos: found.dos || '',
+                    donts: found.donts || '',
+                    cta: found.cta || '',
+                    script_template: found.script_template || '',
+                    sample_video_url: found.sample_video_url || ''
+                });
+            } else {
                 setCampaign(null);
-            } finally {
-                setIsLoading(false);
             }
-        };
+        } catch (error) {
+            console.error('Failed to fetch campaign:', error);
+            if (!isSilent) setCampaign(null);
+        } finally {
+            if (!isSilent) setIsLoading(false);
+        }
+    };
+
+    const fetchTabData = async () => {
+        if (!id) return;
+        try {
+            switch (activeTab) {
+                case 'creators':
+                    const [creatorsData, bidsData] = await Promise.all([
+                        brandApi.getCampaignCreators(id),
+                        brandApi.getCreatorBids(id)
+                    ]);
+                    setCreators(Array.isArray(creatorsData) ? creatorsData : ((creatorsData as any)?.creators || []));
+                    setBids(Array.isArray(bidsData) ? bidsData : ((bidsData as any)?.bids || (bidsData as any)?.creators || []));
+                    break;
+                case 'scripts':
+                    const scriptsData: any = await brandApi.getCreatorScripts(id);
+                    setScripts(Array.isArray(scriptsData) ? scriptsData : (scriptsData?.scripts || scriptsData?.creators || []));
+                    break;
+                case 'content':
+                    const contentData: any = await brandApi.getCreatorContent(id);
+                    setContent(Array.isArray(contentData) ? contentData : (contentData?.content || contentData?.creators || []));
+                    break;
+            }
+        } catch (error) {
+            console.error(`Failed to fetch ${activeTab} data:`, error);
+        }
+    };
+
+    useEffect(() => {
         fetchCampaign();
     }, [id]);
 
     useEffect(() => {
         if (!id || !campaign) return;
-
-        const fetchTabData = async () => {
-            try {
-                switch (activeTab) {
-                    case 'creators':
-                        const creatorsData: any = await brandApi.getCampaignCreators(id);
-                        setCreators(Array.isArray(creatorsData) ? creatorsData : (creatorsData?.creators || []));
-                        const bidsData: any = await brandApi.getCreatorBids(id);
-                        setBids(Array.isArray(bidsData) ? bidsData : (bidsData?.bids || bidsData?.creators || []));
-                        break;
-                    case 'scripts':
-                        const scriptsData: any = await brandApi.getCreatorScripts(id);
-                        setScripts(Array.isArray(scriptsData) ? scriptsData : (scriptsData?.scripts || scriptsData?.creators || []));
-                        break;
-                    case 'content':
-                        const contentData: any = await brandApi.getCreatorContent(id);
-                        setContent(Array.isArray(contentData) ? contentData : (contentData?.content || contentData?.creators || []));
-                        break;
-                }
-            } catch (error) {
-                console.error(`Failed to fetch ${activeTab} data:`, error);
-            }
-        };
-
         fetchTabData();
-    }, [activeTab, id, campaign]);
+
+        // Background polling for real-time updates every 10 seconds
+        const intervalId = setInterval(() => {
+            fetchCampaign(true);
+            fetchTabData();
+        }, 10000);
+
+        return () => clearInterval(intervalId);
+    }, [activeTab, id, campaign?.id]);
 
     const handleUploadCreatorsSheet = async () => {
         if (!id || creatorsSheetFile.length === 0) {
@@ -273,13 +309,34 @@ export const useCampaignDetails = () => {
         if (!id) return;
         setIsSubmittingSelection(true);
         try {
+            // First, sync any local status changes to the backend
+            const statusUpdates = creators
+                .filter(c => c.status && c.status !== 'pending')
+                .map(c => ({
+                    creator_id: c.creator_id || c.id || c._id,
+                    status: c.status
+                }));
+
+            if (statusUpdates.length > 0) {
+                try {
+                    await brandApi.updateCreatorStatuses(id, statusUpdates);
+                } catch (updateErr) {
+                    console.warn('Failed to sync some creator statuses, continuing with submission...', updateErr);
+                }
+            }
+
             await brandApi.submitCreatorSelection(id);
             showToast('Creator selection submitted successfully!', 'success');
+
             const response = await brandApi.getCampaigns() as any;
             const campaigns = Array.isArray(response) ? response : (response?.campaigns || []);
             const found = campaigns.find((c: any) => c.id === id);
             if (found) {
                 setCampaign(found);
+                // Also refresh creators and scripts to be safe
+                const creatorsData: any = await brandApi.getCampaignCreators(id);
+                setCreators(Array.isArray(creatorsData) ? creatorsData : (creatorsData?.creators || []));
+
                 if (activeTab === 'scripts' || found.review_status === 'creators_are_final') {
                     const scriptsData: any = await brandApi.getCreatorScripts(id);
                     setScripts(Array.isArray(scriptsData) ? scriptsData : (scriptsData?.scripts || scriptsData?.creators || []));
@@ -613,6 +670,7 @@ export const useCampaignDetails = () => {
     const campaignData = campaign || {};
     const normalizedCampaignStatus = String(campaignData.status || '').toLowerCase();
     const campaignStatusLabelMap: Record<string, string> = {
+        pending: 'Pending for Approval',
         awaiting_creators: 'Awaiting Creators',
         creator_review: 'Creator Review',
         creator_negotiation: 'Creator Negotiation',
@@ -624,12 +682,22 @@ export const useCampaignDetails = () => {
     const campaignStatusLabel = campaignStatusLabelMap[normalizedCampaignStatus] || campaignData.status || 'N/A';
     const campaignStatusTone =
         normalizedCampaignStatus === 'completed'
-            ? 'status-active'
-            : normalizedCampaignStatus === 'content_review' || normalizedCampaignStatus === 'script_review'
-                ? 'status-content-review'
-                : normalizedCampaignStatus === 'creator_negotiation'
-                    ? 'status-negotiate'
-                    : 'status-planning';
+            ? 'status-completed'
+            : normalizedCampaignStatus === 'pending'
+                ? 'status-pending'
+                : normalizedCampaignStatus === 'awaiting_creators'
+                    ? 'status-awaiting'
+                    : normalizedCampaignStatus === 'creator_review'
+                        ? 'status-review'
+                        : normalizedCampaignStatus === 'creator_negotiation'
+                            ? 'status-negotiation'
+                            : normalizedCampaignStatus === 'brief_pending'
+                                ? 'status-brief'
+                                : normalizedCampaignStatus === 'script_review'
+                                    ? 'status-script'
+                                    : normalizedCampaignStatus === 'content_review'
+                                        ? 'status-content'
+                                        : 'status-planning';
 
     const canShowBriefTab =
         campaignData.review_status === 'creators_are_final' ||
@@ -638,6 +706,10 @@ export const useCampaignDetails = () => {
         campaignData.status === 'content_review' ||
         campaignData.status === 'completed' ||
         campaignData.brief_completed === false;
+
+    const canShowConfirmedCreatorsTab =
+        campaignData.review_status === 'creators_are_final' ||
+        ['brief_pending', 'script_review', 'content_review', 'completed'].includes(normalizedCampaignStatus);
 
     const canShowNegotiationInCreators =
         campaignData.review_status === 'negotiation' ||
@@ -660,6 +732,19 @@ export const useCampaignDetails = () => {
             return status === 'rejected';
         });
     })();
+
+    const confirmedCreators = (Array.isArray(creators) ? creators : []).filter((creator: any) => {
+        const status = String(creator?.status || '').toLowerCase();
+        // A creator is only "confirmed" if they have an agreed deal (amount_finalized or active)
+        // or have already started the project workflow (scripts/content).
+        return (
+            status === 'amount_finalized' ||
+            status === 'active' ||
+            status.includes('script') ||
+            status.includes('content') ||
+            status === 'completed'
+        );
+    });
 
     const stats = [
         { label: 'Total Budget', value: `₹${(campaignData.total_budget || 0).toLocaleString()}`, icon: IndianRupee, trend: '62% used', trendType: 'neutral' },
@@ -684,6 +769,7 @@ export const useCampaignDetails = () => {
         campaignStatusTone,
         campaignStatusLabel,
         canShowBriefTab,
+        canShowConfirmedCreatorsTab,
         activeTab,
         setActiveTab,
         isUploadSheetModalOpen, setIsUploadSheetModalOpen,
@@ -711,7 +797,7 @@ export const useCampaignDetails = () => {
         followerRangeOptions, handleUpdateFollowerRanges, isUpdatingFollowerRanges,
         handleBrandSubmitSelection, isSubmittingSelection,
         stats, advancedMetrics, growthData,
-        creatorFilterTab, setCreatorFilterTab, filteredCreators,
+        creatorFilterTab, setCreatorFilterTab, filteredCreators, confirmedCreators,
         creators, bids, handleFinalizeAmounts, isFinalizingAmounts,
         canShowNegotiationInCreators, showToast, setCreators, setBids,
         getBidCreatorId, openCounterModal, isBriefEditing, setIsBriefEditing,
@@ -719,7 +805,11 @@ export const useCampaignDetails = () => {
         getScriptStatusMeta, handleOpenAIReview, filteredContent,
         contentFilterTab, setContentFilterTab, contentReviewStats,
         getContentStatusMeta, handleOpenAIContentReview,
-        handleOpenEditFollowerRanges
+        handleOpenEditFollowerRanges,
+        isCreatorProfileSidebarOpen, setIsCreatorProfileSidebarOpen,
+        selectedProfileCreator, setSelectedProfileCreator,
+        handleOpenCreatorProfile,
+        isAnalyzingCreator, handleAnalyzeCreator
     };
 
     return contextValue;

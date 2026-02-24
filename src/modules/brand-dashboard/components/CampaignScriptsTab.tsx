@@ -129,17 +129,40 @@ export const CampaignScriptsTab: React.FC<CampaignScriptsTabProps> = ({
                                         <tr key={script.id || script.creator_id}>
                                             <td>
                                                 <div className="creator-cell">
-                                                    <div className="creator-avatar" style={{ width: 32, height: 32, fontSize: 16 }}>
+                                                    <div className="creator-avatar">
                                                         {script.avatar || '👤'}
                                                     </div>
-                                                    <div>
-                                                        <div className="creator-name">{script.name || script.creator_name}</div>
-                                                    </div>
+                                                    <span className="creator-name">{script.name || script.creator_name}</span>
                                                 </div>
                                             </td>
                                             <td>
-                                                <div style={{ maxWidth: '300px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                                    {script.script_content || script.content || '-'}
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', minWidth: '200px' }}>
+                                                    <div style={{
+                                                        fontSize: 'var(--text-sm)',
+                                                        color: 'var(--color-text-primary)',
+                                                        fontWeight: 500,
+                                                        maxWidth: '350px',
+                                                        overflow: 'hidden',
+                                                        textOverflow: 'ellipsis',
+                                                        whiteSpace: 'nowrap'
+                                                    }}>
+                                                        {script.script_content || script.content || '-'}
+                                                    </div>
+                                                    {(script.script_feedback || script.feedback) && (
+                                                        <div style={{
+                                                            fontSize: '11px',
+                                                            color: 'var(--color-text-secondary)',
+                                                            background: 'rgba(var(--color-accent-rgb), 0.03)',
+                                                            padding: '6px 10px',
+                                                            borderRadius: 'var(--radius-sm)',
+                                                            borderLeft: '3px solid var(--color-accent)',
+                                                            maxWidth: '350px',
+                                                            lineHeight: 1.4
+                                                        }}>
+                                                            <strong style={{ color: 'var(--color-accent)', marginRight: '4px' }}>Your Comment:</strong>
+                                                            {script.script_feedback || script.feedback}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             </td>
                                             <td>
@@ -153,17 +176,19 @@ export const CampaignScriptsTab: React.FC<CampaignScriptsTabProps> = ({
                                                     ? new Date(script.script_submitted_at).toLocaleString()
                                                     : (script.submitted_at || script.created_at || '-')}
                                             </td>
-                                            <td style={{ textAlign: 'right', display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
-                                                {String(script.status || '').toLowerCase() === 'script_pending' ? (
-                                                    <Button variant="ghost" size="sm" onClick={() => handleOpenAIReview(script)}>
-                                                        <Sparkles size={14} />
-                                                        Ask AI Review
-                                                    </Button>
-                                                ) : (
-                                                    <Button variant="ghost" size="sm" disabled>
-                                                        Reviewed
-                                                    </Button>
-                                                )}
+                                            <td style={{ textAlign: 'right' }}>
+                                                <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                                    {String(script.status || '').toLowerCase() === 'script_pending' ? (
+                                                        <Button variant="ghost" size="sm" onClick={() => handleOpenAIReview(script)}>
+                                                            <Sparkles size={14} />
+                                                            Ask AI Review
+                                                        </Button>
+                                                    ) : (
+                                                        <Button variant="ghost" size="sm" disabled>
+                                                            Reviewed
+                                                        </Button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     ))

@@ -285,7 +285,7 @@ export const CreatorCampaignModals: React.FC = () => {
                         )}
                         <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'flex-end' }}>
                             <Button variant="ghost" onClick={() => setModalType(null)} disabled={isSubmitting}>Cancel</Button>
-                            <Button onClick={handleAction} isLoading={isSubmitting} disabled={modalType === 'content' && contentFiles.length === 0}>
+                            <Button onClick={handleAction} isLoading={isSubmitting} disabled={modalType === 'content' && contentFiles.length === 0 && !contentLink.trim()}>
                                 {modalType === 'script' ? 'Finalize Script' : 'Submit'}
                             </Button>
                         </div>

@@ -104,22 +104,24 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
         const normalized = normalizeStatus(status);
         const statusMap: Record<string, string> = {
             active: 'status-active',
-            negotiate: 'status-negotiate',
-            content_review: 'status-content-review',
+            pending: 'status-pending',
+            negotiate: 'status-negotiation',
+            content_review: 'status-content',
             planning: 'status-planning',
             completed: 'status-completed',
-            awaiting_creators: 'status-planning',
-            creator_review: 'status-planning',
-            creator_negotiation: 'status-negotiate',
-            brief_pending: 'status-planning',
-            script_review: 'status-content-review'
+            awaiting_creators: 'status-awaiting',
+            creator_review: 'status-review',
+            creator_negotiation: 'status-negotiation',
+            brief_pending: 'status-brief',
+            script_review: 'status-script'
         };
-        return statusMap[normalized] || 'status-default';
+        return statusMap[normalized] || 'status-planning';
     };
 
     const getStatusLabel = (status: string) => {
         const normalized = normalizeStatus(status);
         const labels: Record<string, string> = {
+            pending: 'Pending for Approval',
             awaiting_creators: 'Awaiting Creators',
             creator_review: 'Creator Review',
             creator_negotiation: 'Creator Negotiation',
@@ -166,9 +168,9 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
                     <div className="campaign-matching-dialog-note">
                         <p style={{ margin: 0, color: 'var(--color-text-primary)', lineHeight: 1.6 }}>
-                            We are finding suitable and best candidates for this campaign.
-                            Please give us some time. We are matching creators for{' '}
-                            <strong>{matchingDialogCampaignName}</strong>.
+                            Our AI is currently analyzing thousands of profiles to find creators
+                            perfectly aligned with your campaign requirements.
+                            We are matching the best creators for <strong>{matchingDialogCampaignName}</strong>.
                         </p>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
@@ -196,7 +198,17 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
                         const isMatching = isCreatorMatchingInProgress(campaign);
 
                         return (
-                            <Card key={campaign.id} className="campaign-list-card">
+                            <Card
+                                key={campaign.id}
+                                className="campaign-list-card"
+                                onClick={() => {
+                                    if (isMatching && !hasCreatorsShortlisted(campaign)) {
+                                        openMatchingDialog(campaign.name);
+                                        return;
+                                    }
+                                    navigate(`/brand/campaign/${campaign.id}`);
+                                }}
+                            >
                                 <CardBody>
                                     <div className="campaign-top-bar">
                                         <span className={`status-pill ${getStatusColor(campaign.status)}`}>
@@ -271,7 +283,8 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
                                             variant="ghost"
                                             fullWidth
                                             size="sm"
-                                            onClick={() => {
+                                            onClick={(e) => {
+                                                e.stopPropagation();
                                                 if (isMatching && !hasCreatorsShortlisted(campaign)) {
                                                     openMatchingDialog(campaign.name);
                                                     return;

@@ -8,7 +8,8 @@ import {
     Video,
     Clock,
     Instagram,
-    ArrowRight
+    ArrowRight,
+    Megaphone
 } from 'lucide-react';
 import { creatorApi } from '../../../lib/api';
 import '../CreatorDashboard.css';
@@ -20,7 +21,7 @@ interface CreatorCampaignsTabProps {
 export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ searchQuery = '' }) => {
     const navigate = useNavigate();
     const { showToast } = useToast();
-    const [modalType, setModalType] = useState<'script' | 'content' | 'go-live' | 'participate' | 'negotiate' | 'accept-deal' | null>(null);
+    const [modalType, setModalType] = useState<'script' | 'content' | 'go-live' | 'participate' | 'negotiate' | 'accept-deal' | 'reject-deal' | null>(null);
     const [selectedCampaign, setSelectedCampaign] = useState<any>(null);
     const [scriptContent, setScriptContent] = useState('');
     const [contentLink, setContentLink] = useState('');
@@ -43,12 +44,18 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
             } else if (data && typeof data === 'object') {
                 campaignsArray = data.campaigns || data.data || [];
             }
-            // Enrich each campaign with latest bid/negotiation status so brand acceptance reflects on creator tab
-            const campaignIds = campaignsArray.map((c: any) => c.id || c._id || c.campaign_id).filter(Boolean);
+            // Enrich the first few campaigns with latest bid/negotiation status 
+            // PERFORMANCE: Limiting to first 10 to avoid overloading backend
+            const enrichLimit = 10;
+            const campaignIds = campaignsArray.slice(0, enrichLimit).map((c: any) => c.id || c._id || c.campaign_id).filter(Boolean);
+
             const bidStatuses = await Promise.allSettled(
                 campaignIds.map((id: string) => creatorApi.getBidStatus(id))
             );
+
             const enriched = campaignsArray.map((campaign: any, index: number) => {
+                if (index >= enrichLimit) return campaign;
+
                 const result = bidStatuses[index];
                 if (result.status !== 'fulfilled' || !result.value) return campaign;
                 const bid = result.value as any;
@@ -79,18 +86,35 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
     }, []);
 
     const getStatusClass = (status: string) => {
-        switch (status) {
-            case 'Active': return 'status-active';
-            case 'Deal Accepted': return 'status-active';
-            case 'Negotiate': return 'status-negotiate';
-            case 'Negotiation': return 'status-negotiate';
-            case 'Content Approved': return 'status-active';
-            case 'Script Pending': return 'status-content-review';
+        const normalized = String(status || '').toLowerCase().replace(/\s+/g, '_');
+        switch (normalized) {
+            case 'active':
+            case 'deal_accepted':
+            case 'content_approved':
+            case 'content_live':
+                return 'status-active';
+            case 'negotiate':
+            case 'negotiation':
+            case 'in_negotiation':
+                return 'status-negotiation';
+            case 'script_pending':
+            case 'script_submitted':
+                return 'status-script';
+            case 'script_approved':
+                return 'status-active';
+            case 'content_pending':
+                return 'status-content';
+            case 'pending_for_approval':
+            case 'pending':
+                return 'status-pending';
+            case 'bid_submitted':
+            case 'bid_pending':
+                return 'status-review';
             default: return 'status-planning';
         }
     };
 
-    const handleOpenModal = (campaign: any, type: 'script' | 'content' | 'go-live' | 'participate' | 'negotiate' | 'accept-deal') => {
+    const handleOpenModal = (campaign: any, type: 'script' | 'content' | 'go-live' | 'participate' | 'negotiate' | 'accept-deal' | 'reject-deal') => {
         setSelectedCampaign(campaign);
         setModalType(type);
         setIsSuccess(false);
@@ -172,6 +196,7 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
     };
     const getStatusLabel = (campaign: any) => {
         const status = getWorkflowStatus(campaign);
+        if (status === 'pending') return 'Pending for Approval';
         if (status === 'amount_finalized') return 'Deal Accepted';
         if (status === 'accepted') return hasCreatorProposal(campaign) ? 'Deal Accepted' : 'Open to Negotiate';
         if (status === 'bid_pending') return 'Bid Submitted';
@@ -234,6 +259,25 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
         }
     };
 
+    const handleRejectDeal = async () => {
+        if (!selectedCampaign) return;
+
+        setIsSubmitting(true);
+        try {
+            await creatorApi.respondToBid(selectedCampaign.id, 'reject');
+            setIsSuccess(true);
+            setTimeout(() => {
+                setModalType(null);
+                fetchCampaigns(); // Refresh to show updated status
+            }, 2000);
+        } catch (error: any) {
+            console.error('Failed to reject deal:', error);
+            showToast(error.message || 'Failed to reject deal. Please try again.', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     const handleAction = async () => {
         if (!selectedCampaign) return;
 
@@ -247,13 +291,18 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
             return;
         }
 
+        if (modalType === 'reject-deal') {
+            await handleRejectDeal();
+            return;
+        }
+
         setIsSubmitting(true);
         try {
             if (modalType === 'script') {
                 await creatorApi.uploadScript(selectedCampaign.id, scriptContent);
             } else if (modalType === 'content') {
-                if (contentFiles.length === 0) {
-                    showToast('Please upload a video file before submitting content.', 'error');
+                if (contentFiles.length === 0 && !contentLink.trim()) {
+                    showToast('Please upload a video file or provide a content link before submitting content.', 'error');
                     setIsSubmitting(false);
                     return;
                 }
@@ -289,130 +338,195 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
 
             {/* Campaigns Grid */}
             <div className="creator-campaigns-list">
-                {filteredCampaigns.map((campaign) => (
-                    <div key={campaign.id} className="creator-campaign-card-detailed">
-                        <div className="creator-campaign-header">
-                            <div>
-                                <h4 className="creator-campaign-name">{campaign.name}</h4>
-                                <div className="creator-campaign-brand">
-                                    <Instagram size={14} />
-                                    {campaign.brand}
-                                </div>
-                            </div>
-                            <div className="creator-campaign-amount">{getDisplayAmount(campaign)}</div>
+                {filteredCampaigns.length === 0 ? (
+                    <div className="empty-state-container" style={{ gridColumn: '1 / -1', padding: 'var(--space-16) var(--space-8)', textAlign: 'center', background: 'var(--color-bg-secondary)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-subtle)', animation: 'fadeIn 0.5s ease-out' }}>
+                        <div className="empty-state-icon" style={{ width: '80px', height: '80px', background: 'var(--color-bg-tertiary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto var(--space-6)', color: 'var(--color-accent)' }}>
+                            <Megaphone size={40} />
                         </div>
-
-                        <p className="campaign-description">{campaign.description}</p>
-
-                        <div className="campaign-requirements">
-                            <h5>Deliverables</h5>
-                            <div className="requirements-list">
-                                {campaign.requirements?.map((req: string, idx: number) => (
-                                    <span key={idx} className="requirement-tag">{req}</span>
-                                ))}
-                            </div>
-                        </div>
-
-                        <div className="creator-campaign-status-bar">
-                            <div className="status-info">
-                                <span className={`status-badge ${getStatusClass(getStatusLabel(campaign))}`}>
-                                    {getStatusLabel(campaign)}
-                                </span>
-                                <span className="creator-campaign-deadline">
-                                    <Clock size={14} />
-                                    Due {new Date(campaign.deadline).toLocaleDateString()}
-                                </span>
-                            </div>
-                            <div className="progress-bar" style={{ height: '4px' }}>
-                                <div
-                                    className="progress-fill"
-                                    style={{ width: `${getProgressValue(campaign)}%` }}
-                                ></div>
-                            </div>
-                        </div>
-
-                        <div className="creator-campaign-actions">
-                            {isNegotiationStatus(campaign) && (
-                                <div className="creator-negotiation-note">
-                                    {parseAmount(campaign?.bid_amount) > 0
-                                        ? `Your Proposal: ${formatINR(parseAmount(campaign.bid_amount))}`
-                                        : getBrandOfferAmount(campaign) > 0
-                                            ? `Brand Offer: ${formatINR(getBrandOfferAmount(campaign))}`
-                                            : 'No offer yet'}
-                                </div>
-                            )}
-                            {isNegotiationStatus(campaign) && (
-                                getNegotiationMessage(campaign) ? (
-                                    <div className="creator-negotiation-note">
-                                        {getNegotiationMessage(campaign)}
-                                    </div>
-                                ) : null
-                            )}
-                            {/* Keep only negotiation/update on creator end (no accept/decline buttons). */}
-                            {isNegotiationStatus(campaign) && !isDealAcceptedOrFinalized(campaign) && (
-                                <Button
-                                    size="sm"
-                                    fullWidth
-                                    onClick={() => handleOpenModal(campaign, 'negotiate')}
-                                >
-                                    {parseAmount(campaign?.bid_amount) > 0 ? 'Update Proposal' : 'Start Negotiation'}
-                                </Button>
-                            )}
-                            {campaign.stage === 'script' && (
-                                <Button
-                                    size="sm"
-                                    fullWidth
-                                    onClick={() => handleOpenModal(campaign, 'script')}
-                                >
-                                    <Upload size={16} />
-                                    Submit Script
-                                </Button>
-                            )}
-                            {(campaign.stage === 'content' || canUploadContentForCampaign(campaign)) && (
-                                <Button
-                                    size="sm"
-                                    fullWidth
-                                    onClick={() => handleOpenModal(campaign, 'content')}
-                                    disabled={!canUploadContentForCampaign(campaign)}
-                                >
-                                    <Video size={16} />
-                                    Upload Content
-                                </Button>
-                            )}
-                            {canGoLiveForCampaign(campaign) && (
-                                <Button
-                                    size="sm"
-                                    fullWidth
-                                    variant="secondary"
-                                    onClick={() => handleOpenModal(campaign, 'go-live')}
-                                >
-                                    Go Live
-                                </Button>
-                            )}
-                            <Button
-                                variant="ghost"
-                                size="sm"
-                                fullWidth
-                                onClick={() => {
-                                    const campaignId = campaign.id || campaign._id || campaign.campaign_id;
-                                    if (campaignId) {
-                                        navigate(`/creator/campaign/${campaignId}`);
-                                    } else {
-                                        showToast('Campaign ID not available', 'error');
-                                    }
-                                }}
-                            >
-                                Details
-                                <ArrowRight size={16} />
-                            </Button>
-                        </div>
+                        <h3 style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', marginBottom: 'var(--space-2)', color: 'var(--color-text-primary)' }}>No campaigns found</h3>
+                        <p style={{ color: 'var(--color-text-secondary)', maxWidth: '400px', margin: '0 auto', fontSize: 'var(--text-base)' }}>
+                            {searchQuery
+                                ? "We couldn't find any campaigns matching your search. Try different keywords or clear the search."
+                                : "You haven't been invited to any campaigns yet. We'll notify you as soon as a brand matches with your profile!"}
+                        </p>
                     </div>
-                ))}
+                ) : (
+                    filteredCampaigns.map((campaign) => (
+                        <div
+                            key={campaign.id}
+                            className="creator-campaign-card-detailed"
+                            onClick={() => {
+                                const campaignId = campaign.id || campaign._id || campaign.campaign_id;
+                                if (campaignId) {
+                                    navigate(`/creator/campaign/${campaignId}`);
+                                } else {
+                                    showToast('Campaign ID not available', 'error');
+                                }
+                            }}
+                        >
+                            <div className="creator-campaign-header">
+                                <div>
+                                    <h4 className="creator-campaign-name">{campaign.name}</h4>
+                                    <div className="creator-campaign-brand">
+                                        <Instagram size={14} />
+                                        {campaign.brand}
+                                    </div>
+                                </div>
+                                <div className="creator-campaign-amount">{getDisplayAmount(campaign)}</div>
+                            </div>
+
+                            <p className="campaign-description">{campaign.description}</p>
+
+                            <div className="campaign-requirements">
+                                <h5>Deliverables</h5>
+                                <div className="requirements-list">
+                                    {campaign.requirements?.map((req: string, idx: number) => (
+                                        <span key={idx} className="requirement-tag">{req}</span>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="creator-campaign-status-bar">
+                                <div className="status-info">
+                                    <span className={`status-badge ${getStatusClass(getStatusLabel(campaign))}`}>
+                                        {getStatusLabel(campaign)}
+                                    </span>
+                                    <span className="creator-campaign-deadline">
+                                        <Clock size={14} />
+                                        Due {new Date(campaign.deadline).toLocaleDateString()}
+                                    </span>
+                                </div>
+                                <div className="progress-bar" style={{ height: '4px' }}>
+                                    <div
+                                        className="progress-fill"
+                                        style={{ width: `${getProgressValue(campaign)}%` }}
+                                    ></div>
+                                </div>
+                            </div>
+
+                            <div className="creator-campaign-actions">
+                                {isNegotiationStatus(campaign) && (
+                                    <div className="creator-negotiation-note">
+                                        {parseAmount(campaign?.bid_amount) > 0
+                                            ? `Your Proposal: ${formatINR(parseAmount(campaign.bid_amount))}`
+                                            : getBrandOfferAmount(campaign) > 0
+                                                ? `Brand Offer: ${formatINR(getBrandOfferAmount(campaign))}`
+                                                : 'No offer yet'}
+                                    </div>
+                                )}
+                                {isNegotiationStatus(campaign) && (
+                                    getNegotiationMessage(campaign) ? (
+                                        <div className="creator-negotiation-note">
+                                            {getNegotiationMessage(campaign)}
+                                        </div>
+                                    ) : null
+                                )}
+                                {isNegotiationStatus(campaign) && !isDealAcceptedOrFinalized(campaign) && getBrandOfferAmount(campaign) > 0 && (
+                                    <div style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 'var(--space-2)', width: '100%' }}>
+                                        <Button
+                                            size="sm"
+                                            fullWidth
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleOpenModal(campaign, 'accept-deal');
+                                            }}
+                                            style={{ background: 'var(--color-success)', color: 'white', border: 'none' }}
+                                        >
+                                            Accept Deal
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            fullWidth
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleOpenModal(campaign, 'reject-deal');
+                                            }}
+                                            style={{ color: 'var(--color-error)', border: '1px solid var(--color-error)' }}
+                                        >
+                                            Decline
+                                        </Button>
+                                    </div>
+                                )}
+                                {/* Keep negotiation/update as secondary option if offer exists, or primary if no offer. */}
+                                {isNegotiationStatus(campaign) && !isDealAcceptedOrFinalized(campaign) && (
+                                    <Button
+                                        size="sm"
+                                        fullWidth
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenModal(campaign, 'negotiate');
+                                        }}
+                                    >
+                                        {parseAmount(campaign?.bid_amount) > 0 ? 'Update Proposal' : 'Start Negotiation'}
+                                    </Button>
+                                )}
+                                {campaign.stage === 'script' && (
+                                    <Button
+                                        size="sm"
+                                        fullWidth
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenModal(campaign, 'script');
+                                        }}
+                                    >
+                                        <Upload size={16} />
+                                        Submit Script
+                                    </Button>
+                                )}
+                                {(campaign.stage === 'content' || canUploadContentForCampaign(campaign)) && (
+                                    <Button
+                                        size="sm"
+                                        fullWidth
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenModal(campaign, 'content');
+                                        }}
+                                        disabled={!canUploadContentForCampaign(campaign)}
+                                    >
+                                        <Video size={16} />
+                                        Upload Content
+                                    </Button>
+                                )}
+                                {canGoLiveForCampaign(campaign) && (
+                                    <Button
+                                        size="sm"
+                                        fullWidth
+                                        variant="secondary"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleOpenModal(campaign, 'go-live');
+                                        }}
+                                    >
+                                        Go Live
+                                    </Button>
+                                )}
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    fullWidth
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        const campaignId = campaign.id || campaign._id || campaign.campaign_id;
+                                        if (campaignId) {
+                                            navigate(`/creator/campaign/${campaignId}`);
+                                        } else {
+                                            showToast('Campaign ID not available', 'error');
+                                        }
+                                    }}
+                                >
+                                    Details
+                                    <ArrowRight size={16} />
+                                </Button>
+                            </div>
+                        </div>
+                    ))
+                )}
             </div>
 
-            
+
             <CreatorActionModal
-                modalType={modalType}
+                modalType={modalType as any}
                 isSubmitting={isSubmitting}
                 isSuccess={isSuccess}
                 selectedCampaign={selectedCampaign}

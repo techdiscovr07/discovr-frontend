@@ -87,41 +87,56 @@ export const CampaignContentTab: React.FC<CampaignContentTabProps> = ({
                                     <tr key={item.id || item.creator_id}>
                                         <td>
                                             <div className="creator-cell">
-                                                <div className="creator-avatar" style={{ width: 32, height: 32, fontSize: 16 }}>
+                                                <div className="creator-avatar">
                                                     {item.avatar || '👤'}
                                                 </div>
-                                                <div>
-                                                    <div className="creator-name">{item.name || item.creator_name}</div>
-                                                </div>
+                                                <span className="creator-name">{item.name || item.creator_name}</span>
                                             </div>
                                         </td>
                                         <td>
-                                            {(() => {
-                                                const contentStatus = String(item.status || '').toLowerCase();
-                                                const isLive = contentStatus === 'content_live' || contentStatus === 'live';
-                                                if (isLive && item.live_url) {
-                                                    return (
-                                                        <a href={item.live_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent)' }}>
-                                                            View Live URL
-                                                        </a>
-                                                    );
-                                                }
-                                                if (item.content_url) {
-                                                    return (
-                                                        <a href={item.content_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent)' }}>
-                                                            View Content
-                                                        </a>
-                                                    );
-                                                }
-                                                if (item.live_url) {
-                                                    return (
-                                                        <a href={item.live_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent)' }}>
-                                                            View Live URL
-                                                        </a>
-                                                    );
-                                                }
-                                                return item.content || '-';
-                                            })()}
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', minWidth: '150px' }}>
+                                                {(() => {
+                                                    const contentStatus = String(item.status || '').toLowerCase();
+                                                    const isLive = contentStatus === 'content_live' || contentStatus === 'live';
+                                                    if (isLive && item.live_url) {
+                                                        return (
+                                                            <a href={item.live_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent)', fontWeight: 500, fontSize: 'var(--text-sm)' }}>
+                                                                View Live URL
+                                                            </a>
+                                                        );
+                                                    }
+                                                    if (item.content_url) {
+                                                        return (
+                                                            <a href={item.content_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent)', fontWeight: 500, fontSize: 'var(--text-sm)' }}>
+                                                                View Content
+                                                            </a>
+                                                        );
+                                                    }
+                                                    if (item.live_url) {
+                                                        return (
+                                                            <a href={item.live_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent)', fontWeight: 500, fontSize: 'var(--text-sm)' }}>
+                                                                View Live URL
+                                                            </a>
+                                                        );
+                                                    }
+                                                    return <span style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', fontWeight: 500 }}>{item.content || '-'}</span>;
+                                                })()}
+                                                {(item.content_feedback || item.video_feedback || item.feedback) && (
+                                                    <div style={{
+                                                        fontSize: '11px',
+                                                        color: 'var(--color-text-secondary)',
+                                                        background: 'rgba(var(--color-warning-rgb), 0.03)',
+                                                        padding: '6px 10px',
+                                                        borderRadius: 'var(--radius-sm)',
+                                                        borderLeft: '3px solid var(--color-warning)',
+                                                        maxWidth: '350px',
+                                                        lineHeight: 1.4
+                                                    }}>
+                                                        <strong style={{ color: 'var(--color-warning)', marginRight: '4px' }}>Your Comment:</strong>
+                                                        {item.content_feedback || item.video_feedback || item.feedback}
+                                                    </div>
+                                                )}
+                                            </div>
                                         </td>
                                         <td>
                                             {(() => {
@@ -130,17 +145,19 @@ export const CampaignContentTab: React.FC<CampaignContentTabProps> = ({
                                             })()}
                                         </td>
                                         <td>{item.submitted_at || item.created_at || '-'}</td>
-                                        <td style={{ textAlign: 'right', display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
-                                            {String(item.status || '').toLowerCase() === 'content_pending' ? (
-                                                <Button variant="ghost" size="sm" onClick={() => handleOpenAIContentReview(item)}>
-                                                    <Sparkles size={14} />
-                                                    Ask AI Review
-                                                </Button>
-                                            ) : (
-                                                <Button variant="ghost" size="sm" disabled>
-                                                    Reviewed
-                                                </Button>
-                                            )}
+                                        <td style={{ textAlign: 'right' }}>
+                                            <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                                {String(item.status || '').toLowerCase() === 'content_pending' ? (
+                                                    <Button variant="ghost" size="sm" onClick={() => handleOpenAIContentReview(item)}>
+                                                        <Sparkles size={14} />
+                                                        Ask AI Review
+                                                    </Button>
+                                                ) : (
+                                                    <Button variant="ghost" size="sm" disabled>
+                                                        Reviewed
+                                                    </Button>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))

@@ -20,6 +20,9 @@ interface CampaignCreatorsTabProps {
     setBids: (bids: any[]) => void;
     getBidCreatorId: (bid: any) => string | undefined;
     openCounterModal: (bid: any) => void;
+    campaignData: any;
+    hideFilters?: boolean;
+    handleOpenCreatorProfile?: (creator: any) => void;
 }
 
 export const CampaignCreatorsTab: React.FC<CampaignCreatorsTabProps> = ({
@@ -38,45 +41,66 @@ export const CampaignCreatorsTab: React.FC<CampaignCreatorsTabProps> = ({
     setCreators,
     setBids,
     getBidCreatorId,
-    openCounterModal
+    openCounterModal,
+    campaignData,
+    hideFilters = false,
+    handleOpenCreatorProfile
 }) => {
     return (
         <Card className="content-card">
             <CardHeader>
                 <div className="card-header-content">
                     <h3>{creatorFilterTab === 'negotiation' ? `Creator Negotiations (${bids.length})` : `Campaign Creators (${filteredCreators.length})`}</h3>
-                    {creatorFilterTab === 'negotiation' ? (
-                        <Button onClick={handleFinalizeAmounts} isLoading={isFinalizingAmounts}>
-                            Finalize Deals
-                        </Button>
-                    ) : (
-                        <Button size="sm" onClick={handleBrandSubmitSelection} isLoading={isSubmittingSelection}>
+                    <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+                        {/* Only show Finalize if not already final and we have accepted creators */}
+                        {campaignData.review_status !== 'creators_are_final' && creators.some((c: any) => ['accepted', 'shortlisted', 'active'].includes(String(c.status).toLowerCase())) && (
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                onClick={handleFinalizeAmounts}
+                                isLoading={isFinalizingAmounts}
+                                style={{ background: 'rgba(34, 197, 94, 0.1)', color: 'var(--color-success)', borderColor: 'rgba(34, 197, 94, 0.2)' }}
+                            >
+                                <Check size={16} />
+                                Finalize All Deals
+                            </Button>
+                        )}
+
+                        <Button
+                            variant={creatorFilterTab === 'negotiation' ? 'ghost' : 'primary'}
+                            size="sm"
+                            onClick={handleBrandSubmitSelection}
+                            isLoading={isSubmittingSelection}
+                            disabled={campaignData.review_status === 'creators_are_final'}
+                        >
                             <Check size={18} />
-                            Submit Selection
+                            {campaignData.review_status === 'negotiation' ? 'Update Selection' : 'Submit Selection'}
                         </Button>
-                    )}
+                    </div>
                 </div>
             </CardHeader>
             <CardBody className="no-padding">
-                <div style={{ padding: 'var(--space-3)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', gap: 'var(--space-2)' }}>
-                    <Button size="sm" variant={creatorFilterTab === 'all' ? 'primary' : 'ghost'} onClick={() => setCreatorFilterTab('all')}>
-                        All ({creators.length})
-                    </Button>
-                    <Button size="sm" variant={creatorFilterTab === 'accepted' ? 'primary' : 'ghost'} onClick={() => setCreatorFilterTab('accepted')}>
-                        Accepted ({creators.filter((c: any) => {
-                            const status = String(c?.status || '').toLowerCase();
-                            return status === 'accepted' || status === 'shortlisted';
-                        }).length})
-                    </Button>
-                    <Button size="sm" variant={creatorFilterTab === 'rejected' ? 'primary' : 'ghost'} onClick={() => setCreatorFilterTab('rejected')}>
-                        Rejected ({creators.filter((c: any) => String(c?.status || '').toLowerCase() === 'rejected').length})
-                    </Button>
-                    {canShowNegotiationInCreators && (
-                        <Button size="sm" variant={creatorFilterTab === 'negotiation' ? 'primary' : 'ghost'} onClick={() => setCreatorFilterTab('negotiation')}>
-                            Negotiation ({bids.length})
+                {!hideFilters && (
+                    <div style={{ padding: 'var(--space-3)', borderBottom: '1px solid var(--color-border-subtle)', display: 'flex', gap: 'var(--space-2)' }}>
+                        <Button size="sm" variant={creatorFilterTab === 'all' ? 'primary' : 'ghost'} onClick={() => setCreatorFilterTab('all')}>
+                            All ({creators.length})
                         </Button>
-                    )}
-                </div>
+                        <Button size="sm" variant={creatorFilterTab === 'accepted' ? 'primary' : 'ghost'} onClick={() => setCreatorFilterTab('accepted')}>
+                            Accepted ({creators.filter((c: any) => {
+                                const status = String(c?.status || '').toLowerCase();
+                                return status === 'accepted' || status === 'shortlisted';
+                            }).length})
+                        </Button>
+                        <Button size="sm" variant={creatorFilterTab === 'rejected' ? 'primary' : 'ghost'} onClick={() => setCreatorFilterTab('rejected')}>
+                            Rejected ({creators.filter((c: any) => String(c?.status || '').toLowerCase() === 'rejected').length})
+                        </Button>
+                        {canShowNegotiationInCreators && (
+                            <Button size="sm" variant={creatorFilterTab === 'negotiation' ? 'primary' : 'ghost'} onClick={() => setCreatorFilterTab('negotiation')}>
+                                Negotiation ({bids.length})
+                            </Button>
+                        )}
+                    </div>
+                )}
                 {creatorFilterTab !== 'negotiation' ? (
                     <div className="table-responsive">
                         <table className="creators-table">
@@ -99,7 +123,11 @@ export const CampaignCreatorsTab: React.FC<CampaignCreatorsTabProps> = ({
                                     </tr>
                                 ) : (
                                     filteredCreators.map((creator: any) => (
-                                        <tr key={creator.id || creator.creator_id}>
+                                        <tr
+                                            key={creator.id || creator.creator_id}
+                                            onClick={() => handleOpenCreatorProfile?.(creator)}
+                                            style={{ cursor: handleOpenCreatorProfile ? 'pointer' : 'default' }}
+                                        >
                                             <td>
                                                 <div className="creator-cell">
                                                     <div className="creator-avatar" style={{ width: 32, height: 32, fontSize: 16 }}>
@@ -112,72 +140,130 @@ export const CampaignCreatorsTab: React.FC<CampaignCreatorsTabProps> = ({
                                                 </div>
                                             </td>
                                             <td>
-                                                {creator.instagram ? (
-                                                    <a
-                                                        href={creator.instagram.startsWith('http') ? creator.instagram : `https://instagram.com/${creator.instagram.replace('@', '')}`}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        style={{ color: 'var(--color-accent)', textDecoration: 'none' }}
-                                                    >
-                                                        {creator.instagram}
-                                                    </a>
-                                                ) : (
+                                                {creator.instagram ? (() => {
+                                                    const url = creator.instagram;
+                                                    let username = '';
+                                                    try {
+                                                        const parts = url.replace(/\/$/, '').split('/');
+                                                        const lastPart = parts[parts.length - 1];
+                                                        username = lastPart.split('?')[0];
+                                                    } catch (e) {
+                                                        username = url;
+                                                    }
+                                                    return (
+                                                        <a
+                                                            href={url.startsWith('http') ? url : `https://instagram.com/${url.replace('@', '')}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            style={{ color: 'var(--color-accent)', textDecoration: 'none', fontWeight: 'var(--font-medium)' }}
+                                                        >
+                                                            @{username}
+                                                        </a>
+                                                    );
+                                                })() : (
                                                     <span style={{ color: 'var(--color-text-tertiary)' }}>No link</span>
                                                 )}
                                             </td>
                                             <td>
-                                                <span className={`status-badge ${creator.status === 'accepted' || creator.status === 'shortlisted' ? 'status-active' : creator.status === 'rejected' ? 'status-error' : 'status-planning'}`}>
-                                                    {creator.status || 'Pending'}
-                                                </span>
+                                                {(() => {
+                                                    const status = String(creator.status || '').toLowerCase();
+                                                    let statusClass = 'status-planning';
+                                                    if (status === 'accepted' || status === 'shortlisted' || status === 'script_approved' || status === 'amount_finalized') statusClass = 'status-active';
+                                                    else if (status === 'rejected') statusClass = 'status-error';
+                                                    else if (status === 'negotiation' || status === 'in_negotiation') statusClass = 'status-negotiation';
+                                                    else if (status === 'pending') statusClass = 'status-pending';
+
+                                                    return (
+                                                        <span className={`status-badge ${statusClass}`}>
+                                                            {creator.status ? creator.status.replace(/_/g, ' ') : 'Pending'}
+                                                        </span>
+                                                    );
+                                                })()}
                                             </td>
                                             <td>
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-semibold)' }}>{(Math.floor(Math.random() * 50) + 10)}k views</div>
-                                                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-success)' }}>{(Math.random() * 5 + 2).toFixed(1)}% ER</div>
+                                                    <div style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-semibold)' }}>
+                                                        {creator.avg_views ? (Number(creator.avg_views) >= 1000 ? `${(Number(creator.avg_views) / 1000).toFixed(0)}k` : creator.avg_views) : 'N/A'} views
+                                                    </div>
+                                                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-success)' }}>
+                                                        {creator.engagement_rate || creator.commercial || 'N/A'}{creator.engagement_rate ? '%' : ''} ER
+                                                    </div>
                                                 </div>
                                             </td>
                                             <td>
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                                    <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)' }}>₹{(Math.random() * 2 + 1).toFixed(2)} CPE</div>
-                                                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>₹{creator.amount || creator.final_amount || '0'} spent</div>
+                                                    <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)' }}>
+                                                        ₹{creator.avg_views && (creator.amount || creator.final_amount)
+                                                            ? (Number(creator.amount || creator.final_amount) / Number(creator.avg_views)).toFixed(2)
+                                                            : '0.00'} CPE
+                                                    </div>
+                                                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
+                                                        ₹{(() => {
+                                                            const amt = Number(creator.amount || creator.final_amount || 0);
+                                                            return amt.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
+                                                        })()} spent
+                                                    </div>
                                                 </div>
                                             </td>
-                                            <td style={{ textAlign: 'right', display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end' }}>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    onClick={async () => {
-                                                        if (!id) return;
-                                                        try {
-                                                            await brandApi.updateCreatorStatuses(id, [{ creator_id: creator.id || creator.creator_id, status: 'accepted' }]);
-                                                            showToast('Creator accepted successfully', 'success');
-                                                            const creatorsData: any = await brandApi.getCampaignCreators(id);
-                                                            setCreators(Array.isArray(creatorsData) ? creatorsData : (creatorsData?.creators || []));
-                                                        } catch (err: any) {
-                                                            showToast('Failed to update status', 'error');
-                                                        }
-                                                    }}
-                                                >
-                                                    Accept
-                                                </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="sm"
-                                                    style={{ color: 'var(--color-error)' }}
-                                                    onClick={async () => {
-                                                        if (!id) return;
-                                                        try {
-                                                            await brandApi.updateCreatorStatuses(id, [{ creator_id: creator.id || creator.creator_id, status: 'rejected' }]);
-                                                            showToast('Creator rejected', 'info');
-                                                            const creatorsData: any = await brandApi.getCampaignCreators(id);
-                                                            setCreators(Array.isArray(creatorsData) ? creatorsData : (creatorsData?.creators || []));
-                                                        } catch (err: any) {
-                                                            showToast('Failed to update status', 'error');
-                                                        }
-                                                    }}
-                                                >
-                                                    Reject
-                                                </Button>
+                                            <td style={{ textAlign: 'right' }}>
+                                                {(() => {
+                                                    const status = String(creator.status || '').toLowerCase();
+
+                                                    // Hiding actions if creator has progressed beyond selection (to script, content, or finalized phases)
+                                                    const isWorkflowPhase =
+                                                        status.includes('script') ||
+                                                        status.includes('content') ||
+                                                        status === 'completed' ||
+                                                        status === 'amount_finalized';
+
+                                                    if (isWorkflowPhase) return null;
+
+                                                    const isAccepted = status === 'accepted' || status === 'shortlisted' || status === 'active';
+                                                    const currentId = creator.creator_id || creator.id || creator._id;
+
+                                                    if (isAccepted) {
+                                                        return (
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                style={{ color: 'var(--color-error)' }}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    const updated = creators.map(c => {
+                                                                        const cId = c.creator_id || c.id || c._id;
+                                                                        if (cId === currentId) {
+                                                                            return { ...c, status: 'rejected' };
+                                                                        }
+                                                                        return c;
+                                                                    });
+                                                                    setCreators(updated);
+                                                                }}
+                                                            >
+                                                                Reject
+                                                            </Button>
+                                                        );
+                                                    } else {
+                                                        return (
+                                                            <Button
+                                                                variant="primary"
+                                                                size="sm"
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    const updated = creators.map(c => {
+                                                                        const cId = c.creator_id || c.id || c._id;
+                                                                        if (cId === currentId) {
+                                                                            return { ...c, status: 'accepted' };
+                                                                        }
+                                                                        return c;
+                                                                    });
+                                                                    setCreators(updated);
+                                                                }}
+                                                            >
+                                                                Accept
+                                                            </Button>
+                                                        );
+                                                    }
+                                                })()}
                                             </td>
                                         </tr>
                                     ))
@@ -205,7 +291,11 @@ export const CampaignCreatorsTab: React.FC<CampaignCreatorsTabProps> = ({
                                     </tr>
                                 ) : (
                                     bids.map((bid: any) => (
-                                        <tr key={bid.id || bid.creator_id}>
+                                        <tr
+                                            key={bid.id || bid.creator_id}
+                                            onClick={() => handleOpenCreatorProfile?.(bid)}
+                                            style={{ cursor: handleOpenCreatorProfile ? 'pointer' : 'default' }}
+                                        >
                                             <td>
                                                 <div className="creator-cell">
                                                     <div className="creator-avatar" style={{ width: 32, height: 32, fontSize: 16 }}>
@@ -218,9 +308,15 @@ export const CampaignCreatorsTab: React.FC<CampaignCreatorsTabProps> = ({
                                                 </div>
                                             </td>
                                             <td>
-                                                <span style={{ fontWeight: 'var(--font-semibold)' }}>
-                                                    ₹{(bid.bid_amount || bid.amount || '0').toLocaleString()}
-                                                </span>
+                                                {(bid.bid_amount || bid.amount) ? (
+                                                    <span style={{ fontWeight: 'var(--font-semibold)' }}>
+                                                        ₹{(bid.bid_amount || bid.amount).toLocaleString()}
+                                                    </span>
+                                                ) : (
+                                                    <span style={{ color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)', fontStyle: 'italic' }}>
+                                                        Pending creator proposal
+                                                    </span>
+                                                )}
                                             </td>
                                             <td>
                                                 {bid.final_amount ? (

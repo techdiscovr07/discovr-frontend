@@ -217,45 +217,29 @@ export const NewCampaignModal: React.FC<NewCampaignModalProps> = ({ isOpen, onCl
                                 Select categories that match your target creators (multiple selection)
                             </span>
                         </label>
-                        <select
-                            id="creatorCategories"
-                            name="creatorCategories"
-                            multiple
-                            value={formData.creatorCategories}
-                            onChange={(e) => {
-                                const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-                                setFormData(prev => ({
-                                    ...prev,
-                                    creatorCategories: selectedOptions
-                                }));
-                            }}
-                            required
-                            className="form-input"
-                            style={{
-                                minHeight: '120px',
-                                padding: 'var(--space-3)',
-                                background: 'var(--color-bg-secondary)',
-                                border: formData.creatorCategories.length === 0 ? '1px solid var(--color-error)' : '1px solid var(--color-border)'
-                            }}
-                            size={availableCategories.length}
-                        >
-                            {availableCategories.map(category => (
-                                <option key={category} value={category}>
-                                    {category}
-                                </option>
-                            ))}
-                        </select>
-                        <p style={{
-                            marginTop: 'var(--space-2)',
-                            fontSize: 'var(--text-xs)',
-                            color: 'var(--color-text-tertiary)',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 'var(--space-1)'
-                        }}>
-                            <Info size={12} />
-                            Hold Ctrl (or Cmd on Mac) to select multiple categories
-                        </p>
+                        <div className="category-pill-selection">
+                            {availableCategories.map(category => {
+                                const isActive = formData.creatorCategories.includes(category);
+                                return (
+                                    <button
+                                        key={category}
+                                        type="button"
+                                        className={`category-pill ${isActive ? 'active' : ''}`}
+                                        onClick={() => {
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                creatorCategories: prev.creatorCategories.includes(category)
+                                                    ? prev.creatorCategories.filter(c => c !== category)
+                                                    : [...prev.creatorCategories, category]
+                                            }));
+                                        }}
+                                    >
+                                        {category}
+                                        {isActive && <Check size={14} />}
+                                    </button>
+                                );
+                            })}
+                        </div>
                         {formData.creatorCategories.length === 0 && (
                             <p style={{
                                 marginTop: 'var(--space-1)',
@@ -267,16 +251,6 @@ export const NewCampaignModal: React.FC<NewCampaignModalProps> = ({ isOpen, onCl
                             }}>
                                 <Info size={14} />
                                 Please select at least one category
-                            </p>
-                        )}
-                        {formData.creatorCategories.length > 0 && (
-                            <p style={{
-                                marginTop: 'var(--space-1)',
-                                fontSize: 'var(--text-xs)',
-                                color: 'var(--color-text-primary)',
-                                fontWeight: 'var(--font-medium)'
-                            }}>
-                                {formData.creatorCategories.length} categor{formData.creatorCategories.length === 1 ? 'y' : 'ies'} selected: {formData.creatorCategories.join(', ')}
                             </p>
                         )}
                         <div className="category-add-row">

@@ -1,17 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Button, NotificationCenter } from '../../components';
+import { Button, NotificationCenter, LoadingSpinner } from '../../components';
 import {
     LogOut,
     LayoutDashboard,
     Megaphone,
     Users,
-    Sun,
-    Moon,
     Search,
     Plus
 } from 'lucide-react';
 import { BrandOverviewTab, BrandCampaignsTab, BrandCreatorsTab } from './brand-tabs';
-import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import '../../components/DashboardShared.css';
@@ -19,11 +16,14 @@ import './BrandDashboard.css';
 
 export const BrandDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'overview' | 'campaigns' | 'creators'>('overview');
-    const { theme, toggleTheme } = useTheme();
-    const { signOut, user, profile } = useAuth();
+    const { signOut, user, profile, loading } = useAuth();
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [isNewCampaignModalOpen, setIsNewCampaignModalOpen] = useState(false);
+
+    if (loading) {
+        return <LoadingSpinner fullPage />;
+    }
 
     // Debug logging
     useEffect(() => {
@@ -46,13 +46,13 @@ export const BrandDashboard: React.FC = () => {
     const getHeaderTitle = () => {
         switch (activeTab) {
             case 'overview':
-                return 'Campaign Dashboard';
+                return 'Brand Dashboard';
             case 'campaigns':
                 return 'Campaign Management';
             case 'creators':
                 return 'Creator Management';
             default:
-                return 'Campaign Dashboard';
+                return 'Brand Dashboard';
         }
     };
 
@@ -75,7 +75,17 @@ export const BrandDashboard: React.FC = () => {
             <aside className="dashboard-sidebar">
                 <div className="sidebar-header">
                     <img src="/logo.png" alt="Discovr" className="sidebar-logo" />
-                    <h2 className="sidebar-title">Brand Portal</h2>
+                    <h2 className="sidebar-title">Discovr</h2>
+                </div>
+
+                <div className="sidebar-user" onClick={() => navigate('/profile')}>
+                    <div className="sidebar-avatar">
+                        {profile?.display_name?.[0] || user?.email?.[0]?.toUpperCase() || 'B'}
+                    </div>
+                    <div className="sidebar-user-info">
+                        <span className="sidebar-user-name">{profile?.display_name || 'Brand Partner'}</span>
+                        <span className="sidebar-user-role">Brand Dashboard</span>
+                    </div>
                 </div>
 
                 <nav className="sidebar-nav">
@@ -132,13 +142,6 @@ export const BrandDashboard: React.FC = () => {
                         <Button variant="ghost" size="sm" onClick={() => navigate('/settings')}>
                             Settings
                         </Button>
-                        <button
-                            className="theme-toggle-btn"
-                            onClick={toggleTheme}
-                            title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-                        >
-                            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-                        </button>
                         <div className="search-box">
                             <Search size={18} />
                             <input

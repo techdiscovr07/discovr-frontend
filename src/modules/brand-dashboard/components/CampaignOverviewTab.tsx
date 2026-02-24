@@ -26,12 +26,12 @@ export const CampaignOverviewTab: React.FC<CampaignOverviewTabProps> = ({
                     <Card key={index} className="stat-card">
                         <CardBody>
                             <div className="stat-content">
-                                <div className="stat-icon"><stat.icon size={20} /></div>
+                                <div className="stat-icon-wrapper"><stat.icon size={20} /></div>
                                 <div className="stat-details">
                                     <p className="stat-label">{stat.label}</p>
                                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 'var(--space-2)' }}>
-                                        <h3 className="stat-value" style={{ fontSize: '1.5rem' }}>{stat.value}</h3>
-                                        <span style={{ fontSize: '0.75rem', color: stat.trendType === 'positive' ? 'var(--color-success)' : 'var(--color-text-tertiary)' }}>
+                                        <h3 className="stat-value">{stat.value}</h3>
+                                        <span style={{ fontSize: 'var(--text-xs)', color: stat.trendType === 'positive' ? 'var(--color-success)' : 'var(--color-text-tertiary)', fontWeight: 'var(--font-medium)' }}>
                                             {stat.trend}
                                         </span>
                                     </div>
@@ -45,10 +45,16 @@ export const CampaignOverviewTab: React.FC<CampaignOverviewTabProps> = ({
             {/* Efficiency Metrics Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 'var(--space-4)', marginTop: 'var(--space-4)' }}>
                 {advancedMetrics.map((m, i) => (
-                    <div key={i} style={{ padding: 'var(--space-4)', background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)' }}>
-                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-1)' }}>{m.label}</div>
-                        <div style={{ fontSize: 'var(--text-lg)', fontWeight: 'var(--font-semibold)' }}>{m.value}</div>
-                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-success)', marginTop: 'var(--space-1)' }}>{m.sub}</div>
+                    <div key={i} className="premium-card" style={{ padding: 'var(--space-4)' }}>
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', textTransform: 'uppercase', fontWeight: 'var(--font-bold)', letterSpacing: '0.05em', marginBottom: 'var(--space-2)' }}>
+                            {m.label}
+                        </div>
+                        <div style={{ fontSize: 'var(--text-xl)', fontWeight: 'var(--font-bold)', color: 'var(--color-text-primary)', lineHeight: 1 }}>
+                            {m.value}
+                        </div>
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)', marginTop: 'var(--space-2)', display: 'flex', alignItems: 'center', gap: 'var(--space-1)' }}>
+                            {m.sub}
+                        </div>
                     </div>
                 ))}
             </div>

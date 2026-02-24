@@ -1,27 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     LogOut,
     LayoutDashboard,
     Megaphone,
     IndianRupee,
-    Sun,
-    Moon,
     Search
 } from 'lucide-react';
 import { CreatorOverviewTab, CreatorCampaignsTab, CreatorEarningsTab } from './creator-tabs';
-import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { useToast } from '../../contexts/ToastContext';
 import { useNavigate } from 'react-router-dom';
-import { NotificationCenter, Button } from '../../components';
+import { NotificationCenter, Button, LoadingSpinner } from '../../components';
+import { creatorApi } from '../../lib/api';
 import '../../components/DashboardShared.css';
 import './CreatorDashboard.css';
 
 export const CreatorDashboard: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'overview' | 'campaigns' | 'earnings'>('overview');
-    const { theme, toggleTheme } = useTheme();
-    const { signOut } = useAuth();
+    const { signOut, user, profile, loading } = useAuth();
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
+    const { showToast } = useToast();
+
+    // Pre-fetch campaigns to prime the cache as soon as the dashboard mounts
+    useEffect(() => {
+        if (!loading && profile?.role === 'creator') {
+            creatorApi.getCampaigns().catch(err => {
+                console.error('Pre-fetch failed:', err);
+            });
+        }
+    }, [loading, profile]);
+
+    if (loading) {
+        return <LoadingSpinner fullPage />;
+    }
 
     const renderTabContent = () => {
         switch (activeTab) {
@@ -68,7 +80,17 @@ export const CreatorDashboard: React.FC = () => {
             <aside className="dashboard-sidebar">
                 <div className="sidebar-header">
                     <img src="/logo.png" alt="Discovr" className="sidebar-logo" />
-                    <h2 className="sidebar-title">Creator Portal</h2>
+                    <h2 className="sidebar-title">Discovr</h2>
+                </div>
+
+                <div className="sidebar-user" onClick={() => navigate('/profile')}>
+                    <div className="sidebar-avatar">
+                        {profile?.display_name?.[0] || user?.email?.[0]?.toUpperCase() || 'C'}
+                    </div>
+                    <div className="sidebar-user-info">
+                        <span className="sidebar-user-name">{profile?.display_name || 'Creator Partner'}</span>
+                        <span className="sidebar-user-role">Creator Dashboard</span>
+                    </div>
                 </div>
 
                 <nav className="sidebar-nav">
@@ -125,13 +147,6 @@ export const CreatorDashboard: React.FC = () => {
                         <Button variant="ghost" size="sm" onClick={() => navigate('/settings')}>
                             Settings
                         </Button>
-                        <button
-                            className="theme-toggle-btn"
-                            onClick={toggleTheme}
-                            title={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-                        >
-                            {theme === 'dark' ? <Sun size={18} /> : <Moon size={18} />}
-                        </button>
                         <div className="search-box">
                             <Search size={18} />
                             <input
