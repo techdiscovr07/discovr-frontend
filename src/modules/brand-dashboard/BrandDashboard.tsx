@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Button, NotificationCenter, LoadingSpinner } from '../../components';
+import React, { useState, useEffect, Suspense } from 'react';
+import { LoadingSpinner, Button, NotificationCenter } from '../../components';
 import {
     LogOut,
     LayoutDashboard,
@@ -8,14 +8,23 @@ import {
     Search,
     Plus
 } from 'lucide-react';
-import { BrandOverviewTab, BrandCampaignsTab, BrandCreatorsTab } from './brand-tabs';
 import { useAuth } from '../../contexts/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+
+const BrandOverviewTab = React.lazy(() => import('./brand-tabs').then(m => ({ default: m.BrandOverviewTab })));
+const BrandCampaignsTab = React.lazy(() => import('./brand-tabs').then(m => ({ default: m.BrandCampaignsTab })));
+const BrandCreatorsTab = React.lazy(() => import('./brand-tabs').then(m => ({ default: m.BrandCreatorsTab })));
 import '../../components/DashboardShared.css';
 import './BrandDashboard.css';
 
 export const BrandDashboard: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'overview' | 'campaigns' | 'creators'>('overview');
+    const [searchParams, setSearchParams] = useSearchParams();
+    const activeTab = (searchParams.get('tab') as 'overview' | 'campaigns' | 'creators') || 'overview';
+
+    const setActiveTab = (tab: string) => {
+        setSearchParams({ tab });
+    };
+
     const { signOut, user, profile, loading } = useAuth();
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
@@ -168,7 +177,9 @@ export const BrandDashboard: React.FC = () => {
 
                 {/* Tab Content */}
                 <div className="tab-content">
-                    {renderTabContent()}
+                    <Suspense fallback={<div style={{ padding: 'var(--space-20)', display: 'flex', justifyContent: 'center' }}><LoadingSpinner /></div>}>
+                        {renderTabContent()}
+                    </Suspense>
                 </div>
             </main>
         </div>

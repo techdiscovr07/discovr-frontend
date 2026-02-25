@@ -1,7 +1,7 @@
 import React from 'react';
 import './Card.css';
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
     children: React.ReactNode;
     className?: string;
     hover?: boolean;
@@ -14,7 +14,8 @@ export const Card: React.FC<CardProps> = ({
     className = '',
     hover = false,
     onClick,
-    style
+    style,
+    ...props
 }) => {
     const classes = [
         'card',
@@ -24,7 +25,7 @@ export const Card: React.FC<CardProps> = ({
     ].filter(Boolean).join(' ');
 
     return (
-        <div className={classes} onClick={onClick} style={style}>
+        <div className={classes} onClick={onClick} style={style} {...props}>
             {children}
         </div>
     );

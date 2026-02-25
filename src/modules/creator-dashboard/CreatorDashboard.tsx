@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import {
     LogOut,
     LayoutDashboard,
@@ -6,23 +6,30 @@ import {
     IndianRupee,
     Search
 } from 'lucide-react';
-import { CreatorOverviewTab, CreatorCampaignsTab, CreatorEarningsTab } from './creator-tabs';
 import { useAuth } from '../../contexts/AuthContext';
-import { useToast } from '../../contexts/ToastContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { NotificationCenter, Button, LoadingSpinner } from '../../components';
 import { creatorApi } from '../../lib/api';
+
+const CreatorOverviewTab = React.lazy(() => import('./creator-tabs').then(m => ({ default: m.CreatorOverviewTab })));
+const CreatorCampaignsTab = React.lazy(() => import('./creator-tabs').then(m => ({ default: m.CreatorCampaignsTab })));
+const CreatorEarningsTab = React.lazy(() => import('./creator-tabs').then(m => ({ default: m.CreatorEarningsTab })));
 import '../../components/DashboardShared.css';
 import './CreatorDashboard.css';
 
 export const CreatorDashboard: React.FC = () => {
-    const [activeTab, setActiveTab] = useState<'overview' | 'campaigns' | 'earnings'>('overview');
+    const [searchParams, setSearchParams] = useSearchParams();
+    const activeTab = (searchParams.get('tab') as 'overview' | 'campaigns' | 'earnings') || 'overview';
+
+    const setActiveTab = (tab: string) => {
+        setSearchParams({ tab });
+    };
+
     const { signOut, user, profile, loading } = useAuth();
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
-    const { showToast } = useToast();
 
-    // Pre-fetch campaigns to prime the cache as soon as the dashboard mounts
+    // Pre-fetch campaigns
     useEffect(() => {
         if (!loading && profile?.role === 'creator') {
             creatorApi.getCampaigns().catch(err => {
@@ -161,7 +168,9 @@ export const CreatorDashboard: React.FC = () => {
 
                 {/* Tab Content */}
                 <div className="tab-content">
-                    {renderTabContent()}
+                    <Suspense fallback={<div style={{ padding: 'var(--space-20)', display: 'flex', justifyContent: 'center' }}><LoadingSpinner /></div>}>
+                        {renderTabContent()}
+                    </Suspense>
                 </div>
             </main>
         </div>

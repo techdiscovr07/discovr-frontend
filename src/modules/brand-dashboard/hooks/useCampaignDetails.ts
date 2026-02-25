@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { IndianRupee, Zap, Percent, TrendingUp } from 'lucide-react';
 import { brandApi } from '../../../lib/api';
 import { useToast } from '../../../contexts/ToastContext';
@@ -8,6 +8,13 @@ export const useCampaignDetails = () => {
     const { id } = useParams<{ id: string }>();
     const navigate = useNavigate();
     const { showToast } = useToast();
+    const [searchParams, setSearchParams] = useSearchParams();
+
+    const activeTab = (searchParams.get('tab') as 'overview' | 'creators' | 'confirmed' | 'brief' | 'scripts' | 'content') || 'overview';
+    const setActiveTab = (tab: string) => {
+        setSearchParams({ tab });
+    };
+
     const [campaign, setCampaign] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isBriefModalOpen, setIsBriefModalOpen] = useState(false);
@@ -28,7 +35,6 @@ export const useCampaignDetails = () => {
     const [isSubmittingScriptTemplate, setIsSubmittingScriptTemplate] = useState(false);
     const [sampleVideoFiles, setSampleVideoFiles] = useState<File[]>([]);
     const [isBriefEditing, setIsBriefEditing] = useState(false);
-    const [activeTab, setActiveTab] = useState<'overview' | 'creators' | 'confirmed' | 'brief' | 'scripts' | 'content'>('overview');
     const [isUploadSheetModalOpen, setIsUploadSheetModalOpen] = useState(false);
     const [creatorsSheetFile, setCreatorsSheetFile] = useState<File[]>([]);
     const [isUploadingSheet, setIsUploadingSheet] = useState(false);

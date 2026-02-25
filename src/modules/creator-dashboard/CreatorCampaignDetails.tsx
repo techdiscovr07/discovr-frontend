@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 
 import { Button, LoadingSpinner } from '../../components';
 import {
@@ -7,9 +7,10 @@ import {
     Link as LinkIcon,
 } from 'lucide-react';
 import { CreatorCampaignProvider } from './CreatorCampaignContext';
-import { CreatorCampaignLeftColumn } from './components/CreatorCampaignLeftColumn';
-import { CreatorCampaignRightColumn } from './components/CreatorCampaignRightColumn';
-import { CreatorCampaignModals } from './components/CreatorCampaignModals';
+
+const CreatorCampaignLeftColumn = React.lazy(() => import('./components/CreatorCampaignLeftColumn').then(m => ({ default: m.CreatorCampaignLeftColumn })));
+const CreatorCampaignRightColumn = React.lazy(() => import('./components/CreatorCampaignRightColumn').then(m => ({ default: m.CreatorCampaignRightColumn })));
+const CreatorCampaignModals = React.lazy(() => import('./components/CreatorCampaignModals').then(m => ({ default: m.CreatorCampaignModals })));
 import { useCreatorCampaignDetails } from './hooks/useCreatorCampaignDetails';
 import '../../components/DashboardShared.css';
 import './CreatorDashboard.css';
@@ -46,7 +47,7 @@ export const CreatorCampaignDetails: React.FC = () => {
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => navigate('/creator/dashboard')}
+                            onClick={() => navigate('/creator/dashboard?tab=campaigns')}
                         >
                             <ArrowLeft size={16} />
                             Back to Dashboard
@@ -77,7 +78,7 @@ export const CreatorCampaignDetails: React.FC = () => {
                             <Button
                                 variant="ghost"
                                 className="header-back-btn"
-                                onClick={() => navigate('/creator/dashboard')}
+                                onClick={() => navigate('/creator/dashboard?tab=campaigns')}
                             >
                                 <ArrowLeft size={18} />
                             </Button>
@@ -134,12 +135,14 @@ export const CreatorCampaignDetails: React.FC = () => {
                         </div>
                     </header>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-8)' }}>
-                        <CreatorCampaignLeftColumn />
-                        <CreatorCampaignRightColumn />
-                    </div>
+                    <Suspense fallback={<div style={{ padding: 'var(--space-20)', display: 'flex', justifyContent: 'center' }}><LoadingSpinner /></div>}>
+                        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 'var(--space-8)' }}>
+                            <CreatorCampaignLeftColumn />
+                            <CreatorCampaignRightColumn />
+                        </div>
 
-                    <CreatorCampaignModals />
+                        <CreatorCampaignModals />
+                    </Suspense>
                 </main >
             </div >
         </CreatorCampaignProvider>

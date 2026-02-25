@@ -2,6 +2,11 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import { ThemeProvider } from './contexts/ThemeContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
+import { NotificationProvider } from './contexts/NotificationContext';
+import { ErrorBoundary } from './components';
 
 const rootElement = document.getElementById('root')
 
@@ -13,7 +18,17 @@ try {
   const root = createRoot(rootElement)
   root.render(
     <StrictMode>
-      <App />
+      <ErrorBoundary>
+        <ThemeProvider>
+          <ToastProvider>
+            <AuthProvider>
+              <NotificationProvider>
+                <App />
+              </NotificationProvider>
+            </AuthProvider>
+          </ToastProvider>
+        </ThemeProvider>
+      </ErrorBoundary>
     </StrictMode>,
   )
 } catch (error) {

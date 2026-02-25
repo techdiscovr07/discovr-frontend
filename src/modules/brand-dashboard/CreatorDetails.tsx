@@ -8,7 +8,8 @@ import {
     MessageSquare,
     TrendingUp,
     Eye,
-    Download
+    Download,
+    History
 } from 'lucide-react';
 import { brandApi } from '../../lib/api';
 import { useToast } from '../../contexts/ToastContext';
@@ -84,7 +85,14 @@ export const CreatorDetails: React.FC = () => {
                 {/* Header */}
                 <header className="dashboard-header" style={{ marginBottom: 'var(--space-8)' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
-                        <Button variant="ghost" size="sm" onClick={() => navigate(`/brand/campaign/${campaignId}`)}>
+                        <Button variant="ghost" size="sm" onClick={() => {
+                            const isConfirmed = [
+                                'amount_finalized', 'active', 'script_review',
+                                'script_approved', 'content_review', 'content_approved',
+                                'completed'
+                            ].some(s => creatorStatus.toLowerCase().includes(s));
+                            navigate(`/brand/campaign/${campaignId}?tab=${isConfirmed ? 'confirmed' : 'creators'}`);
+                        }}>
                             <ArrowLeft size={20} />
                         </Button>
                         <div>
@@ -117,6 +125,10 @@ export const CreatorDetails: React.FC = () => {
                         </div>
                     </div>
                     <div className="tab-actions">
+                        <Button variant="ghost" onClick={() => navigate(`/brand/creator/${creatorId}`)}>
+                            <History size={18} />
+                            View Creator History
+                        </Button>
                         <Button variant="ghost">
                             <Download size={18} />
                             Export Details

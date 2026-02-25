@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Button, LoadingSpinner, NotificationCenter } from '../../components';
 import {
     Check,
@@ -11,11 +11,12 @@ import {
 
 import { BrandCampaignProvider } from './BrandCampaignContext';
 import { BrandCampaignModals } from './components/BrandCampaignModals';
-import { CampaignBriefTab } from './components/CampaignBriefTab';
-import { CampaignScriptsTab } from './components/CampaignScriptsTab';
-import { CampaignContentTab } from './components/CampaignContentTab';
-import { CampaignOverviewTab } from './components/CampaignOverviewTab';
-import { CampaignCreatorsTab } from './components/CampaignCreatorsTab';
+
+const CampaignBriefTab = React.lazy(() => import('./components/CampaignBriefTab').then(m => ({ default: m.CampaignBriefTab })));
+const CampaignScriptsTab = React.lazy(() => import('./components/CampaignScriptsTab').then(m => ({ default: m.CampaignScriptsTab })));
+const CampaignContentTab = React.lazy(() => import('./components/CampaignContentTab').then(m => ({ default: m.CampaignContentTab })));
+const CampaignOverviewTab = React.lazy(() => import('./components/CampaignOverviewTab').then(m => ({ default: m.CampaignOverviewTab })));
+const CampaignCreatorsTab = React.lazy(() => import('./components/CampaignCreatorsTab').then(m => ({ default: m.CampaignCreatorsTab })));
 import { useCampaignDetails } from './hooks/useCampaignDetails';
 
 import '../../components/DashboardShared.css';
@@ -102,7 +103,7 @@ export const CampaignDetails: React.FC = () => {
                             <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => navigate('/brand/dashboard')}
+                                onClick={() => navigate('/brand/dashboard?tab=campaigns')}
                                 style={{ width: '36px', height: '36px', padding: 0, borderRadius: 'var(--radius-full)' }}
                             >
                                 <ArrowLeft size={18} />
@@ -228,99 +229,101 @@ export const CampaignDetails: React.FC = () => {
                     <BrandCampaignModals />
 
                     {/* Tab Content */}
-                    {activeTab === 'overview' && (
-                        <CampaignOverviewTab
-                            stats={stats}
-                            advancedMetrics={advancedMetrics}
-                            growthData={growthData}
-                            campaignData={campaignData}
-                            handleOpenEditFollowerRanges={handleOpenEditFollowerRanges}
-                        />
-                    )}
+                    <Suspense fallback={<div style={{ padding: 'var(--space-20)', display: 'flex', justifyContent: 'center' }}><LoadingSpinner /></div>}>
+                        {activeTab === 'overview' && (
+                            <CampaignOverviewTab
+                                stats={stats}
+                                advancedMetrics={advancedMetrics}
+                                growthData={growthData}
+                                campaignData={campaignData}
+                                handleOpenEditFollowerRanges={handleOpenEditFollowerRanges}
+                            />
+                        )}
 
-                    {activeTab === 'creators' && (
-                        <CampaignCreatorsTab
-                            creatorFilterTab={creatorFilterTab}
-                            setCreatorFilterTab={(tab: string) => setCreatorFilterTab(tab as any)}
-                            filteredCreators={filteredCreators}
-                            creators={creators}
-                            bids={bids}
-                            handleFinalizeAmounts={handleFinalizeAmounts}
-                            isFinalizingAmounts={isFinalizingAmounts}
-                            handleBrandSubmitSelection={handleBrandSubmitSelection}
-                            isSubmittingSelection={isSubmittingSelection}
-                            canShowNegotiationInCreators={canShowNegotiationInCreators}
-                            id={id}
-                            showToast={showToast}
-                            setCreators={setCreators}
-                            setBids={setBids}
-                            getBidCreatorId={getBidCreatorId}
-                            openCounterModal={openCounterModal}
-                            campaignData={campaignData}
-                            handleOpenCreatorProfile={handleOpenCreatorProfile}
-                        />
-                    )}
+                        {activeTab === 'creators' && (
+                            <CampaignCreatorsTab
+                                creatorFilterTab={creatorFilterTab}
+                                setCreatorFilterTab={(tab: string) => setCreatorFilterTab(tab as any)}
+                                filteredCreators={filteredCreators}
+                                creators={creators}
+                                bids={bids}
+                                handleFinalizeAmounts={handleFinalizeAmounts}
+                                isFinalizingAmounts={isFinalizingAmounts}
+                                handleBrandSubmitSelection={handleBrandSubmitSelection}
+                                isSubmittingSelection={isSubmittingSelection}
+                                canShowNegotiationInCreators={canShowNegotiationInCreators}
+                                id={id}
+                                showToast={showToast}
+                                setCreators={setCreators}
+                                setBids={setBids}
+                                getBidCreatorId={getBidCreatorId}
+                                openCounterModal={openCounterModal}
+                                campaignData={campaignData}
+                                handleOpenCreatorProfile={handleOpenCreatorProfile}
+                            />
+                        )}
 
-                    {activeTab === 'confirmed' && (
-                        <CampaignCreatorsTab
-                            creatorFilterTab="accepted"
-                            setCreatorFilterTab={() => { }} // Disable internal filtering
-                            filteredCreators={confirmedCreators}
-                            creators={confirmedCreators}
-                            bids={[]}
-                            handleFinalizeAmounts={() => { }}
-                            isFinalizingAmounts={false}
-                            handleBrandSubmitSelection={() => { }}
-                            isSubmittingSelection={false}
-                            canShowNegotiationInCreators={false}
-                            id={id}
-                            showToast={showToast}
-                            setCreators={() => { }}
-                            setBids={() => { }}
-                            getBidCreatorId={() => undefined}
-                            openCounterModal={() => { }}
-                            campaignData={{ ...campaignData, review_status: 'creators_are_final' }}
-                            hideFilters={true}
-                            handleOpenCreatorProfile={handleOpenCreatorProfile}
-                        />
-                    )}
+                        {activeTab === 'confirmed' && (
+                            <CampaignCreatorsTab
+                                creatorFilterTab="accepted"
+                                setCreatorFilterTab={() => { }} // Disable internal filtering
+                                filteredCreators={confirmedCreators}
+                                creators={confirmedCreators}
+                                bids={[]}
+                                handleFinalizeAmounts={() => { }}
+                                isFinalizingAmounts={false}
+                                handleBrandSubmitSelection={() => { }}
+                                isSubmittingSelection={false}
+                                canShowNegotiationInCreators={false}
+                                id={id}
+                                showToast={showToast}
+                                setCreators={() => { }}
+                                setBids={() => { }}
+                                getBidCreatorId={() => undefined}
+                                openCounterModal={() => { }}
+                                campaignData={{ ...campaignData, review_status: 'creators_are_final' }}
+                                hideFilters={true}
+                                handleOpenCreatorProfile={handleOpenCreatorProfile}
+                            />
+                        )}
 
-                    {activeTab === 'brief' && (
-                        <CampaignBriefTab
-                            campaignData={campaignData}
-                            isBriefEditing={isBriefEditing}
-                            setIsBriefEditing={setIsBriefEditing}
-                            briefData={briefData}
-                            setBriefData={setBriefData}
-                            handleBriefSubmit={handleBriefSubmit}
-                            setSampleVideoFiles={setSampleVideoFiles}
-                            isSubmittingBrief={isSubmittingBrief}
-                        />
-                    )}
+                        {activeTab === 'brief' && (
+                            <CampaignBriefTab
+                                campaignData={campaignData}
+                                isBriefEditing={isBriefEditing}
+                                setIsBriefEditing={setIsBriefEditing}
+                                briefData={briefData}
+                                setBriefData={setBriefData}
+                                handleBriefSubmit={handleBriefSubmit}
+                                setSampleVideoFiles={setSampleVideoFiles}
+                                isSubmittingBrief={isSubmittingBrief}
+                            />
+                        )}
 
-                    {activeTab === 'scripts' && (
-                        <CampaignScriptsTab
-                            campaignData={campaignData}
-                            setIsScriptTemplateModalOpen={setIsScriptTemplateModalOpen}
-                            filteredScripts={filteredScripts}
-                            scriptFilterTab={scriptFilterTab}
-                            setScriptFilterTab={(tab: string) => setScriptFilterTab(tab as any)}
-                            scriptReviewStats={scriptReviewStats}
-                            getScriptStatusMeta={getScriptStatusMeta}
-                            handleOpenAIReview={handleOpenAIReview}
-                        />
-                    )}
+                        {activeTab === 'scripts' && (
+                            <CampaignScriptsTab
+                                campaignData={campaignData}
+                                setIsScriptTemplateModalOpen={setIsScriptTemplateModalOpen}
+                                filteredScripts={filteredScripts}
+                                scriptFilterTab={scriptFilterTab}
+                                setScriptFilterTab={(tab: string) => setScriptFilterTab(tab as any)}
+                                scriptReviewStats={scriptReviewStats}
+                                getScriptStatusMeta={getScriptStatusMeta}
+                                handleOpenAIReview={handleOpenAIReview}
+                            />
+                        )}
 
-                    {activeTab === 'content' && (
-                        <CampaignContentTab
-                            filteredContent={filteredContent}
-                            contentFilterTab={contentFilterTab}
-                            setContentFilterTab={(tab: string) => setContentFilterTab(tab as any)}
-                            contentReviewStats={contentReviewStats}
-                            getContentStatusMeta={getContentStatusMeta}
-                            handleOpenAIContentReview={handleOpenAIContentReview}
-                        />
-                    )}
+                        {activeTab === 'content' && (
+                            <CampaignContentTab
+                                filteredContent={filteredContent}
+                                contentFilterTab={contentFilterTab}
+                                setContentFilterTab={(tab: string) => setContentFilterTab(tab as any)}
+                                contentReviewStats={contentReviewStats}
+                                getContentStatusMeta={getContentStatusMeta}
+                                handleOpenAIContentReview={handleOpenAIContentReview}
+                            />
+                        )}
+                    </Suspense>
                 </main>
             </div>
         </BrandCampaignProvider>
