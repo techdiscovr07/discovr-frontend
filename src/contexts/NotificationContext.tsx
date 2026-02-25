@@ -41,14 +41,26 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
         }
 
         try {
-            const [notifs, count] = await Promise.all([
+            const [notifsResponse, countResponse] = await Promise.all([
                 getNotifications(),
                 getUnreadCount()
             ]);
+
+            // Handle different potential response formats
+            const notifs = Array.isArray(notifsResponse)
+                ? notifsResponse
+                : (notifsResponse as any)?.notifications || [];
+
+            const count = typeof countResponse === 'number'
+                ? countResponse
+                : (countResponse as any)?.count || 0;
+
             setNotifications(notifs);
             setUnreadCount(count);
         } catch (error) {
             console.error('Failed to fetch notifications:', error);
+            setNotifications([]);
+            setUnreadCount(0);
         } finally {
             setLoading(false);
         }
@@ -56,7 +68,7 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
     useEffect(() => {
         refreshNotifications();
-        
+
         // Poll for new notifications every 30 seconds
         const interval = setInterval(() => {
             if (user) {
@@ -92,9 +104,11 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
 
     const markAllAsRead = useCallback(async () => {
         try {
-            const unreadIds = notifications.filter(n => !n.read).map(n => n.id);
-            await Promise.all(unreadIds.map(id => markNotificationRead(id)));
-            setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+            const unreadIds = (notifications || []).filter(n => !n?.read).map(n => n?.id).filter(Boolean);
+            if (unreadIds.length > 0) {
+                await Promise.all(unreadIds.map(id => markNotificationRead(id)));
+            }
+            setNotifications(prev => (prev || []).map(n => ({ ...n, read: true })));
             setUnreadCount(0);
         } catch (error) {
             console.error('Failed to mark all as read:', error);

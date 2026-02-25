@@ -59,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }, 5000); // 5 second timeout
 
         let unsubscribe: (() => void) | null = null;
-        
+
         try {
             unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
                 clearTimeout(timeoutId);
@@ -94,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signUp = async (email: string, password: string, name: string, role: 'admin' | 'brand_owner' | 'brand_emp' | 'creator') => {
         // 1. Signup via backend (creates Firebase user and MongoDB record)
         const response = await signupToBackend(email, password, name, role);
-        
+
         // 2. If backend returned ID token, sign in with it
         if (response.id_token) {
             // Backend already created the user, we need to sign in
@@ -113,14 +113,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const signIn = async (email: string, password: string, role: 'admin' | 'brand_owner' | 'brand_emp' | 'creator' = 'creator') => {
         // 1. Sign in with Firebase
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        let userCredential;
+        try {
+            userCredential = await signInWithEmailAndPassword(auth, email, password);
+        } catch (error: any) {
+            console.error('Firebase Auth Error:', error);
+            throw error; // Let formatFirebaseError handle this
+        }
 
         // 2. Sync with backend
-        // Backend will use existing user's role if they exist, or create new user with provided role
-        await loginToBackend(role);
-
-        // 3. Update profile state
-        await refreshProfile();
+        try {
+            await loginToBackend(role);
+            await refreshProfile();
+        } catch (error: any) {
+            console.error('Backend Sync Error:', error);
+            // We don't throw here to avoid blocking login if it's just a profile fetch issue
+            // But we should at least have logged in once.
+            // If loginToBackend failed, we might want to know.
+            if (error.message && (error.message.includes('fetch') || error.message.includes('Network'))) {
+                throw new Error('Could not connect to Discovr server. Please try again.');
+            }
+        }
 
         setUser(userCredential.user);
     };

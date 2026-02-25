@@ -51,7 +51,10 @@ export const NotificationCenter: React.FC = () => {
     };
 
     const formatTime = (dateString: string) => {
+        if (!dateString) return '';
         const date = new Date(dateString);
+        if (isNaN(date.getTime())) return '';
+
         const now = new Date();
         const diffMs = now.getTime() - date.getTime();
         const diffMins = Math.floor(diffMs / 60000);
@@ -108,7 +111,7 @@ export const NotificationCenter: React.FC = () => {
                             <div className="notification-loading">
                                 <LoadingSpinner />
                             </div>
-                        ) : notifications.length === 0 ? (
+                        ) : (!notifications || !Array.isArray(notifications) || notifications.length === 0) ? (
                             <div className="notification-empty">
                                 <Bell size={32} style={{ opacity: 0.3, marginBottom: 'var(--space-4)' }} />
                                 <p>No notifications</p>

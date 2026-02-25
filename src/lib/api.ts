@@ -1,6 +1,6 @@
 import { auth } from './firebase';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://discovr-backend.onrender.com';
 
 /**
  * Get current user's Firebase ID token
@@ -392,9 +392,9 @@ export const brandApi = {
                 creator_id: u.creator_id,
                 action:
                     u.status === 'approved' ? 'approve' :
-                    u.status === 'rejected' ? 'reject' :
-                    u.status === 'revision_requested' ? 'request_revision' :
-                    u.action,
+                        u.status === 'rejected' ? 'reject' :
+                            u.status === 'revision_requested' ? 'request_revision' :
+                                u.action,
                 feedback: u.feedback
             }))
         })
@@ -415,8 +415,8 @@ export const brandApi = {
     reviewCreatorScript: (campaignId: string, creatorId: string, status: 'approved' | 'rejected' | 'revision_requested', feedback?: string) => {
         const action =
             status === 'approved' ? 'approve' :
-            status === 'rejected' ? 'reject' :
-            'request_revision';
+                status === 'rejected' ? 'reject' :
+                    'request_revision';
         return request<any>(`/brand/campaigns/review-script?campaign_id=${campaignId}`, {
             method: 'POST',
             body: JSON.stringify({
@@ -448,6 +448,10 @@ export const brandApi = {
         body: JSON.stringify({
             campaign_id: campaignId
         })
+    }),
+    analyzeCreator: (profileUrl: string) => request<any>('/brand/creators/analyze', {
+        method: 'POST',
+        body: JSON.stringify({ profile_url: profileUrl })
     }),
 };
 
@@ -528,42 +532,87 @@ export const adminApi = {
 };
 
 /**
- * Creator-specific API calls
+ * Creator-specific API calls with simple caching to improve performance
  */
+let campaignsCache: any = null;
+let lastFetchTime = 0;
+const CACHE_DURATION = 60 * 1000; // 1 minute
+
 export const creatorApi = {
-    getCampaigns: () => request('/creator/campaigns'),
-    linkCampaign: (campaignId: string, creatorToken?: string) => request<any>('/creator/campaigns/link', {
-        method: 'POST',
-        body: JSON.stringify({ campaign_id: campaignId, creator_token: creatorToken || '' })
-    }),
+    getCampaigns: async (forceRefresh = false) => {
+        const now = Date.now();
+        if (!forceRefresh && campaignsCache && (now - lastFetchTime < CACHE_DURATION)) {
+            return campaignsCache;
+        }
+        const data = await request<any>('/creator/campaigns');
+        campaignsCache = data;
+        lastFetchTime = now;
+        return data;
+    },
+    invalidateCache: () => {
+        campaignsCache = null;
+        lastFetchTime = 0;
+    },
+    linkCampaign: async (campaignId: string, creatorToken?: string) => {
+        const res = await request<any>('/creator/campaigns/link', {
+            method: 'POST',
+            body: JSON.stringify({ campaign_id: campaignId, creator_token: creatorToken || '' })
+        });
+        creatorApi.invalidateCache();
+        return res;
+    },
     getCampaignBrief: (campaignId: string) => request<any>(`/creator/campaigns/brief?campaign_id=${campaignId}`),
-    submitBid: (campaignId: string, amount: number) => request<any>(`/creator/campaigns/bid?campaign_id=${campaignId}`, {
-        method: 'POST',
-        body: JSON.stringify({ bid_amount: amount })
-    }),
-    respondToBid: (campaignId: string, action: 'accept' | 'reject', counterAmount?: number) => request<any>(`/creator/campaigns/bid/respond`, {
-        method: 'POST',
-        body: JSON.stringify({ campaign_id: campaignId, action, counter_amount: counterAmount })
-    }),
+    submitBid: async (campaignId: string, amount: number) => {
+        const res = await request<any>(`/creator/campaigns/bid?campaign_id=${campaignId}`, {
+            method: 'POST',
+            body: JSON.stringify({ bid_amount: amount })
+        });
+        creatorApi.invalidateCache();
+        return res;
+    },
+    respondToBid: async (campaignId: string, action: 'accept' | 'reject', counterAmount?: number) => {
+        const res = await request<any>(`/creator/campaigns/bid/respond`, {
+            method: 'POST',
+            body: JSON.stringify({ campaign_id: campaignId, action, counter_amount: counterAmount })
+        });
+        creatorApi.invalidateCache();
+        return res;
+    },
     getBidStatus: (campaignId: string) => request<any>(`/creator/campaigns/bid-status?campaign_id=${campaignId}`),
-    uploadScript: (campaignId: string, scriptContent: string) => request<any>(`/creator/campaigns/script?campaign_id=${campaignId}`, {
-        method: 'POST',
-        body: JSON.stringify({ script_content: scriptContent })
-    }),
-    uploadContent: (campaignId: string, file: File, liveUrl?: string) => {
+    uploadScript: async (campaignId: string, scriptContent: string) => {
+        const res = await request<any>(`/creator/campaigns/script?campaign_id=${campaignId}`, {
+            method: 'POST',
+            body: JSON.stringify({ script_content: scriptContent })
+        });
+        creatorApi.invalidateCache();
+        return res;
+    },
+    uploadContent: async (campaignId: string, file?: File, liveUrl?: string) => {
         const formData = new FormData();
-        formData.append('file', file);
+        if (file) {
+            formData.append('file', file);
+            // Also append as 'video' just in case the backend expects that
+            formData.append('video', file);
+        }
+        formData.append('campaign_id', campaignId);
         if (liveUrl) formData.append('live_url', liveUrl);
-        return request<any>(`/creator/campaigns/content?campaign_id=${campaignId}`, {
+
+        const res = await request<any>(`/creator/campaigns/content?campaign_id=${campaignId}`, {
             method: 'POST',
             body: formData,
             headers: {
                 'Content-Type': undefined as any,
             }
         });
+        creatorApi.invalidateCache();
+        return res;
     },
-    goLive: (campaignId: string, liveUrl: string) => request<any>(`/creator/campaigns/go-live?campaign_id=${campaignId}`, {
-        method: 'POST',
-        body: JSON.stringify({ live_url: liveUrl })
-    }),
+    goLive: async (campaignId: string, liveUrl: string) => {
+        const res = await request<any>(`/creator/campaigns/go-live?campaign_id=${campaignId}`, {
+            method: 'POST',
+            body: JSON.stringify({ live_url: liveUrl })
+        });
+        creatorApi.invalidateCache();
+        return res;
+    },
 };

@@ -23,11 +23,7 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
     // Show loading spinner while checking authentication state
     if (loading) {
-        return (
-            <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <LoadingSpinner />
-            </div>
-        );
+        return <LoadingSpinner fullPage />;
     }
 
     // If no user is logged in, redirect to the appropriate login page
@@ -46,13 +42,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         // If profile is still loading or not available, wait
         if (profile === null && user) {
             // User is logged in but profile not loaded yet - show loading
-            return (
-                <div style={{ height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <LoadingSpinner />
-                </div>
-            );
+            return <LoadingSpinner fullPage />;
         }
-        
+
         // If profile exists and role doesn't match
         if (profile && !allowedRoles.includes(profile.role)) {
             console.warn(`Access denied. User role "${profile.role}" is not in allowed roles:`, allowedRoles);

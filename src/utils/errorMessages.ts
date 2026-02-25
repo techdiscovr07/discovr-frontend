@@ -38,8 +38,13 @@ export function formatFirebaseError(error: any): string {
         return 'Too many failed attempts. Please try again later.';
     }
 
-    if (errorCode.includes('auth/network-request-failed') || errorMessage.includes('network')) {
-        return 'Network error. Please check your connection and try again.';
+    if (errorCode.includes('auth/network-request-failed')) {
+        return 'Firebase connection failed. This is usually due to an ad-blocker or firewall blocking Google services.';
+    }
+
+    if (errorMessage.toLowerCase().includes('network') || errorMessage.toLowerCase().includes('fetch')) {
+        if (errorMessage.includes('Discovr server')) return errorMessage;
+        return 'Network error: Could not reach the server. Please check your internet and try again.';
     }
 
     // Remove "Firebase: Error" prefix if present

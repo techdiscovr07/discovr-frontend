@@ -23,11 +23,7 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-    const [theme, setTheme] = useState<Theme>(() => {
-        // Check localStorage for saved theme preference
-        const savedTheme = localStorage.getItem('dashboard-theme') as Theme;
-        return savedTheme || 'dark';
-    });
+    const [theme] = useState<Theme>('light');
 
     useEffect(() => {
         // Apply theme class to document root
@@ -36,7 +32,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     }, [theme]);
 
     const toggleTheme = () => {
-        setTheme((prevTheme) => (prevTheme === 'dark' ? 'light' : 'dark'));
+        // Do nothing, light mode only
     };
 
     return (

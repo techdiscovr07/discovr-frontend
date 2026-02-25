@@ -1,7 +1,7 @@
 import React from 'react';
 import './Card.css';
 
-interface CardProps {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
     children: React.ReactNode;
     className?: string;
     hover?: boolean;
@@ -14,7 +14,8 @@ export const Card: React.FC<CardProps> = ({
     className = '',
     hover = false,
     onClick,
-    style
+    style,
+    ...props
 }) => {
     const classes = [
         'card',
@@ -24,35 +25,38 @@ export const Card: React.FC<CardProps> = ({
     ].filter(Boolean).join(' ');
 
     return (
-        <div className={classes} onClick={onClick} style={style}>
+        <div className={classes} onClick={onClick} style={style} {...props}>
             {children}
         </div>
     );
 };
 
-export const CardHeader: React.FC<{ children: React.ReactNode; className?: string }> = ({
+export const CardHeader: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties }> = ({
     children,
-    className = ''
+    className = '',
+    style
 }) => (
-    <div className={`card-header ${className}`}>
+    <div className={`card-header ${className}`} style={style}>
         {children}
     </div>
 );
 
-export const CardBody: React.FC<{ children: React.ReactNode; className?: string }> = ({
+export const CardBody: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties }> = ({
     children,
-    className = ''
+    className = '',
+    style
 }) => (
-    <div className={`card-body ${className}`}>
+    <div className={`card-body ${className}`} style={style}>
         {children}
     </div>
 );
 
-export const CardFooter: React.FC<{ children: React.ReactNode; className?: string }> = ({
+export const CardFooter: React.FC<{ children: React.ReactNode; className?: string; style?: React.CSSProperties }> = ({
     children,
-    className = ''
+    className = '',
+    style
 }) => (
-    <div className={`card-footer ${className}`}>
+    <div className={`card-footer ${className}`} style={style}>
         {children}
     </div>
 );
