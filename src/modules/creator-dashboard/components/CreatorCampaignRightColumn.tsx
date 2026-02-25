@@ -5,8 +5,7 @@ import { useCreatorCampaignContext } from '../CreatorCampaignContext';
 
 export const CreatorCampaignRightColumn: React.FC = () => {
     const {
-        scriptReviewMeta, brandScriptFeedback, campaignData, formatINR,
-        negotiationStatus
+        scriptReviewMeta, brandScriptFeedback, campaignData, formatINR
     } = useCreatorCampaignContext();
 
     return (

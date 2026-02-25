@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Modal, Sidebar, Input, TextArea, FileUpload, Card, CardHeader, CardBody } from '../../../components';
-import { Clock, Check, Sparkles, TrendingUp, IndianRupee, MessageSquare, RefreshCw } from 'lucide-react';
+import { Clock, Check, Sparkles, TrendingUp, MessageSquare, RefreshCw } from 'lucide-react';
 import { useBrandCampaignContext } from '../BrandCampaignContext';
 
 export const BrandCampaignModals: React.FC = () => {
