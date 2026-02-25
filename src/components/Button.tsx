@@ -33,6 +33,7 @@ export const Button: React.FC<ButtonProps> = ({
 
     return (
         <button
+            type={props.type || 'button'}
             className={classes}
             disabled={disabled || isLoading}
             {...props}

@@ -227,7 +227,8 @@ export const CampaignCreatorsTab: React.FC<CampaignCreatorsTabProps> = ({
                                                                 variant="ghost"
                                                                 size="sm"
                                                                 style={{ color: 'var(--color-error)' }}
-                                                                onClick={(e) => {
+                                                                onClick={async (e) => {
+                                                                    e.preventDefault();
                                                                     e.stopPropagation();
                                                                     const updated = creators.map(c => {
                                                                         const cId = c.creator_id || c.id || c._id;
@@ -237,6 +238,18 @@ export const CampaignCreatorsTab: React.FC<CampaignCreatorsTabProps> = ({
                                                                         return c;
                                                                     });
                                                                     setCreators(updated);
+
+                                                                    if (id) {
+                                                                        try {
+                                                                            await brandApi.updateCreatorStatuses(id, [{
+                                                                                creator_id: currentId,
+                                                                                status: 'rejected'
+                                                                            }]);
+                                                                            showToast('Creator rejected', 'success');
+                                                                        } catch (error: any) {
+                                                                            showToast(error.message || 'Failed to update status', 'error');
+                                                                        }
+                                                                    }
                                                                 }}
                                                             >
                                                                 Reject
@@ -247,7 +260,8 @@ export const CampaignCreatorsTab: React.FC<CampaignCreatorsTabProps> = ({
                                                             <Button
                                                                 variant="primary"
                                                                 size="sm"
-                                                                onClick={(e) => {
+                                                                onClick={async (e) => {
+                                                                    e.preventDefault();
                                                                     e.stopPropagation();
                                                                     const updated = creators.map(c => {
                                                                         const cId = c.creator_id || c.id || c._id;
@@ -257,6 +271,18 @@ export const CampaignCreatorsTab: React.FC<CampaignCreatorsTabProps> = ({
                                                                         return c;
                                                                     });
                                                                     setCreators(updated);
+
+                                                                    if (id) {
+                                                                        try {
+                                                                            await brandApi.updateCreatorStatuses(id, [{
+                                                                                creator_id: currentId,
+                                                                                status: 'accepted'
+                                                                            }]);
+                                                                            showToast('Creator accepted', 'success');
+                                                                        } catch (error: any) {
+                                                                            showToast(error.message || 'Failed to update status', 'error');
+                                                                        }
+                                                                    }
                                                                 }}
                                                             >
                                                                 Accept
@@ -337,7 +363,9 @@ export const CampaignCreatorsTab: React.FC<CampaignCreatorsTabProps> = ({
                                                                 <Button
                                                                     variant="ghost"
                                                                     size="sm"
-                                                                    onClick={async () => {
+                                                                    onClick={async (e) => {
+                                                                        e.preventDefault();
+                                                                        e.stopPropagation();
                                                                         if (!id) return;
                                                                         const creatorId = getBidCreatorId(bid);
                                                                         if (!creatorId) {
@@ -360,7 +388,11 @@ export const CampaignCreatorsTab: React.FC<CampaignCreatorsTabProps> = ({
                                                                     variant="ghost"
                                                                     size="sm"
                                                                     style={{ color: 'var(--color-warning)' }}
-                                                                    onClick={() => openCounterModal(bid)}
+                                                                    onClick={(e) => {
+                                                                        e.preventDefault();
+                                                                        e.stopPropagation();
+                                                                        openCounterModal(bid);
+                                                                    }}
                                                                 >
                                                                     Counter
                                                                 </Button>
@@ -368,7 +400,9 @@ export const CampaignCreatorsTab: React.FC<CampaignCreatorsTabProps> = ({
                                                                     variant="ghost"
                                                                     size="sm"
                                                                     style={{ color: 'var(--color-error)' }}
-                                                                    onClick={async () => {
+                                                                    onClick={async (e) => {
+                                                                        e.preventDefault();
+                                                                        e.stopPropagation();
                                                                         if (!id) return;
                                                                         const creatorId = getBidCreatorId(bid);
                                                                         if (!creatorId) {
