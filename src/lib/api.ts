@@ -579,11 +579,27 @@ export const creatorApi = {
         return res;
     },
     getBidStatus: (campaignId: string) => request<any>(`/creator/campaigns/bid-status?campaign_id=${campaignId}`),
-    uploadScript: async (campaignId: string, scriptContent: string) => {
-        const res = await request<any>(`/creator/campaigns/script?campaign_id=${campaignId}`, {
-            method: 'POST',
-            body: JSON.stringify({ script_content: scriptContent })
-        });
+    uploadScript: async (campaignId: string, scriptData: string | File) => {
+        let options: RequestInit;
+
+        if (scriptData instanceof File) {
+            const formData = new FormData();
+            formData.append('script_file', scriptData);
+            options = {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'Content-Type': undefined as any,
+                }
+            };
+        } else {
+            options = {
+                method: 'POST',
+                body: JSON.stringify({ script_content: scriptData })
+            };
+        }
+
+        const res = await request<any>(`/creator/campaigns/script?campaign_id=${campaignId}`, options);
         creatorApi.invalidateCache();
         return res;
     },

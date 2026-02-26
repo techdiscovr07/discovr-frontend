@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardHeader, CardBody, Button } from '../../../components';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, FileText, ExternalLink } from 'lucide-react';
 
 interface CampaignScriptsTabProps {
     campaignData: any;
@@ -137,17 +137,30 @@ export const CampaignScriptsTab: React.FC<CampaignScriptsTabProps> = ({
                                             </td>
                                             <td>
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)', minWidth: '200px' }}>
-                                                    <div style={{
-                                                        fontSize: 'var(--text-sm)',
-                                                        color: 'var(--color-text-primary)',
-                                                        fontWeight: 500,
-                                                        maxWidth: '350px',
-                                                        overflow: 'hidden',
-                                                        textOverflow: 'ellipsis',
-                                                        whiteSpace: 'nowrap'
-                                                    }}>
-                                                        {script.script_content || script.content || '-'}
-                                                    </div>
+                                                    {script.script_file_url ? (
+                                                        <Button
+                                                            variant="secondary"
+                                                            size="sm"
+                                                            onClick={() => window.open(script.script_file_url, '_blank')}
+                                                            style={{ alignSelf: 'flex-start', background: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.2)' }}
+                                                        >
+                                                            <FileText size={14} style={{ marginRight: '8px' }} />
+                                                            View Script Doc
+                                                            <ExternalLink size={12} style={{ marginLeft: '8px', opacity: 0.7 }} />
+                                                        </Button>
+                                                    ) : (
+                                                        <div style={{
+                                                            fontSize: 'var(--text-sm)',
+                                                            color: 'var(--color-text-primary)',
+                                                            fontWeight: 500,
+                                                            maxWidth: '350px',
+                                                            overflow: 'hidden',
+                                                            textOverflow: 'ellipsis',
+                                                            whiteSpace: 'nowrap'
+                                                        }}>
+                                                            {script.script_content || script.content || '-'}
+                                                        </div>
+                                                    )}
                                                     {(script.script_feedback || script.feedback) && (
                                                         <div style={{
                                                             fontSize: '11px',

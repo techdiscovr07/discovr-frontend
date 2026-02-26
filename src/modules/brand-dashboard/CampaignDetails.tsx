@@ -148,6 +148,18 @@ export const CampaignDetails: React.FC = () => {
                                     </Button>
                                 )}
 
+                                {campaignData.brief_document_url && (
+                                    <Button
+                                        variant="secondary"
+                                        size="sm"
+                                        onClick={() => window.open(campaignData.brief_document_url, '_blank')}
+                                        style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)' }}
+                                    >
+                                        <FileText size={16} />
+                                        View Brief Doc
+                                    </Button>
+                                )}
+
                                 {(campaignData.review_status === 'creators_are_final') ? (
                                     <Button variant="ghost" size="sm" onClick={() => navigate('/brand/dashboard')}>
                                         <Check size={16} />
@@ -296,6 +308,7 @@ export const CampaignDetails: React.FC = () => {
                                 setBriefData={setBriefData}
                                 handleBriefSubmit={handleBriefSubmit}
                                 setSampleVideoFiles={setSampleVideoFiles}
+                                setBriefDocumentFiles={contextValue.setBriefDocumentFiles}
                                 isSubmittingBrief={isSubmittingBrief}
                             />
                         )}

@@ -1,6 +1,22 @@
 import React from 'react';
+import { motion } from 'framer-motion';
 import { Card, CardHeader, CardBody, Button } from '../../../components';
-import { FileText, CheckCircle2, Upload, MessageSquare, Clock, Calendar, ChevronRight } from 'lucide-react';
+import {
+    FileText,
+    CheckCircle2,
+    XCircle,
+    Upload,
+    MessageSquare,
+    Clock,
+    Calendar,
+    ChevronRight,
+    Target,
+    Zap,
+    ArrowRight,
+    Video,
+    File as FileIcon,
+    AlertCircle
+} from 'lucide-react';
 import { useCreatorCampaignContext } from '../CreatorCampaignContext';
 
 export const CreatorCampaignLeftColumn: React.FC = () => {
@@ -12,66 +28,141 @@ export const CreatorCampaignLeftColumn: React.FC = () => {
         brandScriptFeedback, brandContentFeedback, contentDeliverableStatus
     } = useCreatorCampaignContext();
 
+    const containerVariants = {
+        hidden: { opacity: 0, y: 10 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: { duration: 0.4, staggerChildren: 0.05 }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, scale: 0.95 },
+        visible: { opacity: 1, scale: 1 }
+    };
+
+    const renderBriefItem = (icon: any, label: string, value: string) => (
+        <motion.div
+            variants={itemVariants}
+            className="creator-brief-item-premium"
+            style={{
+                padding: 'var(--space-3)',
+                background: 'rgba(255, 255, 255, 0.02)',
+                borderRadius: 'var(--radius-md)',
+                border: '1px solid var(--color-border-subtle)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '4px'
+            }}
+        >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-tertiary)' }}>
+                {React.createElement(icon, { size: 12 })}
+                <span style={{ fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</span>
+            </div>
+            <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)', margin: 0, fontWeight: 500 }}>{value || '-'}</p>
+        </motion.div>
+    );
+
     return (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-8)' }}>
             {/* Campaign Brief */}
             <Card className="content-card">
                 <CardHeader className="compact-card-header">
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                        <FileText size={16} style={{ color: 'var(--color-accent)' }} />
-                        <h3>Campaign Brief</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                        <div style={{
+                            width: '32px',
+                            height: '32px',
+                            borderRadius: '8px',
+                            background: 'rgba(139, 92, 246, 0.1)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            color: 'var(--color-accent)'
+                        }}>
+                            <FileText size={18} />
+                        </div>
+                        <h3 style={{ fontSize: '16px', fontWeight: 700, margin: 0 }}>Campaign Brief</h3>
                     </div>
                 </CardHeader>
-                <CardBody className="compact-card-body">
+                <CardBody style={{ padding: 'var(--space-5)' }}>
                     {!hasAnyBriefDetails ? (
-                        <div style={{ padding: 'var(--space-3)', background: 'rgba(var(--color-warning-rgb), 0.05)', borderRadius: 'var(--radius-md)', border: '1px dashed var(--color-warning)' }}>
-                            <p style={{ color: 'var(--color-warning)', fontSize: 'var(--text-xs)', fontWeight: 600, margin: 0 }}>
+                        <div style={{
+                            padding: 'var(--space-4)',
+                            background: 'rgba(234, 179, 8, 0.05)',
+                            borderRadius: 'var(--radius-lg)',
+                            border: '1px dashed var(--color-warning)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 'var(--space-3)'
+                        }}>
+                            <AlertCircle size={18} style={{ color: 'var(--color-warning)' }} />
+                            <p style={{ color: 'var(--color-warning)', fontSize: 'var(--text-sm)', fontWeight: 600, margin: 0 }}>
                                 Brief Not Yet Available
                             </p>
                         </div>
                     ) : (
-                        <div className="compact-grid-2">
-                            <div className="compact-info-item">
-                                <p className="compact-label">Video Title</p>
-                                <p className="compact-value">{briefVideoTitle || '-'}</p>
+                        <motion.div
+                            variants={containerVariants}
+                            initial="hidden"
+                            animate="visible"
+                            style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}
+                        >
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                                {renderBriefItem(FileText, "Video Title", briefVideoTitle)}
+                                {renderBriefItem(Target, "Primary Focus", briefPrimaryFocus)}
+                                {renderBriefItem(Zap, "Secondary Focus", briefSecondaryFocus)}
+                                {renderBriefItem(ArrowRight, "Call to Action", briefCta)}
                             </div>
-                            <div className="compact-info-item">
-                                <p className="compact-label">Primary Focus</p>
-                                <p className="compact-value">{briefPrimaryFocus || '-'}</p>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-success)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <CheckCircle2 size={10} /> Dos
+                                    </span>
+                                    <div style={{ padding: 'var(--space-3)', background: 'rgba(34, 197, 94, 0.03)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(34, 197, 94, 0.1)', fontSize: '13px', lineHeight: 1.5, color: 'var(--color-text-secondary)', whiteSpace: 'pre-wrap' }}>
+                                        {briefDos || '-'}
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                    <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-error)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                        <XCircle size={10} /> Don'ts
+                                    </span>
+                                    <div style={{ padding: 'var(--space-3)', background: 'rgba(239, 68, 68, 0.03)', borderRadius: 'var(--radius-md)', border: '1px solid rgba(239, 68, 68, 0.1)', fontSize: '13px', lineHeight: 1.5, color: 'var(--color-text-secondary)', whiteSpace: 'pre-wrap' }}>
+                                        {briefDonts || '-'}
+                                    </div>
+                                </div>
                             </div>
-                            <div className="compact-info-item">
-                                <p className="compact-label">Secondary Focus</p>
-                                <p className="compact-value">{briefSecondaryFocus || '-'}</p>
+
+                            <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => {
+                                        const url = firstBriefValue('sample_video_url', 'sampleVideoUrl', 'sample_video');
+                                        if (url) window.open(url, '_blank');
+                                    }}
+                                    disabled={!firstBriefValue('sample_video_url', 'sampleVideoUrl', 'sample_video')}
+                                    style={{ flex: 1, height: '44px', gap: '8px' }}
+                                >
+                                    <Video size={16} />
+                                    View Sample
+                                </Button>
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => {
+                                        const url = firstBriefValue('brief_document_url', 'brief_document');
+                                        if (url) window.open(url, '_blank');
+                                    }}
+                                    disabled={!firstBriefValue('brief_document_url', 'brief_document')}
+                                    style={{ flex: 1, height: '44px', gap: '8px' }}
+                                >
+                                    <FileIcon size={16} />
+                                    Brief Doc
+                                </Button>
                             </div>
-                            <div className="compact-info-item">
-                                <p className="compact-label">Call to Action</p>
-                                <p className="compact-value">{briefCta || '-'}</p>
-                            </div>
-                            <div className="compact-info-item">
-                                <p className="compact-label">Dos</p>
-                                <p className="compact-value" style={{ whiteSpace: 'pre-wrap' }}>{briefDos || '-'}</p>
-                            </div>
-                            <div className="compact-info-item">
-                                <p className="compact-label">Don'ts</p>
-                                <p className="compact-value" style={{ whiteSpace: 'pre-wrap' }}>{briefDonts || '-'}</p>
-                            </div>
-                            <div className="compact-info-item" style={{ gridColumn: '1 / -1' }}>
-                                <p className="compact-label">Sample Video</p>
-                                {(firstBriefValue('sample_video_url', 'sampleVideoUrl', 'sample_video')) ? (
-                                    <a
-                                        href={firstBriefValue('sample_video_url', 'sampleVideoUrl', 'sample_video')}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="compact-value"
-                                        style={{ color: 'var(--color-accent)', textDecoration: 'none', fontWeight: 600 }}
-                                    >
-                                        View sample video
-                                    </a>
-                                ) : (
-                                    <p className="compact-value">No sample video</p>
-                                )}
-                            </div>
-                        </div>
+                        </motion.div>
                     )}
 
                     {/* Brand Script Template Section */}

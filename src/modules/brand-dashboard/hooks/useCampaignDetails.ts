@@ -28,7 +28,8 @@ export const useCampaignDetails = () => {
         donts: '',
         cta: '',
         script_template: '',
-        sample_video_url: ''
+        sample_video_url: '',
+        brief_document_url: ''
     });
     const [brandScriptTemplate, setBrandScriptTemplate] = useState<string>('');
     const [isScriptTemplateModalOpen, setIsScriptTemplateModalOpen] = useState(false);
@@ -45,6 +46,7 @@ export const useCampaignDetails = () => {
     const [content, setContent] = useState<any[]>([]);
     const [scriptFilterTab, setScriptFilterTab] = useState<'accepted' | 'pending' | 'revisionRequested' | 'rejected'>('pending');
     const [contentFilterTab, setContentFilterTab] = useState<'accepted' | 'pending' | 'revisionRequested' | 'rejected'>('pending');
+    const [briefDocumentFiles, setBriefDocumentFiles] = useState<File[]>([]);
 
     // Demo Growth Data for visuals
     const growthData = [
@@ -192,7 +194,8 @@ export const useCampaignDetails = () => {
                     donts: found.donts || '',
                     cta: found.cta || '',
                     script_template: found.script_template || '',
-                    sample_video_url: found.sample_video_url || ''
+                    sample_video_url: found.sample_video_url || '',
+                    brief_document_url: found.brief_document_url || ''
                 });
             } else {
                 setCampaign(null);
@@ -534,21 +537,42 @@ export const useCampaignDetails = () => {
 
     const handleBriefSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Check if at least one form of brief is provided
+        const hasTextBrief = briefData.video_title || briefData.primary_focus || briefData.dos || briefData.donts || briefData.cta;
+        const hasDocument = briefDocumentFiles.length > 0 || briefData.brief_document_url;
+
+        if (!hasTextBrief && !hasDocument) {
+            showToast('Please provide either campaign details or upload a brief document', 'error');
+            return;
+        }
+
         setIsSubmittingBrief(true);
         try {
             const formData = new FormData();
             formData.append('campaign_id', id || '');
-            formData.append('video_title', briefData.video_title);
-            formData.append('primary_focus', briefData.primary_focus);
-            formData.append('secondary_focus', briefData.secondary_focus);
-            formData.append('dos', briefData.dos);
-            formData.append('donts', briefData.donts);
-            formData.append('cta', briefData.cta);
+
+            const hasFile = briefDocumentFiles.length > 0;
+
+            if (hasFile) {
+                // Option 2: Brief as PDF / Word doc (no form text)
+                formData.append('brief_file', briefDocumentFiles[0]);
+            } else {
+                // Option 1: Structured brief form (no PDF/Word)
+                formData.append('video_title', briefData.video_title || '');
+                formData.append('primary_focus', briefData.primary_focus || '');
+                formData.append('secondary_focus', briefData.secondary_focus || '');
+                formData.append('dos', briefData.dos || '');
+                formData.append('donts', briefData.donts || '');
+                formData.append('cta', briefData.cta || '');
+                if (briefData.script_template) {
+                    formData.append('script_template', briefData.script_template);
+                }
+            }
+
+            // Media fields are sent in both modes according to curl examples
             if (briefData.sample_video_url) {
                 formData.append('sample_video_url', briefData.sample_video_url);
-            }
-            if (briefData.script_template) {
-                formData.append('script_template', briefData.script_template);
             }
             if (sampleVideoFiles.length > 0) {
                 formData.append('sample_video', sampleVideoFiles[0]);
@@ -564,6 +588,7 @@ export const useCampaignDetails = () => {
                 setCampaign(updatedCampaign);
                 setBrandScriptTemplate(updatedCampaign.script_template || '');
                 setIsBriefEditing(false);
+                setBriefDocumentFiles([]);
                 setBriefData({
                     video_title: updatedCampaign.video_title || '',
                     primary_focus: updatedCampaign.primary_focus || '',
@@ -572,7 +597,8 @@ export const useCampaignDetails = () => {
                     donts: updatedCampaign.donts || '',
                     cta: updatedCampaign.cta || '',
                     script_template: updatedCampaign.script_template || '',
-                    sample_video_url: updatedCampaign.sample_video_url || ''
+                    sample_video_url: updatedCampaign.sample_video_url || '',
+                    brief_document_url: updatedCampaign.brief_document_url || ''
                 });
             }
         } catch (error: any) {
@@ -783,7 +809,7 @@ export const useCampaignDetails = () => {
         handleUploadCreatorsSheet, isUploadingSheet,
         isBriefModalOpen, setIsBriefModalOpen,
         briefData, setBriefData,
-        handleBriefSubmit, setSampleVideoFiles, isSubmittingBrief,
+        handleBriefSubmit, setSampleVideoFiles, setBriefDocumentFiles, isSubmittingBrief,
         isScriptTemplateModalOpen, setIsScriptTemplateModalOpen,
         brandScriptTemplate, setBrandScriptTemplate,
         handleScriptTemplateSubmit, isSubmittingScriptTemplate,

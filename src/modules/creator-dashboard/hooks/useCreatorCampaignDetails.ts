@@ -23,6 +23,7 @@ export const useCreatorCampaignDetails = () => {
     const [inlineScriptContent, setInlineScriptContent] = useState('');
     const [isSubmittingInlineScript, setIsSubmittingInlineScript] = useState(false);
     const [contentFiles, setContentFiles] = useState<File[]>([]);
+    const [scriptFiles, setScriptFiles] = useState<File[]>([]);
     const [liveLink, setLiveLink] = useState('');
     const [isLoading, setIsLoading] = useState(true);
 
@@ -193,7 +194,9 @@ export const useCreatorCampaignDetails = () => {
         firstBriefValue('donts', 'dont');
     const briefCta =
         firstBriefValue('cta', 'call_to_action');
-    const hasAnyBriefDetails = Boolean(briefVideoTitle || briefPrimaryFocus || briefSecondaryFocus || campaignData?.description);
+    const briefDocumentUrl =
+        firstBriefValue('brief_document_url', 'brief_document');
+    const hasAnyBriefDetails = Boolean(briefVideoTitle || briefPrimaryFocus || briefSecondaryFocus || briefDocumentUrl || campaignData?.description);
 
     const normalizeCampaign = (base: any, extra: any) => {
         const merged = { ...(base || {}), ...(extra || {}) };
@@ -403,8 +406,18 @@ export const useCreatorCampaignDetails = () => {
                     return;
                 }
 
-                const finalScript = scriptContent || briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template || '';
-                await creatorApi.uploadScript(id, finalScript);
+                if (scriptFiles.length > 0) {
+                    await creatorApi.uploadScript(id, scriptFiles[0]);
+                } else {
+                    const finalScript = scriptContent || briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template || '';
+                    if (!finalScript.trim()) {
+                        showToast('Please provide script content or upload a file.', 'error');
+                        setIsSubmitting(false);
+                        return;
+                    }
+                    await creatorApi.uploadScript(id, finalScript);
+                }
+
                 showToast('Script finalized and submitted successfully!', 'success');
             } else if (modalType === 'content') {
                 if (contentFiles.length === 0 && !contentLink.trim()) {
@@ -525,6 +538,7 @@ export const useCreatorCampaignDetails = () => {
         id,
         navigate,
         hasAnyBriefDetails, briefVideoTitle, briefPrimaryFocus, briefSecondaryFocus, briefCta,
+        briefDocumentUrl,
         briefDos, briefDonts, firstBriefValue, briefData, campaignData, setScriptContent,
         setModalType, canSubmitScript, scriptDeliverableStatus, brandScriptFeedback,
         inlineScriptContent, setInlineScriptContent, handleInlineScriptSubmit,
@@ -536,7 +550,9 @@ export const useCreatorCampaignDetails = () => {
         modalType, isLinking, creatorToken, setCreatorToken, handleLinkCampaign,
         isNegotiating, negotiationAmount, setNegotiationAmount, handleNegotiate,
         isSubmitting, isSuccess, handleAcceptDeal, handleRejectDeal,
-        scriptContent, contentFiles, setContentFiles, contentLink, setContentLink, handleAction,
+        scriptContent, contentFiles, setContentFiles,
+        scriptFiles, setScriptFiles,
+        contentLink, setContentLink, handleAction,
         liveLink, setLiveLink, handleGoLive, isLoading
     };
 

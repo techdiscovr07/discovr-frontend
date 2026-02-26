@@ -28,6 +28,8 @@ export const CreatorCampaignModals: React.FC = () => {
         brandContentFeedback,
         contentFiles,
         setContentFiles,
+        scriptFiles,
+        setScriptFiles,
         contentLink,
         setContentLink,
         handleAction,
@@ -236,6 +238,26 @@ export const CreatorCampaignModals: React.FC = () => {
                                         The brand script template is pre-filled. Review it and click "Finalize Script" to confirm and submit.
                                     </p>
                                 )}
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 'var(--space-4)',
+                                    margin: 'var(--space-2) 0'
+                                }}>
+                                    <div style={{ flex: 1, height: '1px', background: 'var(--color-border-subtle)' }} />
+                                    <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 600, textTransform: 'uppercase' }}>OR</span>
+                                    <div style={{ flex: 1, height: '1px', background: 'var(--color-border-subtle)' }} />
+                                </div>
+                                <FileUpload
+                                    accept=".pdf,.doc,.docx"
+                                    maxSize={20}
+                                    onFileSelect={(files: File[]) => {
+                                        setScriptFiles(files);
+                                        if (files.length > 0) setScriptContent(''); // Clear text if file selected
+                                    }}
+                                    label="Upload Script Document"
+                                    description="Upload PDF/Doc/Docx script (Max 20MB)"
+                                />
                             </>
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
@@ -285,7 +307,14 @@ export const CreatorCampaignModals: React.FC = () => {
                         )}
                         <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'flex-end' }}>
                             <Button variant="ghost" onClick={() => setModalType(null)} disabled={isSubmitting}>Cancel</Button>
-                            <Button onClick={handleAction} isLoading={isSubmitting} disabled={modalType === 'content' && contentFiles.length === 0 && !contentLink.trim()}>
+                            <Button
+                                onClick={handleAction}
+                                isLoading={isSubmitting}
+                                disabled={
+                                    (modalType === 'content' && contentFiles.length === 0 && !contentLink.trim()) ||
+                                    (modalType === 'script' && scriptFiles.length === 0 && !scriptContent.trim())
+                                }
+                            >
                                 {modalType === 'script' ? 'Finalize Script' : 'Submit'}
                             </Button>
                         </div>

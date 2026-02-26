@@ -9,6 +9,8 @@ import {
     Clock,
     Instagram,
     ArrowRight,
+    Filter,
+    ArrowUpDown,
     Megaphone
 } from 'lucide-react';
 import { creatorApi } from '../../../lib/api';
@@ -269,6 +271,8 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
     const [isSuccess, setIsSuccess] = useState(false);
     const [campaigns, setCampaigns] = useState<Campaign[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [sortBy, setSortBy] = useState('latest');
+    const [statusFilter, setStatusFilter] = useState('all');
 
     const fetchCampaigns = async () => {
         setIsLoading(true);
@@ -538,12 +542,43 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
     };
 
     const filteredCampaigns = useMemo(() => {
-        const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
-        return safeCampaigns.filter(campaign =>
-            (campaign.name?.toLowerCase().includes(searchQuery.toLowerCase())) ||
-            (campaign.brand?.toLowerCase().includes(searchQuery.toLowerCase()))
-        );
-    }, [campaigns, searchQuery]);
+        let list = Array.isArray(campaigns) ? [...campaigns] : [];
+
+        // 1. Text Search
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            list = list.filter(c =>
+                (c.name?.toLowerCase().includes(query)) ||
+                (c.brand?.toLowerCase().includes(query)) ||
+                (c.description?.toLowerCase().includes(query))
+            );
+        }
+
+        // 2. Status Filter
+        if (statusFilter !== 'all') {
+            list = list.filter(c => getWorkflowStatus(c) === statusFilter);
+        }
+
+        // 3. Sorting
+        list.sort((a, b) => {
+            switch (sortBy) {
+                case 'amount_high':
+                    return parseAmount(b.final_amount || b.amount || b.budget) - parseAmount(a.final_amount || a.amount || a.budget);
+                case 'amount_low':
+                    return parseAmount(a.final_amount || a.amount || a.budget) - parseAmount(b.final_amount || b.amount || b.budget);
+                case 'deadline':
+                    return new Date(a.deadline || 0).getTime() - new Date(b.deadline || 0).getTime();
+                case 'brand':
+                    return (a.brand || '').localeCompare(b.brand || '');
+                case 'latest':
+                default:
+                    // Higher ID = newer
+                    return String(b.id || b._id || b.campaign_id).localeCompare(String(a.id || a._id || a.campaign_id));
+            }
+        });
+
+        return list;
+    }, [campaigns, searchQuery, statusFilter, sortBy, getWorkflowStatus, parseAmount]);
 
     if (isLoading) {
         return <LoadingSpinner />;
@@ -551,6 +586,46 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
 
     return (
         <div className="creator-tab-content">
+            <div className="filter-bar-clean animate-fade-in">
+                <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        <Filter size={16} color="var(--color-text-tertiary)" />
+                        <select
+                            className="clean-select"
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                        >
+                            <option value="all">All Statuses</option>
+                            <option value="pending">Pending Approval</option>
+                            <option value="negotiation">Negotiation</option>
+                            <option value="deal_accepted">Deal Accepted</option>
+                            <option value="script_pending">Script Phase</option>
+                            <option value="content_pending">Content Phase</option>
+                            <option value="content_live">Live / Completed</option>
+                        </select>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        <ArrowUpDown size={16} color="var(--color-text-tertiary)" />
+                        <select
+                            className="clean-select"
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                        >
+                            <option value="latest">Latest First</option>
+                            <option value="amount_high">Amount: High to Low</option>
+                            <option value="amount_low">Amount: Low to High</option>
+                            <option value="deadline">Deadline: Soonest First</option>
+                            <option value="brand">Brand (A-Z)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)' }}>
+                    Showing <strong>{filteredCampaigns.length}</strong> campaigns
+                </div>
+            </div>
+
             <div className="creator-campaigns-list">
                 {filteredCampaigns.length === 0 ? (
                     <div className="empty-state-container" style={{ gridColumn: '1 / -1', padding: 'var(--space-16) var(--space-8)', textAlign: 'center', background: 'var(--color-bg-secondary)', borderRadius: 'var(--radius-xl)', border: '1px solid var(--color-border-subtle)', animation: 'fadeIn 0.5s ease-out' }}>

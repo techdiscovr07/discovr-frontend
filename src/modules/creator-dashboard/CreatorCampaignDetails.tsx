@@ -5,6 +5,7 @@ import {
     ArrowLeft,
     MessageSquare,
     Link as LinkIcon,
+    FileText
 } from 'lucide-react';
 import { CreatorCampaignProvider } from './CreatorCampaignContext';
 
@@ -27,7 +28,8 @@ export const CreatorCampaignDetails: React.FC = () => {
         negotiationStatusKey,
         setModalType,
         isLoading,
-        hasAnyBriefDetails
+        hasAnyBriefDetails,
+        briefDocumentUrl
     } = contextValue;
 
     if (isLoading && !campaignData) {
@@ -127,6 +129,18 @@ export const CreatorCampaignDetails: React.FC = () => {
                                         {negotiationStatus.bid_amount && negotiationStatus.bid_amount > 0 ? 'Update Proposal' : 'Start Negotiation'}
                                     </Button>
                                 )}
+
+                            {briefDocumentUrl && (
+                                <Button
+                                    variant="secondary"
+                                    size="sm"
+                                    onClick={() => window.open(briefDocumentUrl, '_blank')}
+                                    style={{ background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', border: '1px solid rgba(16, 185, 129, 0.2)' }}
+                                >
+                                    <FileText size={14} />
+                                    View Brief
+                                </Button>
+                            )}
 
                             <Button variant="ghost" size="sm">
                                 <MessageSquare size={14} />

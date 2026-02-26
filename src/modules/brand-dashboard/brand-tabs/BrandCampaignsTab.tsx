@@ -5,6 +5,8 @@ import { Button, Modal, LoadingSpinner, Card, CardBody } from '../../../componen
 import {
     Calendar,
     Info,
+    Filter,
+    ArrowUpDown
 } from 'lucide-react';
 import { brandApi } from '../../../lib/api';
 
@@ -16,6 +18,7 @@ interface BrandCampaignsTabProps {
 
 interface Campaign {
     id: string;
+    _id?: string;
     name: string;
     brand: string;
     description?: string;
@@ -190,6 +193,8 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
     const [isLoading, setIsLoading] = useState(true);
     const [isMatchingDialogOpen, setIsMatchingDialogOpen] = useState(false);
     const [matchingDialogCampaignName, setMatchingDialogCampaignName] = useState('');
+    const [sortBy, setSortBy] = useState('latest');
+    const [statusFilter, setStatusFilter] = useState('all');
 
     // Use external modal state if provided, otherwise use internal state
     const isModalOpen = externalModalOpen !== undefined ? externalModalOpen : internalModalOpen;
@@ -298,12 +303,49 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
     }, [normalizeStatus]);
 
     const filteredCampaigns = useMemo(() => {
-        const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
-        return safeCampaigns.filter(campaign =>
-            campaign.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            campaign.status?.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-    }, [campaigns, searchQuery]);
+        let list = Array.isArray(campaigns) ? [...campaigns] : [];
+
+        // 1. Text Search
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            list = list.filter(c =>
+                c.name?.toLowerCase().includes(query) ||
+                c.status?.toLowerCase().includes(query) ||
+                c.description?.toLowerCase().includes(query)
+            );
+        }
+
+        // 2. Status Filter
+        if (statusFilter !== 'all') {
+            list = list.filter(c => normalizeStatus(c.status) === statusFilter);
+        }
+
+        // 3. Sorting
+        list.sort((a, b) => {
+            switch (sortBy) {
+                case 'budget_high':
+                    return parseCurrency(b.total_budget ?? b.budget) - parseCurrency(a.total_budget ?? a.budget);
+                case 'budget_low':
+                    return parseCurrency(a.total_budget ?? a.budget) - parseCurrency(b.total_budget ?? b.budget);
+                case 'name':
+                    return (a.name || '').localeCompare(b.name || '');
+                case 'latest':
+                default:
+                    // Default to latest (ID descending)
+                    return String(b.id || b._id).localeCompare(String(a.id || a._id)) * -1; // Wait, b-a for normal desc? 
+                // Actually MongoDB IDs are chronological. 
+                // String(b.id).localeCompare(String(a.id)) would be b > a (later ID)
+            }
+        });
+
+        // For 'latest', we want the NEWEST at the top. 
+        // MongoDB IDs increase over time. So higher ID = newer.
+        if (sortBy === 'latest') {
+            list.sort((a, b) => String(b.id || b._id).localeCompare(String(a.id || a._id)));
+        }
+
+        return list;
+    }, [campaigns, searchQuery, statusFilter, sortBy, normalizeStatus, parseCurrency]);
 
     if (isLoading) {
         return <LoadingSpinner />;
@@ -343,7 +385,48 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
                 </div>
             </Modal>
 
-            <div className="campaigns-container animate-fade-in">
+            <div className="filter-bar-clean animate-fade-in" style={{ marginBottom: 'var(--space-6)' }}>
+                <div style={{ display: 'flex', gap: 'var(--space-4)', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        <Filter size={16} color="var(--color-text-tertiary)" />
+                        <select
+                            className="clean-select"
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value)}
+                        >
+                            <option value="all">All Statuses</option>
+                            <option value="pending">Awaiting Approval</option>
+                            <option value="awaiting_creators">Awaiting Creators</option>
+                            <option value="creator_review">Review Creators</option>
+                            <option value="creator_negotiation">Negotiation</option>
+                            <option value="brief_pending">Brief Pending</option>
+                            <option value="script_review">Script Review</option>
+                            <option value="content_review">Content Review</option>
+                            <option value="completed">Completed</option>
+                        </select>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                        <ArrowUpDown size={16} color="var(--color-text-tertiary)" />
+                        <select
+                            className="clean-select"
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value)}
+                        >
+                            <option value="latest">Latest First</option>
+                            <option value="budget_high">Budget: High to Low</option>
+                            <option value="budget_low">Budget: Low to High</option>
+                            <option value="name">Campaign Name (A-Z)</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-tertiary)' }}>
+                    Showing <strong>{filteredCampaigns.length}</strong> campaigns
+                </div>
+            </div>
+
+            <div className="campaigns-container">
                 {/* Campaigns Grid */}
                 <div className="campaigns-grid">
                     {filteredCampaigns.map((campaign) => (
