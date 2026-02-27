@@ -351,6 +351,7 @@ export const CampaignBriefTab: React.FC<CampaignBriefTabProps> = ({
                                             onFileSelect={(files: File[]) => setBriefDocumentFiles(files)}
                                             label="Brief Document"
                                             description="Upload PDF/Doc/Excel brief (Max 20MB)"
+                                            currentFiles={campaignData.brief_document_url ? [{ name: 'Current Brief Document', url: campaignData.brief_document_url }] : []}
                                         />
                                     </div>
                                 </div>

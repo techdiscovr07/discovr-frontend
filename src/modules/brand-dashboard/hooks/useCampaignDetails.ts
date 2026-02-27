@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { IndianRupee, Zap, Percent, TrendingUp } from 'lucide-react';
 import { brandApi } from '../../../lib/api';
@@ -83,6 +83,18 @@ export const useCampaignDetails = () => {
     const [isCreatorProfileSidebarOpen, setIsCreatorProfileSidebarOpen] = useState(false);
     const [selectedProfileCreator, setSelectedProfileCreator] = useState<any | null>(null);
     const [isAnalyzingCreator, setIsAnalyzingCreator] = useState(false);
+
+    // Refs to track editing state to prevent polling from overwriting local changes
+    const isBriefEditingRef = useRef(isBriefEditing);
+    const isScriptTemplateModalOpenRef = useRef(isScriptTemplateModalOpen);
+
+    useEffect(() => {
+        isBriefEditingRef.current = isBriefEditing;
+    }, [isBriefEditing]);
+
+    useEffect(() => {
+        isScriptTemplateModalOpenRef.current = isScriptTemplateModalOpen;
+    }, [isScriptTemplateModalOpen]);
 
     const handleOpenCreatorProfile = (creator: any) => {
         setSelectedProfileCreator(creator);
@@ -176,7 +188,8 @@ export const useCampaignDetails = () => {
         return { label: status ? status.replace(/_/g, ' ') : 'Pending Review', tone: 'status-planning' };
     };
 
-    const fetchCampaign = async (isSilent = false) => {
+    const fetchCampaign = useCallback(async (isSilent = false) => {
+        if (!id) return;
         try {
             if (!isSilent) setIsLoading(true);
             const response = await brandApi.getCampaigns() as any;
@@ -184,19 +197,27 @@ export const useCampaignDetails = () => {
             const found = campaigns.find((c: any) => c.id === id);
             if (found) {
                 setCampaign(found);
-                setBrandScriptTemplate(found.script_template || '');
-                setIsBriefEditing(!found.brief_completed);
-                setBriefData({
-                    video_title: found.video_title || '',
-                    primary_focus: found.primary_focus || '',
-                    secondary_focus: found.secondary_focus || '',
-                    dos: found.dos || '',
-                    donts: found.donts || '',
-                    cta: found.cta || '',
-                    script_template: found.script_template || '',
-                    sample_video_url: found.sample_video_url || '',
-                    brief_document_url: found.brief_document_url || ''
-                });
+
+                // Only update form-related states if user is NOT editing 
+                // OR if it's a non-silent refresh (initial load/tab change)
+                if (!isSilent || !isScriptTemplateModalOpenRef.current) {
+                    setBrandScriptTemplate(found.script_template || '');
+                }
+
+                if (!isSilent || !isBriefEditingRef.current) {
+                    setIsBriefEditing(!found.brief_completed);
+                    setBriefData({
+                        video_title: found.video_title || '',
+                        primary_focus: found.primary_focus || '',
+                        secondary_focus: found.secondary_focus || '',
+                        dos: found.dos || '',
+                        donts: found.donts || '',
+                        cta: found.cta || '',
+                        script_template: found.script_template || '',
+                        sample_video_url: found.sample_video_url || '',
+                        brief_document_url: found.brief_document_url || ''
+                    });
+                }
             } else {
                 setCampaign(null);
             }
@@ -206,9 +227,9 @@ export const useCampaignDetails = () => {
         } finally {
             if (!isSilent) setIsLoading(false);
         }
-    };
+    }, [id]);
 
-    const fetchTabData = async () => {
+    const fetchTabData = useCallback(async () => {
         if (!id) return;
         try {
             switch (activeTab) {
@@ -232,11 +253,11 @@ export const useCampaignDetails = () => {
         } catch (error) {
             console.error(`Failed to fetch ${activeTab} data:`, error);
         }
-    };
+    }, [id, activeTab]);
 
     useEffect(() => {
         fetchCampaign();
-    }, [id]);
+    }, [fetchCampaign]);
 
     useEffect(() => {
         if (!id || !campaign) return;
@@ -249,7 +270,7 @@ export const useCampaignDetails = () => {
         }, 10000);
 
         return () => clearInterval(intervalId);
-    }, [activeTab, id, campaign?.id]);
+    }, [fetchCampaign, fetchTabData, id, campaign?.id]);
 
     const handleUploadCreatorsSheet = async () => {
         if (!id || creatorsSheetFile.length === 0) {
@@ -554,23 +575,21 @@ export const useCampaignDetails = () => {
 
             const hasFile = briefDocumentFiles.length > 0;
 
+            // Append structured form text if present
+            if (briefData.video_title) formData.append('video_title', briefData.video_title);
+            if (briefData.primary_focus) formData.append('primary_focus', briefData.primary_focus);
+            if (briefData.secondary_focus) formData.append('secondary_focus', briefData.secondary_focus);
+            if (briefData.dos) formData.append('dos', briefData.dos);
+            if (briefData.donts) formData.append('donts', briefData.donts);
+            if (briefData.cta) formData.append('cta', briefData.cta);
+            if (briefData.script_template) formData.append('script_template', briefData.script_template);
+
+            // Append brief document if present
             if (hasFile) {
-                // Option 2: Brief as PDF / Word doc (no form text)
                 formData.append('brief_file', briefDocumentFiles[0]);
-            } else {
-                // Option 1: Structured brief form (no PDF/Word)
-                formData.append('video_title', briefData.video_title || '');
-                formData.append('primary_focus', briefData.primary_focus || '');
-                formData.append('secondary_focus', briefData.secondary_focus || '');
-                formData.append('dos', briefData.dos || '');
-                formData.append('donts', briefData.donts || '');
-                formData.append('cta', briefData.cta || '');
-                if (briefData.script_template) {
-                    formData.append('script_template', briefData.script_template);
-                }
             }
 
-            // Media fields are sent in both modes according to curl examples
+            // Append secondary media fields
             if (briefData.sample_video_url) {
                 formData.append('sample_video_url', briefData.sample_video_url);
             }
@@ -589,6 +608,7 @@ export const useCampaignDetails = () => {
                 setBrandScriptTemplate(updatedCampaign.script_template || '');
                 setIsBriefEditing(false);
                 setBriefDocumentFiles([]);
+                setSampleVideoFiles([]);
                 setBriefData({
                     video_title: updatedCampaign.video_title || '',
                     primary_focus: updatedCampaign.primary_focus || '',
