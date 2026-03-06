@@ -3,7 +3,10 @@ export const DEMO_CAMPAIGN_ID = 'demo-campaign-001';
 export const DEMO_CAMPAIGNS = [
     {
         id: DEMO_CAMPAIGN_ID,
+        title: "L'Oreal Paris - Hyaluronic Acid Serum Launch",
+        name: "L'Oreal Paris - Hyaluronic Acid Serum Launch",
         video_title: "L'Oreal Paris - Hyaluronic Acid Serum Launch",
+        brand: "L'Oreal Paris",
         primary_focus: 'Highlight the instant hydration and skin plumping effect',
         secondary_focus: 'Showcase the lightweight, non-sticky texture',
         dos: 'Show real before/after, apply on damp skin, be authentic about results',
