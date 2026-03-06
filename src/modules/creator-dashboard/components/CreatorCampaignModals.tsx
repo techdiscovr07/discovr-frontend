@@ -42,6 +42,31 @@ export const CreatorCampaignModals: React.FC = () => {
     const [aiVerificationProgress, setAIVerificationProgress] = React.useState(0);
     const [aiVerificationResult, setAIVerificationResult] = React.useState<any>(null);
 
+    const [showAIPrompt, setShowAIPrompt] = React.useState(false);
+    const [aiPrompt, setAiPrompt] = React.useState('');
+    const [isAIGenerating, setIsAIGenerating] = React.useState(false);
+
+    const handleGenerateAIScript = () => {
+        if (!aiPrompt.trim()) return;
+        setIsAIGenerating(true);
+        setTimeout(() => {
+            setIsAIGenerating(false);
+            const brand = briefData?.campaign?.brand_name || campaignData?.brand_name || 'this brand';
+            const product = briefData?.campaign?.title || campaignData?.title || 'product';
+            const focus = briefData?.campaign?.primary_focus || campaignData?.primary_focus || '';
+            setScriptContent(`Hey everyone! 🌟 I wanted to talk to you about the new ${product} from ${brand}!
+
+This is incredible because ${aiPrompt}
+
+Plus, it hits all the right points: 
+${focus}
+
+Don't forget to click the link in my bio to check it out for yourself! ✨`);
+            setShowAIPrompt(false);
+            setAiPrompt('');
+        }, 3000);
+    };
+
     const runAIVerification = () => {
         setIsAIVerifying(true);
         setAIVerificationProgress(0);
@@ -247,10 +272,51 @@ export const CreatorCampaignModals: React.FC = () => {
                                         </div>
                                     </div>
                                 )}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                    <label style={{ fontSize: 'var(--text-sm)', fontWeight: 'var(--font-semibold)', color: 'var(--color-text-primary)' }}>
+                                        {(briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template)
+                                            ? "Review and Edit Script (if needed)"
+                                            : "Script Content"}
+                                    </label>
+                                    <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        onClick={() => setShowAIPrompt(!showAIPrompt)}
+                                        style={{ background: 'rgba(59, 130, 246, 0.1)', color: '#60a5fa', border: '1px solid rgba(59, 130, 246, 0.2)' }}
+                                    >
+                                        <Sparkles size={14} style={{ marginRight: '6px' }} />
+                                        Create with AI
+                                    </Button>
+                                </div>
+
+                                {showAIPrompt && (
+                                    <div style={{
+                                        padding: 'var(--space-4)',
+                                        background: 'rgba(59, 130, 246, 0.05)',
+                                        borderRadius: 'var(--radius-md)',
+                                        border: '1px dashed rgba(59, 130, 246, 0.3)'
+                                    }}>
+                                        <TextArea
+                                            label="AI Prompt"
+                                            placeholder="E.g., Make it energetic, mention I have dry skin, and focus on the hydration..."
+                                            value={aiPrompt}
+                                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setAiPrompt(e.target.value)}
+                                            rows={2}
+                                        />
+                                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'var(--space-3)' }}>
+                                            <Button
+                                                size="sm"
+                                                onClick={handleGenerateAIScript}
+                                                isLoading={isAIGenerating}
+                                                disabled={!aiPrompt.trim()}
+                                            >
+                                                <Sparkles size={14} style={{ marginRight: '6px' }} />
+                                                Generate Script
+                                            </Button>
+                                        </div>
+                                    </div>
+                                )}
                                 <TextArea
-                                    label={(briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template)
-                                        ? "Review and Edit Script (if needed)"
-                                        : "Script Content"}
                                     placeholder={(briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template)
                                         ? "Review the brand template above and make any edits if needed..."
                                         : "Write your campaign script here..."}
