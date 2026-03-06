@@ -110,7 +110,6 @@ export const CampaignCreatorsTab: React.FC<CampaignCreatorsTabProps> = ({
                                     <th>Instagram</th>
                                     <th>Status</th>
                                     <th>Performance</th>
-                                    <th>Efficiency</th>
                                     <th style={{ textAlign: 'right' }}>Actions</th>
                                 </tr>
                             </thead>
@@ -187,21 +186,6 @@ export const CampaignCreatorsTab: React.FC<CampaignCreatorsTabProps> = ({
                                                     </div>
                                                     <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-success)' }}>
                                                         {creator.engagement_rate || creator.commercial || 'N/A'}{creator.engagement_rate ? '%' : ''} ER
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-                                                    <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-primary)' }}>
-                                                        ₹{creator.avg_views && (creator.amount || creator.final_amount)
-                                                            ? (Number(creator.amount || creator.final_amount) / Number(creator.avg_views)).toFixed(2)
-                                                            : '0.00'} CPE
-                                                    </div>
-                                                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
-                                                        ₹{(() => {
-                                                            const amt = Number(creator.amount || creator.final_amount || 0);
-                                                            return amt.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 2 });
-                                                        })()} spent
                                                     </div>
                                                 </div>
                                             </td>
