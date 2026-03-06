@@ -1,5 +1,5 @@
 import { auth } from './firebase';
-import { DEMO_CAMPAIGNS, DEMO_CREATORS, DEMO_BIDS, DEMO_SCRIPTS, DEMO_CONTENT } from './demoData';
+import { DEMO_CAMPAIGNS, DEMO_CREATORS, DEMO_BIDS, DEMO_SCRIPTS, DEMO_CONTENT, DEMO_CREATOR_CAMPAIGNS, DEMO_CREATOR_BID_STATUS } from './demoData';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://discovr-backend.onrender.com';
 
@@ -484,24 +484,13 @@ export const brandApi = {
 /**
  * Creator-specific API calls with simple caching to improve performance
  */
-let campaignsCache: any = null;
-let lastFetchTime = 0;
-const CACHE_DURATION = 60 * 1000; // 1 minute
+// Creator-specific API calls with demo data overrides
 
 export const creatorApi = {
-    getCampaigns: async (forceRefresh = false) => {
-        const now = Date.now();
-        if (!forceRefresh && campaignsCache && (now - lastFetchTime < CACHE_DURATION)) {
-            return campaignsCache;
-        }
-        const data = await request<any>('/creator/campaigns');
-        campaignsCache = data;
-        lastFetchTime = now;
-        return data;
+    getCampaigns: async (_forceRefresh = false) => {
+        return { campaigns: DEMO_CREATOR_CAMPAIGNS };
     },
     invalidateCache: () => {
-        campaignsCache = null;
-        lastFetchTime = 0;
     },
     linkCampaign: async (campaignId: string, creatorToken?: string) => {
         const res = await request<any>('/creator/campaigns/link', {
@@ -511,7 +500,7 @@ export const creatorApi = {
         creatorApi.invalidateCache();
         return res;
     },
-    getCampaignBrief: (campaignId: string) => request<any>(`/creator/campaigns/brief?campaign_id=${campaignId}`),
+    getCampaignBrief: async (_campaignId: string) => ({ brief: DEMO_CAMPAIGNS[0] }),
     submitBid: async (campaignId: string, amount: number) => {
         const res = await request<any>(`/creator/campaigns/bid?campaign_id=${campaignId}`, {
             method: 'POST',
@@ -528,7 +517,7 @@ export const creatorApi = {
         creatorApi.invalidateCache();
         return res;
     },
-    getBidStatus: (campaignId: string) => request<any>(`/creator/campaigns/bid-status?campaign_id=${campaignId}`),
+    getBidStatus: async (_campaignId: string) => ({ bid: DEMO_CREATOR_BID_STATUS }),
     uploadScript: async (campaignId: string, scriptData: string | File) => {
         let options: RequestInit;
 

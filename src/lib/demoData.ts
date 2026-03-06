@@ -14,7 +14,7 @@ export const DEMO_CAMPAIGNS = [
         brand_id: 'TechDiscovr',
         description: 'We are launching the Discovr App and need top tech creators to review it.',
         creator_categories: ['Technology', 'Software', 'Gadgets'],
-        total_budget: '₹5,00,000',
+        total_budget: 500000,
         creator_count: 5,
         go_live_date: '2026-04-01T00:00:00Z',
         status: 'content_review',
@@ -47,3 +47,24 @@ export const DEMO_CONTENT = [
     { id: 'content-001', creator_id: 'creator-001', creator_name: 'Techie Tina', content_url: 'https://youtube.com/shorts/discovr-tina', status: 'pending', content_feedback: '', ai_analysis: 'Lighting is great. Audio is clear. The CTA is visible on screen for 4 seconds.' },
     { id: 'content-002', creator_id: 'creator-002', creator_name: 'Gadget Guru', content_url: 'https://youtube.com/shorts/guru-app', status: 'approved', content_feedback: 'Awesome energy, cleared to post.', ai_analysis: 'Very engaging. High audience retention expected.' }
 ];
+
+export const DEMO_CREATOR_CAMPAIGNS = [
+    {
+        id: DEMO_CAMPAIGN_ID,
+        title: 'Discovr App Launch - Tech First Impressions',
+        brand_name: 'TechDiscovr',
+        status: 'content_review',
+        amount: 15000,
+        go_live_date: '2026-04-01T00:00:00Z',
+        creator_status: 'accepted',
+        match_score: 95
+    }
+];
+
+export const DEMO_CREATOR_BID_STATUS = {
+    campaign_id: DEMO_CAMPAIGN_ID,
+    status: 'accepted',
+    proposed_amount: 15000,
+    counter_amount: 15000,
+    brand_action: 'accept'
+};
