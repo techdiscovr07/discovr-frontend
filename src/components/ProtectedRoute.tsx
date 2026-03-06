@@ -28,9 +28,8 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
     // If no user is logged in, redirect to the appropriate login page
     if (!user) {
-        // Default fallbacks based on the current path
+        // Default fallbacks based on the current path (admin app is separate)
         let targetLogin = '/creator/login';
-        if (location.pathname.startsWith('/admin')) targetLogin = '/admin/login';
         if (location.pathname.startsWith('/brand')) targetLogin = '/brand/login';
 
         return <Navigate to={fallbackPath || targetLogin} state={{ from: location }} replace />;
@@ -49,11 +48,9 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
         if (profile && !allowedRoles.includes(profile.role)) {
             console.warn(`Access denied. User role "${profile.role}" is not in allowed roles:`, allowedRoles);
 
-            // Redirect to user's appropriate dashboard based on their role
+            // Redirect to user's appropriate dashboard (admin uses separate app)
             let redirectPath = '/unauthorized';
-            if (profile.role === 'admin') {
-                redirectPath = '/admin/dashboard';
-            } else if (profile.role === 'brand_owner' || profile.role === 'brand_emp') {
+            if (profile.role === 'brand_owner' || profile.role === 'brand_emp') {
                 redirectPath = '/brand/dashboard';
             } else if (profile.role === 'creator') {
                 redirectPath = '/creator/dashboard';

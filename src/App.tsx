@@ -9,6 +9,7 @@ const BrandLogin = React.lazy(() => import('./modules/landing').then(m => ({ def
 const BrandSignup = React.lazy(() => import('./modules/landing').then(m => ({ default: m.BrandSignup })));
 const CreatorLogin = React.lazy(() => import('./modules/landing').then(m => ({ default: m.CreatorLogin })));
 const CreatorSignup = React.lazy(() => import('./modules/landing').then(m => ({ default: m.CreatorSignup })));
+const CreatorInstagramConnect = React.lazy(() => import('./modules/landing').then(m => ({ default: m.CreatorInstagramConnect })));
 const UnauthorizedPage = React.lazy(() => import('./modules/landing').then(m => ({ default: m.UnauthorizedPage })));
 const ForgotPassword = React.lazy(() => import('./modules/landing').then(m => ({ default: m.ForgotPassword })));
 const ResetPassword = React.lazy(() => import('./modules/landing').then(m => ({ default: m.ResetPassword })));
@@ -41,6 +42,10 @@ function App() {
           <Route path="/brand/signup" element={<BrandSignup />} />
           <Route path="/creator/login" element={<CreatorLogin />} />
           <Route path="/creator/signup" element={<CreatorSignup />} />
+          <Route path="/auth/brand/login" element={<BrandLogin />} />
+          <Route path="/auth/brand/signup" element={<BrandSignup />} />
+          <Route path="/auth/creator/login" element={<CreatorLogin />} />
+          <Route path="/auth/creator/signup" element={<CreatorSignup />} />
           <Route path="/unauthorized" element={<UnauthorizedPage />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
@@ -111,6 +116,14 @@ function App() {
             element={
               <ProtectedRoute allowedRoles={['creator']}>
                 <CreatorDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/creator/connect-instagram"
+            element={
+              <ProtectedRoute allowedRoles={['creator']}>
+                <CreatorInstagramConnect />
               </ProtectedRoute>
             }
           />

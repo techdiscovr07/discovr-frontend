@@ -8,3 +8,4 @@ export { ForgotPassword } from './ForgotPassword';
 export { ResetPassword } from './ResetPassword';
 export { CareersPage } from './CareersPage';
 export { CreatorLandingPage } from './CreatorLandingPage';
+export { CreatorInstagramConnect } from './CreatorInstagramConnect';

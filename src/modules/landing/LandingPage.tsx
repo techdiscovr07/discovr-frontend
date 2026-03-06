@@ -92,7 +92,7 @@ export const LandingPage: React.FC = () => {
                                 <Button
                                     variant="outline"
                                     size="lg"
-                                    onClick={() => navigate('/auth/creator/signup')}
+                                    onClick={() => navigate('/creator/signup')}
                                 >
                                     Join as Creator
                                 </Button>

@@ -2,7 +2,6 @@ import { createContext, useContext, useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import {
     signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
     signOut as firebaseSignOut,
     onAuthStateChanged
 } from 'firebase/auth';
@@ -14,8 +13,8 @@ interface AuthContextType {
     user: User | null;
     profile: any | null;
     loading: boolean;
-    signUp: (email: string, password: string, name: string, role: 'admin' | 'brand_owner' | 'brand_emp' | 'creator') => Promise<void>;
-    signIn: (email: string, password: string, role?: 'admin' | 'brand_owner' | 'brand_emp' | 'creator') => Promise<void>;
+    signUp: (email: string, password: string, name: string, role: 'brand_owner' | 'brand_emp' | 'creator') => Promise<void>;
+    signIn: (email: string, password: string, role?: 'brand_owner' | 'brand_emp' | 'creator') => Promise<void>;
     signOut: () => Promise<void>;
     refreshProfile: () => Promise<void>;
 }
@@ -50,19 +49,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
 
     useEffect(() => {
-        // Set a timeout to ensure loading doesn't hang forever
-        const timeoutId = setTimeout(() => {
-            if (loading) {
-                console.warn('Auth state check timed out. Setting loading to false.');
-                setLoading(false);
-            }
-        }, 5000); // 5 second timeout
+        // Safety timeout: ensure loading never sticks (e.g. backend down or getUserProfile hangs)
+        const safetyTimeoutId = setTimeout(() => {
+            setLoading((prev) => {
+                if (prev) {
+                    console.warn('Auth state check timed out. Proceeding without profile.');
+                    return false;
+                }
+                return prev;
+            });
+        }, 8000);
 
         let unsubscribe: (() => void) | null = null;
 
         try {
             unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-                clearTimeout(timeoutId);
                 setUser(firebaseUser);
                 if (firebaseUser) {
                     try {
@@ -79,39 +80,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             });
         } catch (error) {
             console.error('Failed to set up auth state listener:', error);
-            clearTimeout(timeoutId);
             setLoading(false);
         }
 
         return () => {
-            clearTimeout(timeoutId);
+            clearTimeout(safetyTimeoutId);
             if (unsubscribe) {
                 unsubscribe();
             }
         };
     }, []);
 
-    const signUp = async (email: string, password: string, name: string, role: 'admin' | 'brand_owner' | 'brand_emp' | 'creator') => {
+    const signUp = async (email: string, password: string, name: string, role: 'brand_owner' | 'brand_emp' | 'creator') => {
         // 1. Signup via backend (creates Firebase user and MongoDB record)
-        const response = await signupToBackend(email, password, name, role);
+        await signupToBackend(email, password, name, role);
 
-        // 2. If backend returned ID token, sign in with it
-        if (response.id_token) {
-            // Backend already created the user, we need to sign in
-            const userCredential = await signInWithEmailAndPassword(auth, email, password);
-            setUser(userCredential.user);
-        } else {
-            // Fallback: create Firebase user directly if backend didn't return token
-            const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-            await loginToBackend(role);
-            setUser(userCredential.user);
+        // 2. Backend already created the Firebase user — sign in on the client to set auth state
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        setUser(userCredential.user);
+
+        // 3. Sync role with backend and load profile
+        try {
+            await loginToBackend(role, name);
+        } catch (e) {
+            console.warn('Login to backend after signup:', e);
         }
-
-        // 3. Update profile state
         await refreshProfile();
     };
 
-    const signIn = async (email: string, password: string, role: 'admin' | 'brand_owner' | 'brand_emp' | 'creator' = 'creator') => {
+    const signIn = async (email: string, password: string, role: 'brand_owner' | 'brand_emp' | 'creator' = 'creator') => {
         // 1. Sign in with Firebase
         let userCredential;
         try {
@@ -121,18 +118,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             throw error; // Let formatFirebaseError handle this
         }
 
-        // 2. Sync with backend
+        // 2. Sync with backend (required so profile/role are set)
         try {
             await loginToBackend(role);
             await refreshProfile();
         } catch (error: any) {
-            console.error('Backend Sync Error:', error);
-            // We don't throw here to avoid blocking login if it's just a profile fetch issue
-            // But we should at least have logged in once.
-            // If loginToBackend failed, we might want to know.
-            if (error.message && (error.message.includes('fetch') || error.message.includes('Network'))) {
-                throw new Error('Could not connect to Discovr server. Please try again.');
+            console.error('Backend sync error:', error);
+            const msg = error?.message || '';
+            if (msg.includes('fetch') || msg.includes('Network') || msg.includes('Failed to fetch')) {
+                throw new Error('Could not connect to Discovr server. Is the backend running?');
             }
+            if (msg.toLowerCase().includes('token') || msg.toLowerCase().includes('unauthorized') || msg.includes('401')) {
+                throw new Error(msg || 'Backend could not verify your account. Check that the backend is using the same Firebase project.');
+            }
+            throw error;
         }
 
         setUser(userCredential.user);

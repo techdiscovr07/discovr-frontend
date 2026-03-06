@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Button, Modal } from '../../../components';
-import { IndianRupee, Users, Calendar, Target, Users2, Tag, Info, AlertCircle, Check } from 'lucide-react';
+import { Button, Modal, TextArea } from '../../../components';
+import { IndianRupee, Users, Calendar, Target, Users2, Tag, Info, AlertCircle, Check, Sparkles, BrainCircuit, Rocket, Zap } from 'lucide-react';
 import { brandApi } from '../../../lib/api';
 import { useToast } from '../../../contexts/ToastContext';
 
@@ -13,6 +13,10 @@ interface NewCampaignModalProps {
 export const NewCampaignModal: React.FC<NewCampaignModalProps> = ({ isOpen, onClose, onSuccess }) => {
     const { showToast } = useToast();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isAIModalOpen, setIsAIModalOpen] = useState(false);
+    const [isGeneratingAI, setIsGeneratingAI] = useState(false);
+    const [aiPrompt, setAiPrompt] = useState('');
+    const [generationProgress, setGenerationProgress] = useState(0);
 
     const defaultCategories = [
         'Fashion', 'Beauty', 'Lifestyle', 'Food', 'Travel',
@@ -50,6 +54,71 @@ export const NewCampaignModal: React.FC<NewCampaignModalProps> = ({ isOpen, onCl
             ...formData,
             [e.target.name]: e.target.value
         });
+    };
+
+    const handleAIGenerate = async () => {
+        if (!aiPrompt.trim()) {
+            showToast('Please describe your campaign idea first', 'error');
+            return;
+        }
+
+        setIsGeneratingAI(true);
+        setGenerationProgress(0);
+
+        const interval = setInterval(() => {
+            setGenerationProgress(prev => Math.min(prev + Math.random() * 15, 95));
+        }, 300);
+
+        try {
+            await new Promise(resolve => setTimeout(resolve, 2500));
+
+            const lowerPrompt = aiPrompt.toLowerCase();
+            let suggestedCategories: string[] = ['Lifestyle'];
+            let suggestedBudget = '50000';
+            let suggestedCreators = '10';
+            let suggestedCPV = '0.50';
+            let suggestedRanges = ['10000-50000'];
+
+            if (lowerPrompt.includes('skincare') || lowerPrompt.includes('makeup') || lowerPrompt.includes('beauty')) {
+                suggestedCategories = ['Beauty', 'Lifestyle'];
+            } else if (lowerPrompt.includes('fashion') || lowerPrompt.includes('clothing')) {
+                suggestedCategories = ['Fashion', 'Lifestyle'];
+            } else if (lowerPrompt.includes('tech') || lowerPrompt.includes('gadget') || lowerPrompt.includes('app')) {
+                suggestedCategories = ['Tech'];
+            }
+
+            if (lowerPrompt.includes('high budget') || lowerPrompt.includes('expensive')) {
+                suggestedBudget = '200000';
+                suggestedCreators = '20';
+                suggestedRanges = ['50000-100000', '100000-500000'];
+            }
+
+            const defaultDate = new Date();
+            defaultDate.setDate(defaultDate.getDate() + 30);
+            const dateString = defaultDate.toISOString().split('T')[0];
+
+            setFormData({
+                ...formData,
+                name: `AI: ${aiPrompt.split(' ').slice(0, 3).join(' ')}...`,
+                description: `Campaign Objective: ${aiPrompt}\n\nOur AI has optimized this campaign for the ${suggestedCategories.join('/')} market.`,
+                totalBudget: suggestedBudget,
+                creatorCount: suggestedCreators,
+                goLiveDate: dateString,
+                cpv: suggestedCPV,
+                creatorCategories: suggestedCategories,
+                followerRanges: suggestedRanges
+            });
+
+            setGenerationProgress(100);
+            setTimeout(() => {
+                setIsGeneratingAI(false);
+                setIsAIModalOpen(false);
+                setAiPrompt('');
+                showToast('Campaign pre-filled by AI!', 'success');
+            }, 500);
+        } finally {
+            clearInterval(interval);
+        }
     };
 
     const handleAddCategory = () => {
@@ -154,335 +223,411 @@ export const NewCampaignModal: React.FC<NewCampaignModalProps> = ({ isOpen, onCl
     };
 
     return (
-        <Modal
-            isOpen={isOpen}
-            onClose={onClose}
-            title="Create New Campaign"
-            subtitle="Set up your influencer marketing campaign"
-            size="xl"
-        >
-            <form onSubmit={handleSubmit} className="campaign-form">
-                {/* Campaign Details */}
-                <div className="form-section">
-                    <h3 className="form-section-title">Campaign Details</h3>
-
-                    <div className="form-group">
-                        <label htmlFor="name">
-                            Campaign Name *
-                            <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
-                                Give your campaign a memorable name
-                            </span>
-                        </label>
-                        <input
-                            type="text"
-                            id="name"
-                            name="name"
-                            value={formData.name}
-                            onChange={handleChange}
-                            placeholder="e.g., Summer Collection Launch 2024"
-                            required
-                            className="form-input"
-                            maxLength={100}
-                        />
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="description">
-                            Description *
-                            <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
-                                Explain your campaign goals and what you want to achieve
-                            </span>
-                        </label>
-                        <textarea
-                            id="description"
-                            name="description"
-                            value={formData.description}
-                            onChange={handleChange}
-                            placeholder="Describe your campaign goals, target audience, key messaging, and what success looks like..."
-                            rows={4}
-                            required
-                            className="form-input"
-                            maxLength={1000}
-                        />
-                        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-1)', textAlign: 'right' }}>
-                            {formData.description.length}/1000 characters
-                        </p>
-                    </div>
-
-                    <div className="form-group">
-                        <label htmlFor="creatorCategories">
-                            <Tag size={16} style={{ display: 'inline', marginRight: 'var(--space-2)' }} />
-                            Creator Categories *
-                            <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
-                                Select categories that match your target creators (multiple selection)
-                            </span>
-                        </label>
-                        <div className="category-pill-selection">
-                            {availableCategories.map(category => {
-                                const isActive = formData.creatorCategories.includes(category);
-                                return (
-                                    <button
-                                        key={category}
-                                        type="button"
-                                        className={`category-pill ${isActive ? 'active' : ''}`}
-                                        onClick={() => {
-                                            setFormData(prev => ({
-                                                ...prev,
-                                                creatorCategories: prev.creatorCategories.includes(category)
-                                                    ? prev.creatorCategories.filter(c => c !== category)
-                                                    : [...prev.creatorCategories, category]
-                                            }));
-                                        }}
-                                    >
-                                        {category}
-                                        {isActive && <Check size={14} />}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        {formData.creatorCategories.length === 0 && (
-                            <p style={{
-                                marginTop: 'var(--space-1)',
-                                fontSize: 'var(--text-sm)',
-                                color: 'var(--color-error)',
+        <>
+            <Modal
+                isOpen={isOpen}
+                onClose={onClose}
+                title={
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingRight: 'var(--space-8)' }}>
+                        <span>Create New Campaign</span>
+                        <Button
+                            size="sm"
+                            onClick={() => setIsAIModalOpen(true)}
+                            style={{
+                                background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))',
+                                border: 'none',
+                                color: 'white',
                                 display: 'flex',
                                 alignItems: 'center',
-                                gap: 'var(--space-1)'
-                            }}>
-                                <Info size={14} />
-                                Please select at least one category
-                            </p>
-                        )}
-                        <div className="category-add-row">
-                            <input
-                                type="text"
-                                value={newCategory}
-                                onChange={(e) => {
-                                    setNewCategory(e.target.value);
-                                    if (newCategoryError) setNewCategoryError('');
-                                }}
-                                onKeyDown={(e) => {
-                                    if (e.key === 'Enter') {
-                                        e.preventDefault();
-                                        handleAddCategory();
-                                    }
-                                }}
-                                placeholder="Add your own category (e.g., Finance)"
-                                className="form-input"
-                            />
-                            <Button
-                                type="button"
-                                variant="secondary"
-                                onClick={handleAddCategory}
-                            >
-                                Add Category
-                            </Button>
-                        </div>
-                        {newCategoryError && (
-                            <p className="category-add-error">{newCategoryError}</p>
-                        )}
+                                gap: 'var(--space-2)',
+                                boxShadow: '0 4px 10px rgba(168, 85, 247, 0.2)',
+                                padding: 'var(--space-2) var(--space-4)',
+                                transform: 'scale(0.95)'
+                            }}
+                        >
+                            <Sparkles size={14} />
+                            Magic AI
+                        </Button>
                     </div>
+                }
+                subtitle="Set up your influencer marketing campaign"
+                size="xl"
+            >
+                <form onSubmit={handleSubmit} className="campaign-form">
+                    {/* Campaign Details */}
+                    <div className="form-section">
+                        <h3 className="form-section-title">Campaign Details</h3>
 
-                    <div className="form-group">
-                        <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
-                            <Users2 size={16} />
-                            Follower Range *
-                            <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
-                                Select one or more target creator tiers
-                            </span>
-                        </label>
-                        <div className="ncf-range-options">
-                            {followerRangeOptions.map(opt => {
-                                const isActive = formData.followerRanges.includes(opt.value);
-                                return (
-                                    <button
-                                        key={opt.value}
-                                        type="button"
-                                        className={`ncf-range-option ${isActive ? 'ncf-range-option--active' : ''}`}
-                                        onClick={() => setFormData(prev => ({
-                                            ...prev,
-                                            followerRanges: prev.followerRanges.includes(opt.value)
-                                                ? prev.followerRanges.filter(v => v !== opt.value)
-                                                : [...prev.followerRanges, opt.value]
-                                        }))}
-                                    >
-                                        <span className="ncf-range-option-label">{opt.label}</span>
-                                        <span className="ncf-range-option-desc">{opt.desc}</span>
-                                        {isActive && <Check size={14} className="ncf-range-option-check" />}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                        {formData.followerRanges.length === 0 && (
-                            <p style={{
-                                marginTop: 'var(--space-1)',
-                                fontSize: 'var(--text-sm)',
-                                color: 'var(--color-error)',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 'var(--space-1)'
-                            }}>
-                                <AlertCircle size={14} />
-                                Please select at least one range
-                            </p>
-                        )}
-                    </div>
-                </div>
-
-                {/* Budget & Timeline */}
-                <div className="form-section">
-                    <h3 className="form-section-title">Budget & Timeline</h3>
-
-                    <div className="form-row">
                         <div className="form-group">
-                            <label htmlFor="totalBudget">
-                                <IndianRupee size={16} />
-                                Total Budget (INR) *
+                            <label htmlFor="name">
+                                Campaign Name *
                                 <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
-                                    Total amount allocated for this campaign
+                                    Give your campaign a memorable name
                                 </span>
                             </label>
                             <input
-                                type="number"
-                                id="totalBudget"
-                                name="totalBudget"
-                                value={formData.totalBudget}
+                                type="text"
+                                id="name"
+                                name="name"
+                                value={formData.name}
                                 onChange={handleChange}
-                                placeholder="50000"
-                                min="0"
-                                step="0.01"
+                                placeholder="e.g., Summer Collection Launch 2024"
                                 required
                                 className="form-input"
+                                maxLength={100}
                             />
-                            {formData.totalBudget && parseFloat(formData.totalBudget) > 0 && formData.creatorCount && parseInt(formData.creatorCount) > 0 && (
-                                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-1)' }}>
-                                    ≈ ₹{Math.round(parseFloat(formData.totalBudget) / parseInt(formData.creatorCount)).toLocaleString()} per creator
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="description">
+                                Description *
+                                <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
+                                    Explain your campaign goals and what you want to achieve
+                                </span>
+                            </label>
+                            <textarea
+                                id="description"
+                                name="description"
+                                value={formData.description}
+                                onChange={handleChange}
+                                placeholder="Describe your campaign goals, target audience, key messaging, and what success looks like..."
+                                rows={4}
+                                required
+                                className="form-input"
+                                maxLength={1000}
+                            />
+                            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-1)', textAlign: 'right' }}>
+                                {formData.description.length}/1000 characters
+                            </p>
+                        </div>
+
+                        <div className="form-group">
+                            <label htmlFor="creatorCategories">
+                                <Tag size={16} style={{ display: 'inline', marginRight: 'var(--space-2)' }} />
+                                Creator Categories *
+                                <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
+                                    Select categories that match your target creators (multiple selection)
+                                </span>
+                            </label>
+                            <div className="category-pill-selection">
+                                {availableCategories.map(category => {
+                                    const isActive = formData.creatorCategories.includes(category);
+                                    return (
+                                        <button
+                                            key={category}
+                                            type="button"
+                                            className={`category-pill ${isActive ? 'active' : ''}`}
+                                            onClick={() => {
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    creatorCategories: prev.creatorCategories.includes(category)
+                                                        ? prev.creatorCategories.filter(c => c !== category)
+                                                        : [...prev.creatorCategories, category]
+                                                }));
+                                            }}
+                                        >
+                                            {category}
+                                            {isActive && <Check size={14} />}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            {formData.creatorCategories.length === 0 && (
+                                <p style={{
+                                    marginTop: 'var(--space-1)',
+                                    fontSize: 'var(--text-sm)',
+                                    color: 'var(--color-error)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 'var(--space-1)'
+                                }}>
+                                    <Info size={14} />
+                                    Please select at least one category
                                 </p>
+                            )}
+                            <div className="category-add-row">
+                                <input
+                                    type="text"
+                                    value={newCategory}
+                                    onChange={(e) => {
+                                        setNewCategory(e.target.value);
+                                        if (newCategoryError) setNewCategoryError('');
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') {
+                                            e.preventDefault();
+                                            handleAddCategory();
+                                        }
+                                    }}
+                                    placeholder="Add your own category (e.g., Finance)"
+                                    className="form-input"
+                                />
+                                <Button
+                                    type="button"
+                                    variant="secondary"
+                                    onClick={handleAddCategory}
+                                >
+                                    Add Category
+                                </Button>
+                            </div>
+                            {newCategoryError && (
+                                <p className="category-add-error">{newCategoryError}</p>
                             )}
                         </div>
 
                         <div className="form-group">
-                            <label htmlFor="creatorCount">
-                                <Users size={16} />
-                                Number of Creators *
-                                <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
-                                    How many creators do you want to work with?
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-2)' }}>
+                                <Users2 size={16} />
+                                Follower Range *
+                                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
+                                    Select one or more target creator tiers
                                 </span>
                             </label>
-                            <input
-                                type="number"
-                                id="creatorCount"
-                                name="creatorCount"
-                                value={formData.creatorCount}
-                                onChange={handleChange}
-                                placeholder="10"
-                                min="1"
-                                required
-                                className="form-input"
-                            />
+                            <div className="ncf-range-options">
+                                {followerRangeOptions.map(opt => {
+                                    const isActive = formData.followerRanges.includes(opt.value);
+                                    return (
+                                        <button
+                                            key={opt.value}
+                                            type="button"
+                                            className={`ncf-range-option ${isActive ? 'ncf-range-option--active' : ''}`}
+                                            onClick={() => setFormData(prev => ({
+                                                ...prev,
+                                                followerRanges: prev.followerRanges.includes(opt.value)
+                                                    ? prev.followerRanges.filter(v => v !== opt.value)
+                                                    : [...prev.followerRanges, opt.value]
+                                            }))}
+                                        >
+                                            <span className="ncf-range-option-label">{opt.label}</span>
+                                            <span className="ncf-range-option-desc">{opt.desc}</span>
+                                            {isActive && <Check size={14} className="ncf-range-option-check" />}
+                                        </button>
+                                    );
+                                })}
+                            </div>
+                            {formData.followerRanges.length === 0 && (
+                                <p style={{
+                                    marginTop: 'var(--space-1)',
+                                    fontSize: 'var(--text-sm)',
+                                    color: 'var(--color-error)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 'var(--space-1)'
+                                }}>
+                                    <AlertCircle size={14} />
+                                    Please select at least one range
+                                </p>
+                            )}
                         </div>
                     </div>
 
-                    <div className="form-row">
-                        <div className="form-group">
-                            <label htmlFor="goLiveDate">
-                                <Calendar size={16} />
-                                Go Live Date *
-                                <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
-                                    When should creators publish content?
-                                </span>
-                            </label>
-                            <input
-                                type="date"
-                                id="goLiveDate"
-                                name="goLiveDate"
-                                value={formData.goLiveDate}
-                                onChange={handleChange}
-                                required
-                                className="form-input"
-                                min={new Date().toISOString().split('T')[0]}
-                            />
+                    {/* Budget & Timeline */}
+                    <div className="form-section">
+                        <h3 className="form-section-title">Budget & Timeline</h3>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="totalBudget">
+                                    <IndianRupee size={16} />
+                                    Total Budget (INR) *
+                                    <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
+                                        Total amount allocated for this campaign
+                                    </span>
+                                </label>
+                                <input
+                                    type="number"
+                                    id="totalBudget"
+                                    name="totalBudget"
+                                    value={formData.totalBudget}
+                                    onChange={handleChange}
+                                    placeholder="50000"
+                                    min="0"
+                                    step="0.01"
+                                    required
+                                    className="form-input"
+                                />
+                                {formData.totalBudget && parseFloat(formData.totalBudget) > 0 && formData.creatorCount && parseInt(formData.creatorCount) > 0 && (
+                                    <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-1)' }}>
+                                        ≈ ₹{Math.round(parseFloat(formData.totalBudget) / parseInt(formData.creatorCount)).toLocaleString()} per creator
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="creatorCount">
+                                    <Users size={16} />
+                                    Number of Creators *
+                                    <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
+                                        How many creators do you want to work with?
+                                    </span>
+                                </label>
+                                <input
+                                    type="number"
+                                    id="creatorCount"
+                                    name="creatorCount"
+                                    value={formData.creatorCount}
+                                    onChange={handleChange}
+                                    placeholder="10"
+                                    min="1"
+                                    required
+                                    className="form-input"
+                                />
+                            </div>
                         </div>
 
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label htmlFor="goLiveDate">
+                                    <Calendar size={16} />
+                                    Go Live Date *
+                                    <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
+                                        When should creators publish content?
+                                    </span>
+                                </label>
+                                <input
+                                    type="date"
+                                    id="goLiveDate"
+                                    name="goLiveDate"
+                                    value={formData.goLiveDate}
+                                    onChange={handleChange}
+                                    required
+                                    className="form-input"
+                                    min={new Date().toISOString().split('T')[0]}
+                                />
+                            </div>
+
+                            <div className="form-group">
+                                <label htmlFor="cpv">
+                                    <Target size={16} />
+                                    Cost Per View (CPV) *
+                                    <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
+                                        Maximum cost per view in INR
+                                    </span>
+                                </label>
+                                <input
+                                    type="number"
+                                    id="cpv"
+                                    name="cpv"
+                                    value={formData.cpv}
+                                    onChange={handleChange}
+                                    placeholder="0.50"
+                                    min="0"
+                                    step="0.01"
+                                    required
+                                    className="form-input"
+                                />
+                                <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-1)' }}>
+                                    The maximum amount you're willing to pay per view
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Requirements */}
+                    <div className="form-section">
+                        <h3 className="form-section-title">Content Requirements (Optional)</h3>
+
                         <div className="form-group">
-                            <label htmlFor="cpv">
-                                <Target size={16} />
-                                Cost Per View (CPV) *
+                            <label htmlFor="requirements">
+                                Requirements & Guidelines
                                 <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
-                                    Maximum cost per view in INR
+                                    Add specific requirements, hashtags, mentions, dos and don'ts
                                 </span>
                             </label>
-                            <input
-                                type="number"
-                                id="cpv"
-                                name="cpv"
-                                value={formData.cpv}
+                            <textarea
+                                id="requirements"
+                                name="requirements"
+                                value={formData.requirements}
                                 onChange={handleChange}
-                                placeholder="0.50"
-                                min="0"
-                                step="0.01"
-                                required
+                                placeholder="Example:&#10;- Use hashtags: #Summer2024 #Fashion&#10;- Mention @yourbrand in caption&#10;- Include product link in bio&#10;- Do: Show product in natural settings&#10;- Don't: Use filters that change product colors"
+                                rows={6}
                                 className="form-input"
                             />
                             <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-1)' }}>
-                                The maximum amount you're willing to pay per view
+                                These guidelines will be shared with creators when they join your campaign
                             </p>
                         </div>
                     </div>
-                </div>
 
-                {/* Requirements */}
-                <div className="form-section">
-                    <h3 className="form-section-title">Content Requirements (Optional)</h3>
+                    {/* Actions */}
+                    <div className="form-actions" style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        paddingTop: 'var(--space-4)',
+                        borderTop: '1px solid var(--color-border)',
+                        marginTop: 'var(--space-4)'
+                    }}>
+                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
+                            * Required fields
+                        </div>
+                        <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
+                            <Button type="button" variant="ghost" onClick={onClose} disabled={isSubmitting}>
+                                Cancel
+                            </Button>
+                            <Button
+                                type="submit"
+                                isLoading={isSubmitting}
+                                disabled={isSubmitting || formData.creatorCategories.length === 0}
+                            >
+                                {isSubmitting ? 'Creating...' : 'Create Campaign'}
+                            </Button>
+                        </div>
+                    </div>
+                </form>
+            </Modal>
 
-                    <div className="form-group">
-                        <label htmlFor="requirements">
-                            Requirements & Guidelines
-                            <span style={{ marginLeft: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', fontWeight: 'normal' }}>
-                                Add specific requirements, hashtags, mentions, dos and don'ts
-                            </span>
-                        </label>
-                        <textarea
-                            id="requirements"
-                            name="requirements"
-                            value={formData.requirements}
-                            onChange={handleChange}
-                            placeholder="Example:&#10;- Use hashtags: #Summer2024 #Fashion&#10;- Mention @yourbrand in caption&#10;- Include product link in bio&#10;- Do: Show product in natural settings&#10;- Don't: Use filters that change product colors"
-                            rows={6}
-                            className="form-input"
+            {/* AI Builder Prompt Modal */}
+            <Modal
+                isOpen={isAIModalOpen}
+                onClose={() => !isGeneratingAI && setIsAIModalOpen(false)}
+                title="AI Magic Campaign Builder"
+                subtitle="Describe your idea and we'll generate the details"
+                size="md"
+            >
+                {isGeneratingAI ? (
+                    <div style={{ textAlign: 'center', padding: 'var(--space-6) 0' }}>
+                        <div style={{ position: 'relative', width: '70px', height: '70px', margin: '0 auto var(--space-4)' }}>
+                            <div style={{
+                                width: '100%',
+                                height: '100%',
+                                borderRadius: '50%',
+                                border: '3px solid var(--color-bg-secondary)',
+                                borderTopColor: 'var(--color-primary)',
+                                animation: 'spin 1.2s linear infinite'
+                            }} />
+                            <BrainCircuit size={28} style={{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', color: 'var(--color-primary)' }} />
+                        </div>
+                        <h3>Building Campaign...</h3>
+                        <div style={{ width: '100%', height: '6px', background: 'var(--color-bg-secondary)', borderRadius: '999px', overflow: 'hidden', marginTop: 'var(--space-4)' }}>
+                            <div style={{ width: `${generationProgress}%`, height: '100%', background: 'linear-gradient(90deg, var(--color-primary), var(--color-accent))', transition: 'width 0.4s ease' }} />
+                        </div>
+                    </div>
+                ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                        <div style={{ padding: 'var(--space-3)', background: 'rgba(168, 85, 247, 0.05)', borderRadius: 'var(--radius-md)', border: '1px dashed var(--color-accent)', display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
+                            <Zap size={14} style={{ color: 'var(--color-warning)' }} />
+                            <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>Describe your product and what you want to achieve.</p>
+                        </div>
+                        <TextArea
+                            label="Your Campaign Idea"
+                            placeholder="e.g., A luxury watch launch for high-income professionals. Focus on precision and status."
+                            value={aiPrompt}
+                            onChange={(e: any) => setAiPrompt(e.target.value)}
+                            rows={4}
+                            autoFocus
                         />
-                        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-1)' }}>
-                            These guidelines will be shared with creators when they join your campaign
-                        </p>
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
+                            <Button variant="ghost" onClick={() => setIsAIModalOpen(false)}>Cancel</Button>
+                            <Button onClick={handleAIGenerate} style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))', border: 'none', color: 'white' }}>
+                                <Rocket size={16} style={{ marginRight: '8px' }} />
+                                Magic Generate
+                            </Button>
+                        </div>
                     </div>
-                </div>
-
-                {/* Actions */}
-                <div className="form-actions" style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    paddingTop: 'var(--space-4)',
-                    borderTop: '1px solid var(--color-border)',
-                    marginTop: 'var(--space-4)'
-                }}>
-                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
-                        * Required fields
-                    </div>
-                    <div style={{ display: 'flex', gap: 'var(--space-3)' }}>
-                        <Button type="button" variant="ghost" onClick={onClose} disabled={isSubmitting}>
-                            Cancel
-                        </Button>
-                        <Button
-                            type="submit"
-                            isLoading={isSubmitting}
-                            disabled={isSubmitting || formData.creatorCategories.length === 0}
-                        >
-                            {isSubmitting ? 'Creating...' : 'Create Campaign'}
-                        </Button>
-                    </div>
-                </div>
-            </form>
-        </Modal>
+                )}
+            </Modal>
+            <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+        </>
     );
 };

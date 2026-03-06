@@ -44,7 +44,11 @@ export function formatFirebaseError(error: any): string {
 
     if (errorMessage.toLowerCase().includes('network') || errorMessage.toLowerCase().includes('fetch')) {
         if (errorMessage.includes('Discovr server')) return errorMessage;
-        return 'Network error: Could not reach the server. Please check your internet and try again.';
+        return 'Network error: Could not reach the server. Is the backend running at ' + (import.meta.env.VITE_API_URL || 'the API URL') + '?';
+    }
+
+    if (errorMessage.toLowerCase().includes('token') || errorMessage.toLowerCase().includes('verify') || errorMessage.includes('401')) {
+        return 'Backend could not verify your account. Ensure the backend is running and using the same Firebase project as this app.';
     }
 
     // Remove "Firebase: Error" prefix if present

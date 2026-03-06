@@ -1,5 +1,6 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
+import { getAnalytics, isSupported, type Analytics } from 'firebase/analytics';
 import type { FirebaseApp } from 'firebase/app';
 import type { Auth } from 'firebase/auth';
 
@@ -35,10 +36,17 @@ if (missingVars.length > 0 && import.meta.env.DEV) {
 // Initialize Firebase (singleton pattern)
 let app!: FirebaseApp;
 let auth!: Auth;
+let analytics: Analytics | null = null;
 
 try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApps()[0];
     auth = getAuth(app);
+    // Analytics only in browser and when supported (e.g. not in SSR)
+    if (typeof window !== 'undefined') {
+        isSupported().then((yes) => {
+            if (yes) analytics = getAnalytics(app);
+        });
+    }
 } catch (error) {
     console.error('Firebase initialization error:', error);
     // In development, show a helpful error message
@@ -48,4 +56,4 @@ try {
     throw error;
 }
 
-export { app, auth };
+export { app, auth, analytics };

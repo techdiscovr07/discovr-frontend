@@ -331,18 +331,10 @@ export const BrandCampaignsTab: React.FC<BrandCampaignsTabProps> = ({
                     return (a.name || '').localeCompare(b.name || '');
                 case 'latest':
                 default:
-                    // Default to latest (ID descending)
-                    return String(b.id || b._id).localeCompare(String(a.id || a._id)) * -1; // Wait, b-a for normal desc? 
-                // Actually MongoDB IDs are chronological. 
-                // String(b.id).localeCompare(String(a.id)) would be b > a (later ID)
+                    // MongoDB IDs are chronological. Higher ID = newer.
+                    return String(b.id || b._id).localeCompare(String(a.id || a._id));
             }
         });
-
-        // For 'latest', we want the NEWEST at the top. 
-        // MongoDB IDs increase over time. So higher ID = newer.
-        if (sortBy === 'latest') {
-            list.sort((a, b) => String(b.id || b._id).localeCompare(String(a.id || a._id)));
-        }
 
         return list;
     }, [campaigns, searchQuery, statusFilter, sortBy, normalizeStatus, parseCurrency]);

@@ -15,7 +15,7 @@ export const CreatorSignup: React.FC = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    
+
     // Get campaign_id from URL if present (for campaign-specific signup)
     const campaignId = searchParams.get('campaign_id');
 
@@ -39,12 +39,12 @@ export const CreatorSignup: React.FC = () => {
 
         try {
             await signUp(email, password, name, 'creator');
-            
+
             // If signed up from campaign link, navigate to campaign details
             if (campaignId) {
                 navigate(`/creator/campaign/${campaignId}`);
             } else {
-                navigate('/creator/dashboard');
+                navigate('/creator/connect-instagram');
             }
         } catch (err: any) {
             console.error('Creator signup failed:', err);
@@ -68,7 +68,7 @@ export const CreatorSignup: React.FC = () => {
                                 </div>
                                 <h1 className="creator-login-title">Creator Signup</h1>
                                 <p className="creator-login-description">
-                                    {campaignId 
+                                    {campaignId
                                         ? "You've been selected for a campaign! Create your account to get started."
                                         : "Create your creator account to join campaigns and collaborate with brands."
                                     }
@@ -133,10 +133,10 @@ export const CreatorSignup: React.FC = () => {
                             </form>
 
                             <div style={{ marginTop: 'var(--space-4)', textAlign: 'center' }}>
-                                <Link 
-                                    to="/creator/login" 
-                                    style={{ 
-                                        color: 'var(--color-primary)', 
+                                <Link
+                                    to="/creator/login"
+                                    style={{
+                                        color: 'var(--color-primary)',
                                         textDecoration: 'none',
                                         display: 'inline-flex',
                                         alignItems: 'center',

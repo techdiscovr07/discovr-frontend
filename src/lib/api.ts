@@ -13,10 +13,17 @@ async function getAuthToken(): Promise<string> {
     return await user.getIdToken();
 }
 
+/** Options for the request helper (e.g. skip global 401 sign-out so login can show errors) */
+type RequestConfig = { skip401Redirect?: boolean };
+
 /**
  * Base request function that acts as an interceptor
  */
-async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+async function request<T>(
+    endpoint: string,
+    options: RequestInit = {},
+    config?: RequestConfig
+): Promise<T> {
     const token = await getAuthToken();
 
     const headers: any = {
@@ -40,15 +47,22 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
             headers,
         });
 
-        // Global Error Handling
+        // Global Error Handling (skip redirect for login so user sees error on page)
         if (response.status === 401) {
-            // Handle unauthorized - maybe redirect to login or sign out
-            console.warn('Unauthorized request. Possible token expiry.');
-            // We can't use navigate() here as it's not a component, 
-            // but we can trigger a sign out which will be caught by ProtectedRoute
-            await auth.signOut();
-            window.location.href = '/'; // Fallback to landing
-            throw new Error('Session expired. Please login again.');
+            const errorBody = await response.text();
+            let errMsg = 'Session expired. Please login again.';
+            try {
+                const parsed = JSON.parse(errorBody);
+                errMsg = parsed.error || parsed.message || errMsg;
+            } catch {
+                if (errorBody) errMsg = errorBody;
+            }
+            if (!config?.skip401Redirect) {
+                console.warn('Unauthorized request. Possible token expiry.');
+                await auth.signOut();
+                window.location.href = '/';
+            }
+            throw new Error(errMsg);
         }
 
         if (!response.ok) {
@@ -56,7 +70,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
             let errorMessage = `API Error: ${response.status}`;
             try {
                 const parsedError = JSON.parse(errorBody);
-                errorMessage = parsedError.message || errorMessage;
+                errorMessage = parsedError.error || parsedError.message || errorMessage;
             } catch {
                 errorMessage = errorBody || errorMessage;
             }
@@ -78,7 +92,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
 /**
  * Signup new user (creates Firebase user and MongoDB record)
  */
-export async function signupToBackend(email: string, password: string, name: string, role: 'admin' | 'brand_owner' | 'brand_emp' | 'creator') {
+export async function signupToBackend(email: string, password: string, name: string, role: 'brand_owner' | 'brand_emp' | 'creator') {
     const response = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: 'POST',
         headers: {
@@ -103,13 +117,18 @@ export async function signupToBackend(email: string, password: string, name: str
 }
 
 /**
- * Login to backend (creates user in MongoDB if new)
+ * Login to backend (creates user in MongoDB if new).
+ * Uses skip401Redirect so login page can show backend errors instead of redirecting.
  */
-export async function loginToBackend(role: 'admin' | 'brand_owner' | 'brand_emp' | 'creator') {
-    return request('/auth/login', {
-        method: 'POST',
-        body: JSON.stringify({ role })
-    });
+export async function loginToBackend(role: 'brand_owner' | 'brand_emp' | 'creator', name?: string) {
+    return request(
+        '/auth/login',
+        {
+            method: 'POST',
+            body: JSON.stringify({ role, name }),
+        },
+        { skip401Redirect: true }
+    );
 }
 
 /**
@@ -156,6 +175,7 @@ export async function updateProfile(data: {
     location?: string;
     website?: string;
     instagram?: string;
+    insta_connected?: boolean;
 }) {
     return request('/api/profile', {
         method: 'PUT',
@@ -452,82 +472,6 @@ export const brandApi = {
     analyzeCreator: (profileUrl: string) => request<any>('/brand/creators/analyze', {
         method: 'POST',
         body: JSON.stringify({ profile_url: profileUrl })
-    }),
-};
-
-/**
- * Admin-specific API calls
- */
-export const adminApi = {
-    getWaitlist: () => request<any>('/admin/waitlist/list'),
-    getBrands: () => request<any[]>('/admin/brands/list'),
-    createBrand: (data: any) => request<any>('/admin/brands', {
-        method: 'POST',
-        body: JSON.stringify(data)
-    }),
-    createBrandOwner: (data: { brand_id: string; email: string; password: string; name?: string }) => request<any>('/admin/brands/owners', {
-        method: 'POST',
-        body: JSON.stringify(data)
-    }),
-    assignBrandEmployee: (data: { brand_id: string; email?: string; uid?: string }) => request<any>('/admin/brands/employees/assign', {
-        method: 'POST',
-        body: JSON.stringify(data)
-    }),
-    updateBrand: (data: any) => request<any>('/admin/brands/update', {
-        method: 'POST',
-        body: JSON.stringify(data)
-    }),
-    deleteBrand: (brandId: string) => request<any>('/admin/brands/delete', {
-        method: 'POST',
-        body: JSON.stringify({ brand_id: brandId })
-    }),
-    getCampaigns: (filters?: { brand_id?: string; campaign_id?: string }) => {
-        const params = new URLSearchParams();
-        if (filters?.brand_id) params.append('brand_id', filters.brand_id);
-        if (filters?.campaign_id) params.append('campaign_id', filters.campaign_id);
-        const query = params.toString();
-        return request<any>(`/admin/campaigns${query ? `?${query}` : ''}`);
-    },
-    getCampaignCreators: (campaignId: string) => request<any>(`/admin/campaigns/creators?campaign_id=${campaignId}`),
-    uploadCreatorsSheet: (campaignId: string, file: File) => {
-        const formData = new FormData();
-        formData.append('campaign_id', campaignId);
-        formData.append('creators_sheet', file);
-        return request<any>('/admin/campaigns/creators/upload', {
-            method: 'POST',
-            body: formData,
-            headers: {
-                'Content-Type': undefined as any,
-            }
-        });
-    },
-    finalizeCreators: (campaignId: string) => request<any>(`/admin/campaigns/finalize-creators?campaign_id=${campaignId}`, {
-        method: 'POST',
-        body: JSON.stringify({ campaign_id: campaignId })
-    }),
-    notifyCreatorsBrief: (campaignId: string) => request<any>(`/admin/campaigns/creators/notify-brief?campaign_id=${campaignId}`, {
-        method: 'POST',
-        body: JSON.stringify({ campaign_id: campaignId })
-    }),
-    notifyCreatorsRegistration: (campaignId: string) => request<any>(`/admin/campaigns/creators/notify-registration?campaign_id=${campaignId}`, {
-        method: 'POST',
-        body: JSON.stringify({ campaign_id: campaignId })
-    }),
-    updateBrandOwner: (data: { brand_id: string; email: string; name?: string }) => request<any>('/admin/brands/owners/update', {
-        method: 'POST',
-        body: JSON.stringify(data)
-    }),
-    listBrandUsers: (brandId: string) => request<any>(`/admin/brands/users/list?brand_id=${brandId}`),
-    getStats: () => request<any>('/api/stats'),
-    getPayments: (campaignId?: string) => {
-        const query = campaignId ? `?campaign_id=${campaignId}` : '';
-        return campaignId
-            ? request<any>(`/admin/campaigns/payments${query}`)
-            : request<any>('/admin/campaigns/all-payments');
-    },
-    processPayment: (campaignId: string, data: any) => request<any>(`/admin/campaigns/process-payment?campaign_id=${campaignId}`, {
-        method: 'POST',
-        body: JSON.stringify(data)
     }),
 };
 
