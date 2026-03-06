@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { NotificationCenter, Button, LoadingSpinner, Modal } from '../../components';
+import { NotificationCenter, Button, LoadingSpinner } from '../../components';
 import { creatorApi } from '../../lib/api';
 
 const CreatorOverviewTab = React.lazy(() => import('./creator-tabs').then(m => ({ default: m.CreatorOverviewTab })));
@@ -111,10 +111,10 @@ export const CreatorDashboard: React.FC = () => {
 
                 <div className="sidebar-user" onClick={() => navigate('/profile')}>
                     <div className="sidebar-avatar">
-                        {profile?.display_name?.[0] || user?.email?.[0]?.toUpperCase() || 'C'}
+                        {(profile?.name?.[0] || profile?.display_name?.[0] || user?.email?.[0] || 'C').toUpperCase()}
                     </div>
                     <div className="sidebar-user-info">
-                        <span className="sidebar-user-name">{profile?.display_name || 'Creator Partner'}</span>
+                        <span className="sidebar-user-name">{profile?.name || profile?.display_name || 'Creator Partner'}</span>
                         <span className="sidebar-user-role">Creator Dashboard</span>
                     </div>
                 </div>
