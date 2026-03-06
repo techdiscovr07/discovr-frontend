@@ -76,8 +76,8 @@ export const DEMO_CAMPAIGNS = [
 ];
 
 export const DEMO_CREATORS = [
-    { id: 'creator-001', name: 'Glamour Grace', instagram: 'glamour.grace', status: 'accepted', followers: 150000, avg_views: 45000, final_amount: 15000 },
-    { id: 'creator-002', name: 'Skincare Sam', instagram: 'skincarebysam', status: 'accepted', followers: 89000, avg_views: 22000, final_amount: 8000 },
+    { id: 'creator-001', name: 'Glamour Grace', instagram: 'glamour.grace', status: 'active', followers: 150000, avg_views: 45000, final_amount: 15000 },
+    { id: 'creator-002', name: 'Skincare Sam', instagram: 'skincarebysam', status: 'active', followers: 89000, avg_views: 22000, final_amount: 8000 },
     { id: 'creator-003', name: 'Bella Beauty', instagram: 'bella.glow', status: 'rejected', followers: 200000, avg_views: 120000, final_amount: 0 },
     { id: 'creator-004', name: 'Review Raj', instagram: 'raj.lifestyle', status: 'pending', followers: 350000, avg_views: 150000, final_amount: 0 },
 ];
