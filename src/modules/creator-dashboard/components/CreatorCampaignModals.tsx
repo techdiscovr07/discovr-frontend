@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Modal, TextArea, Input, FileUpload } from '../../../components';
-import { CheckCircle2, BadgeCheck } from 'lucide-react';
+import { CheckCircle2, BadgeCheck, Sparkles } from 'lucide-react';
 import { useCreatorCampaignContext } from '../CreatorCampaignContext';
 
 export const CreatorCampaignModals: React.FC = () => {
