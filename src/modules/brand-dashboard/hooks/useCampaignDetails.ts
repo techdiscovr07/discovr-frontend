@@ -760,9 +760,7 @@ export const useCampaignDetails = () => {
         campaignData.status === 'completed' ||
         campaignData.brief_completed === false;
 
-    const canShowConfirmedCreatorsTab =
-        campaignData.review_status === 'creators_are_final' ||
-        ['brief_pending', 'script_review', 'content_review', 'completed'].includes(normalizedCampaignStatus);
+    const canShowConfirmedCreatorsTab = true; // Always show the Confirmed tab
 
     const canShowNegotiationInCreators =
         campaignData.review_status === 'negotiation' ||
