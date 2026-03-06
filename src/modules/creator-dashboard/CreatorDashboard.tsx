@@ -4,7 +4,8 @@ import {
     LayoutDashboard,
     Megaphone,
     IndianRupee,
-    Search
+    Search,
+    Instagram
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -42,20 +43,88 @@ export const CreatorDashboard: React.FC = () => {
     }
 
     if (profile?.role === 'creator' && profile?.approval_status !== 'approved') {
+        const isInstaConnected = profile?.insta_connected || !!profile?.instagram;
         return (
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: 'var(--color-bg-secondary)' }}>
-                <div style={{ maxWidth: '500px', width: '90%', padding: 'var(--space-8)', background: 'var(--color-bg-primary)', borderRadius: 'var(--radius-lg)', boxShadow: 'var(--shadow-lg)', textAlign: 'center' }}>
-                    <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'rgba(59, 130, 246, 0.1)', color: '#3b82f6', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto var(--space-4)' }}>
-                        <Megaphone size={32} />
+            <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--color-bg-primary)' }}>
+                {/* Header Navbar */}
+                <header style={{ padding: 'var(--space-6) var(--space-8)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontWeight: 800, fontSize: '20px', letterSpacing: '-0.5px', color: 'var(--color-text-primary)' }}>
+                        Discovr
                     </div>
-                    <h2 style={{ fontSize: 'var(--text-2xl)', fontWeight: 'var(--font-bold)', marginBottom: 'var(--space-3)' }}>Profile Under Review</h2>
-                    <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-6)', lineHeight: 1.6 }}>
-                        Your profile has been successfully created and is currently pending admin approval. You will receive an email once your profile is approved, after which you can access campaigns.
-                    </p>
-                    <Button onClick={signOut} variant="outline" fullWidth>
+                    <Button onClick={signOut} variant="ghost" size="sm">
+                        <LogOut size={16} style={{ marginRight: '6px' }} />
                         Log Out
                     </Button>
-                </div>
+                </header>
+
+                {/* Main Content */}
+                <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-8)' }}>
+                    <div style={{ maxWidth: '440px', width: '100%', textAlign: 'center' }}>
+                        <h1 style={{ fontSize: '24px', fontWeight: 800, marginBottom: 'var(--space-4)', color: 'var(--color-text-primary)' }}>
+                            You're on the waitlist!
+                        </h1>
+                        <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-8)', lineHeight: 1.6, fontSize: '14px' }}>
+                            You're on the waitlist for Instagram. Connect other channels to be added to the waitlist for brand partnerships on those platforms.
+                        </p>
+
+                        {/* Connected Account Box */}
+                        <div style={{
+                            border: '1px solid var(--color-border-subtle)',
+                            borderRadius: 'var(--radius-md)',
+                            padding: 'var(--space-4)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            background: 'var(--color-bg-primary)',
+                            marginBottom: 'var(--space-6)',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+                                <div style={{
+                                    width: '36px',
+                                    height: '36px',
+                                    background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
+                                    borderRadius: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'white'
+                                }}>
+                                    <Instagram size={18} />
+                                </div>
+                                <div style={{ textAlign: 'left' }}>
+                                    <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--color-text-primary)' }}>Instagram</div>
+                                    <div style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                                        {isInstaConnected ? (
+                                            <span style={{ color: 'var(--color-success)', fontWeight: 500 }}>
+                                                ✓ Connected: {profile?.instagram ? `@${profile.instagram.replace('https://instagram.com/', '').replace('https://www.instagram.com/', '').replace('/', '')}` : 'Yes'}
+                                            </span>
+                                        ) : (
+                                            <span style={{ color: 'var(--color-text-tertiary)' }}>
+                                                Not connected
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {!isInstaConnected && (
+                                <Button variant="primary" size="sm" style={{ background: '#5850ec' }} onClick={() => navigate('/profile')}>
+                                    Connect
+                                </Button>
+                            )}
+                        </div>
+
+                        <div style={{ fontSize: '12px' }}>
+                            <a href="#" style={{ color: '#5850ec', textDecoration: 'none', marginBottom: 'var(--space-4)', display: 'inline-block' }}>
+                                Show data usage info
+                            </a>
+                            <p style={{ color: 'var(--color-text-tertiary)', lineHeight: 1.5, marginTop: 'var(--space-2)' }}>
+                                If you have any questions about connecting your channels, please email creators@discovr.com.
+                            </p>
+                        </div>
+                    </div>
+                </main>
             </div>
         );
     }
