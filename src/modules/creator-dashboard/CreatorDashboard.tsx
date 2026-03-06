@@ -100,9 +100,13 @@ export const CreatorDashboard: React.FC = () => {
                 {/* Main Content */}
                 <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-8)' }}>
                     <div style={{ maxWidth: '440px', width: '100%', textAlign: 'center' }}>
-                        <h1 style={{ fontSize: '24px', fontWeight: 800, marginBottom: 'var(--space-4)', color: 'var(--color-text-primary)' }}>
+                        <h1 style={{ fontSize: '24px', fontWeight: 800, marginBottom: 'var(--space-2)', color: 'var(--color-text-primary)' }}>
                             You're on the waitlist!
                         </h1>
+                        <div style={{ marginBottom: 'var(--space-4)', fontSize: '15px', color: 'var(--color-text-secondary)' }}>
+                            <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{profile?.name || profile?.display_name || user?.email?.split('@')[0] || 'Creator'}</span>
+                            <span style={{ marginLeft: '6px' }}>&bull; {user?.email}</span>
+                        </div>
                         <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-8)', lineHeight: 1.6, fontSize: '14px' }}>
                             You're on the waitlist for Instagram. Connect other channels to be added to the waitlist for brand partnerships on those platforms.
                         </p>
