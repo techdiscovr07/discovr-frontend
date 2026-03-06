@@ -60,7 +60,9 @@ export const CreatorCampaignModals: React.FC = () => {
                 setIsAIVerifying(false);
                 setAIVerificationResult({
                     status: 'success',
-                    message: 'Video passes baseline checks according to the script and brief. It matches pacing, brand safety, and requested topics.'
+                    message: modalType === 'script'
+                        ? 'Script passes baseline checks. It effectively integrates the requested messaging and matches the brand\'s tone.'
+                        : 'Video passes baseline checks according to the script and brief. It matches pacing, brand safety, and requested topics.'
                 });
             }
         }, 120);
@@ -254,7 +256,10 @@ export const CreatorCampaignModals: React.FC = () => {
                                         : "Write your campaign script here..."}
                                     rows={10}
                                     value={scriptContent}
-                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setScriptContent(e.target.value)}
+                                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => {
+                                        setScriptContent(e.target.value);
+                                        setAIVerificationResult(null);
+                                    }}
                                     required
                                 />
                                 {(briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template) && (
@@ -282,10 +287,45 @@ export const CreatorCampaignModals: React.FC = () => {
                                     onFileSelect={(files: File[]) => {
                                         setScriptFiles(files);
                                         if (files.length > 0) setScriptContent(''); // Clear text if file selected
+                                        setAIVerificationResult(null);
                                     }}
                                     label="Upload Script Document"
                                     description="Upload PDF/Doc/Docx script (Max 20MB)"
                                 />
+
+                                {(scriptContent.trim().length > 0 || scriptFiles.length > 0) && (
+                                    <div style={{ marginTop: 'var(--space-2)' }}>
+                                        {!isAIVerifying && !aiVerificationResult ? (
+                                            <Button
+                                                variant="secondary"
+                                                onClick={runAIVerification}
+                                                style={{ width: '100%' }}
+                                                type="button"
+                                            >
+                                                <BadgeCheck size={16} />
+                                                Run AI Script Verification Pre-Check
+                                            </Button>
+                                        ) : isAIVerifying ? (
+                                            <div style={{ padding: 'var(--space-4)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-secondary)' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                                                    <span style={{ fontWeight: 'var(--font-semibold)' }}>AI is reviewing script against brand brief...</span>
+                                                </div>
+                                                <div style={{ height: '8px', background: 'var(--color-bg-primary)', borderRadius: '999px', overflow: 'hidden' }}>
+                                                    <div style={{ width: `${aiVerificationProgress}%`, height: '100%', background: 'var(--color-accent)', transition: 'width 120ms linear' }} />
+                                                </div>
+                                            </div>
+                                        ) : aiVerificationResult ? (
+                                            <div style={{ padding: 'var(--space-3)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 'var(--radius-md)', background: 'rgba(34,197,94,0.08)' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--color-success)', fontWeight: 'var(--font-semibold)', marginBottom: 'var(--space-1)' }}>
+                                                    <CheckCircle2 size={16} /> Verification Complete
+                                                </div>
+                                                <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
+                                                    {aiVerificationResult.message}
+                                                </div>
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                )}
                             </>
                         ) : (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
