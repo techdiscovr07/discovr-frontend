@@ -191,7 +191,7 @@ export const CampaignScriptsTab: React.FC<CampaignScriptsTabProps> = ({
                                             </td>
                                             <td style={{ textAlign: 'right' }}>
                                                 <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end', alignItems: 'center' }}>
-                                                    {String(script.status || '').toLowerCase() === 'script_pending' ? (
+                                                    {['script_pending', 'pending'].includes(String(script.status || '').toLowerCase()) ? (
                                                         <Button variant="ghost" size="sm" onClick={() => handleOpenAIReview(script)}>
                                                             <Sparkles size={14} />
                                                             Ask AI Review

@@ -147,7 +147,7 @@ export const CampaignContentTab: React.FC<CampaignContentTabProps> = ({
                                         <td>{item.submitted_at || item.created_at || '-'}</td>
                                         <td style={{ textAlign: 'right' }}>
                                             <div style={{ display: 'flex', gap: 'var(--space-2)', justifyContent: 'flex-end', alignItems: 'center' }}>
-                                                {String(item.status || '').toLowerCase() === 'content_pending' ? (
+                                                {['content_pending', 'pending'].includes(String(item.status || '').toLowerCase()) ? (
                                                     <Button variant="ghost" size="sm" onClick={() => handleOpenAIContentReview(item)}>
                                                         <Sparkles size={14} />
                                                         Ask AI Review
