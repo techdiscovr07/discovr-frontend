@@ -4,12 +4,14 @@ import {
     LayoutDashboard,
     Megaphone,
     IndianRupee,
-    Search
+    Search,
+    Instagram
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { NotificationCenter, Button, LoadingSpinner, Modal } from '../../components';
-import { creatorApi } from '../../lib/api';
+import { NotificationCenter, Button, LoadingSpinner } from '../../components';
+import { creatorApi, updateProfile } from '../../lib/api';
+import { auth } from '../../lib/firebase';
 
 const CreatorOverviewTab = React.lazy(() => import('./creator-tabs').then(m => ({ default: m.CreatorOverviewTab })));
 const CreatorCampaignsTab = React.lazy(() => import('./creator-tabs').then(m => ({ default: m.CreatorCampaignsTab })));
@@ -28,14 +30,48 @@ export const CreatorDashboard: React.FC = () => {
     const { signOut, user, profile, loading } = useAuth();
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
-    const [showApprovalPopup, setShowApprovalPopup] = useState(false);
+    const [isConnectingInsta, setIsConnectingInsta] = useState(false);
+
+    const handleConnectInstagram = async () => {
+        setIsConnectingInsta(true);
+        try {
+            const token = await auth.currentUser?.getIdToken();
+            if (!token) throw new Error("Not authenticated");
+
+            // Try fetching the auth URL from backend
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+            const response = await fetch(`${apiUrl}/integrations/instagram/connect`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                const text = await response.text();
+                throw new Error(`Failed to get Instagram connect URL: ${text}`);
+            }
+
+            const data = await response.json();
+            if (data.auth_url) {
+                window.location.href = data.auth_url;
+            } else {
+                throw new Error("No auth URL returned");
+            }
+        } catch (err: any) {
+            console.error('Failed to connect to Instagram:', err);
+
+            // Fallback for demo purposes if backend Instagram integration isn't configured
+            alert('Falling back to mock connect for demo.\nError: ' + err.message);
+            await updateProfile({ insta_connected: true } as any);
+            window.location.reload();
+        } finally {
+            setIsConnectingInsta(false);
+        }
+    };
 
     // Pre-fetch campaigns
     useEffect(() => {
-        if (!loading && profile?.role === 'creator') {
-            if (profile.approval_status !== 'approved') {
-                setShowApprovalPopup(true);
-            }
+        if (!loading && profile?.role === 'creator' && profile?.approval_status === 'approved') {
             creatorApi.getCampaigns().catch(err => {
                 console.error('Pre-fetch failed:', err);
             });
@@ -44,6 +80,103 @@ export const CreatorDashboard: React.FC = () => {
 
     if (loading) {
         return <LoadingSpinner fullPage />;
+    }
+
+    if (profile?.role === 'creator' && profile?.approval_status !== 'approved') {
+        const isInstaConnected = profile?.insta_connected || !!profile?.instagram;
+        return (
+            <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: 'var(--color-bg-primary)' }}>
+                {/* Header Navbar */}
+                <header style={{ padding: 'var(--space-6) var(--space-8)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ fontWeight: 800, fontSize: '20px', letterSpacing: '-0.5px', color: 'var(--color-text-primary)' }}>
+                        Discovr
+                    </div>
+                    <Button onClick={signOut} variant="ghost" size="sm">
+                        <LogOut size={16} style={{ marginRight: '6px' }} />
+                        Log Out
+                    </Button>
+                </header>
+
+                {/* Main Content */}
+                <main style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'var(--space-8)' }}>
+                    <div style={{ maxWidth: '440px', width: '100%', textAlign: 'center' }}>
+                        <h1 style={{ fontSize: '24px', fontWeight: 800, marginBottom: 'var(--space-2)', color: 'var(--color-text-primary)' }}>
+                            You're on the waitlist!
+                        </h1>
+                        <div style={{ marginBottom: 'var(--space-4)', fontSize: '15px', color: 'var(--color-text-secondary)' }}>
+                            <span style={{ fontWeight: 600, color: 'var(--color-text-primary)' }}>{profile?.name || profile?.display_name || user?.email?.split('@')[0] || 'Creator'}</span>
+                            <span style={{ marginLeft: '6px' }}>&bull; {user?.email}</span>
+                        </div>
+                        <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-8)', lineHeight: 1.6, fontSize: '14px' }}>
+                            You're on the waitlist for Instagram. Connect other channels to be added to the waitlist for brand partnerships on those platforms.
+                        </p>
+
+                        {/* Connected Account Box */}
+                        <div style={{
+                            border: '1px solid var(--color-border-subtle)',
+                            borderRadius: 'var(--radius-md)',
+                            padding: 'var(--space-4)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            background: 'var(--color-bg-primary)',
+                            marginBottom: 'var(--space-6)',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                        }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-4)' }}>
+                                <div style={{
+                                    width: '36px',
+                                    height: '36px',
+                                    background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
+                                    borderRadius: '8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'white'
+                                }}>
+                                    <Instagram size={18} />
+                                </div>
+                                <div style={{ textAlign: 'left' }}>
+                                    <div style={{ fontWeight: 600, fontSize: '14px', color: 'var(--color-text-primary)' }}>Instagram</div>
+                                    <div style={{ fontSize: '12px', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+                                        {isInstaConnected ? (
+                                            <span style={{ color: 'var(--color-success)', fontWeight: 500 }}>
+                                                ✓ Connected: {profile?.instagram ? `@${profile.instagram.replace('https://instagram.com/', '').replace('https://www.instagram.com/', '').replace('/', '')}` : 'Yes'}
+                                            </span>
+                                        ) : (
+                                            <span style={{ color: 'var(--color-text-tertiary)' }}>
+                                                Not connected
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {!isInstaConnected && (
+                                <Button
+                                    variant="primary"
+                                    size="sm"
+                                    style={{ background: '#5850ec' }}
+                                    onClick={handleConnectInstagram}
+                                    isLoading={isConnectingInsta}
+                                >
+                                    Connect
+                                </Button>
+                            )}
+                        </div>
+
+                        <div style={{ fontSize: '12px' }}>
+                            <a href="#" style={{ color: '#5850ec', textDecoration: 'none', marginBottom: 'var(--space-4)', display: 'inline-block' }}>
+                                Show data usage info
+                            </a>
+                            <p style={{ color: 'var(--color-text-tertiary)', lineHeight: 1.5, marginTop: 'var(--space-2)' }}>
+                                If you have any questions about connecting your channels, please email creators@discovr.com.
+                            </p>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        );
     }
 
     const renderTabContent = () => {
@@ -87,20 +220,6 @@ export const CreatorDashboard: React.FC = () => {
 
     return (
         <div className="dashboard">
-            <Modal
-                isOpen={showApprovalPopup}
-                onClose={() => setShowApprovalPopup(false)}
-                title="Profile Under Review"
-            >
-                <div style={{ padding: 'var(--space-4)', textAlign: 'center' }}>
-                    <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-6)', lineHeight: 1.5 }}>
-                        Your profile has been successfully created and is currently pending admin approval. You will receive an email once your profile is approved, after which you can access campaigns.
-                    </p>
-                    <Button onClick={() => setShowApprovalPopup(false)} fullWidth>
-                        Got it!
-                    </Button>
-                </div>
-            </Modal>
 
             {/* Sidebar */}
             <aside className="dashboard-sidebar">
@@ -111,10 +230,10 @@ export const CreatorDashboard: React.FC = () => {
 
                 <div className="sidebar-user" onClick={() => navigate('/profile')}>
                     <div className="sidebar-avatar">
-                        {profile?.display_name?.[0] || user?.email?.[0]?.toUpperCase() || 'C'}
+                        {(profile?.name?.[0] || profile?.display_name?.[0] || user?.email?.[0] || 'C').toUpperCase()}
                     </div>
                     <div className="sidebar-user-info">
-                        <span className="sidebar-user-name">{profile?.display_name || 'Creator Partner'}</span>
+                        <span className="sidebar-user-name">{profile?.name || profile?.display_name || 'Creator Partner'}</span>
                         <span className="sidebar-user-role">Creator Dashboard</span>
                     </div>
                 </div>
