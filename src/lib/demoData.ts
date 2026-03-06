@@ -113,6 +113,34 @@ export const DEMO_CREATOR_CAMPAIGNS = [
         description: 'Launching our new 1.5% Pure Hyaluronic Acid Serum. We are looking for beauty and skincare creators to showcase authentic, unfiltered results.',
         requirements: ["3 Instagram Reels", "2 Stories", "1 Post"],
         stage: 'content'
+    },
+    {
+        id: 'demo-campaign-002',
+        name: "L'Oreal Paris - Infallible Matte Lipstick",
+        brand: "L'Oreal Paris",
+        status: 'negotiation',
+        amount: 8000,
+        deadline: '2026-05-15T00:00:00Z',
+        go_live_date: '2026-05-15T00:00:00Z',
+        creator_status: 'negotiate',
+        match_score: 88,
+        description: 'Testing the 16HR wear and transfer-proof claim of our new liquid lipstick. Show the intense color payoff in one swipe.',
+        requirements: ["1 Instagram Reel", "1 Story"],
+        stage: 'negotiate'
+    },
+    {
+        id: 'demo-campaign-003',
+        name: "L'Oreal Paris - Elvive Dream Lengths",
+        brand: "L'Oreal Paris",
+        status: 'script_pending',
+        amount: 12000,
+        deadline: '2026-06-01T00:00:00Z',
+        go_live_date: '2026-06-01T00:00:00Z',
+        creator_status: 'amount_finalized',
+        match_score: 91,
+        description: 'Promoting our iconic Elvive Dream Lengths line. Highlight how it seals split ends and save your last 3cm!',
+        requirements: ["2 Instagram Reels", "1 Story"],
+        stage: 'script'
     }
 ];
 
