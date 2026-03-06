@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { NotificationCenter, Button, LoadingSpinner } from '../../components';
+import { NotificationCenter, Button, LoadingSpinner, Modal } from '../../components';
 import { creatorApi } from '../../lib/api';
 
 const CreatorOverviewTab = React.lazy(() => import('./creator-tabs').then(m => ({ default: m.CreatorOverviewTab })));
@@ -28,10 +28,14 @@ export const CreatorDashboard: React.FC = () => {
     const { signOut, user, profile, loading } = useAuth();
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
+    const [showApprovalPopup, setShowApprovalPopup] = useState(false);
 
     // Pre-fetch campaigns
     useEffect(() => {
         if (!loading && profile?.role === 'creator') {
+            if (profile.approval_status !== 'approved') {
+                setShowApprovalPopup(true);
+            }
             creatorApi.getCampaigns().catch(err => {
                 console.error('Pre-fetch failed:', err);
             });
@@ -83,6 +87,21 @@ export const CreatorDashboard: React.FC = () => {
 
     return (
         <div className="dashboard">
+            <Modal
+                isOpen={showApprovalPopup}
+                onClose={() => setShowApprovalPopup(false)}
+                title="Profile Under Review"
+            >
+                <div style={{ padding: 'var(--space-4)', textAlign: 'center' }}>
+                    <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-6)', lineHeight: 1.5 }}>
+                        Your profile has been successfully created and is currently pending admin approval. You will receive an email once your profile is approved, after which you can access campaigns.
+                    </p>
+                    <Button onClick={() => setShowApprovalPopup(false)} fullWidth>
+                        Got it!
+                    </Button>
+                </div>
+            </Modal>
+
             {/* Sidebar */}
             <aside className="dashboard-sidebar">
                 <div className="sidebar-header">
