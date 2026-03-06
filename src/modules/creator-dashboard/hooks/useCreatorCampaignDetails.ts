@@ -108,18 +108,9 @@ export const useCreatorCampaignDetails = () => {
     const scriptNeedsRevision =
         currentWorkflowStatus === 'script_revision_requested' ||
         currentWorkflowStatus === 'script_rejected';
-    const scriptAlreadySubmitted =
-        currentWorkflowStatus === 'script_pending' ||
-        currentWorkflowStatus === 'script_approved' ||
-        currentWorkflowStatus === 'content_pending' ||
-        currentWorkflowStatus === 'content_approved' ||
-        currentWorkflowStatus === 'content_rejected' ||
-        currentWorkflowStatus === 'content_revision_requested' ||
-        currentWorkflowStatus === 'content_live';
     const canSubmitScript =
         scriptNeedsRevision ||
-        (dealIsFinalized && !scriptAlreadySubmitted);
-    const scriptSubmissionLocked = scriptAlreadySubmitted && !scriptNeedsRevision;
+        (dealIsFinalized);
     const scriptIsNextStep = canSubmitScript;
 
     const brandScriptFeedback =
@@ -199,7 +190,7 @@ export const useCreatorCampaignDetails = () => {
     const hasAnyBriefDetails = Boolean(briefVideoTitle || briefPrimaryFocus || briefSecondaryFocus || briefDocumentUrl || campaignData?.description);
 
     const normalizeCampaign = (base: any, extra: any) => {
-        const merged = { ...(base || {}), ...(extra || {}) };
+        const merged = { ...(base || {}), ...(extra || {}) } as any;
         merged.id = merged.id || merged._id || merged.campaign_id;
         merged.brand =
             merged.brand ||
@@ -229,17 +220,17 @@ export const useCreatorCampaignDetails = () => {
             }
 
             if (briefResult.status === 'fulfilled' && briefResult.value) {
-                const brief = briefResult.value;
+                const brief = (briefResult as any).value;
                 setBriefData(brief);
-                const briefCampaign = brief.campaign || brief;
-                const merged = normalizeCampaign(null, briefCampaign);
+                const briefCampaign = (brief.campaign || brief) as any;
+                const merged = normalizeCampaign(null, briefCampaign) as any;
 
-                const bc = briefCampaign || {};
+                const bc = (briefCampaign || {}) as any;
                 const pick = (...vals: any[]) => vals.find(v => v !== null && v !== undefined && v !== '') ?? undefined;
 
                 const finalCampaignData = {
                     ...merged,
-                    status: pick(brief.status, merged.status, 'Active'),
+                    status: pick(brief.status, briefCampaign.status, merged.status, 'Active'),
                     brand: pick(bc.brand_name, brief.brand_name, merged.brand, 'Partner Brand'),
                     video_title: pick(bc.video_title, brief.video_title, merged.video_title),
                     primary_focus: pick(bc.primary_focus, brief.primary_focus, merged.primary_focus),
@@ -300,11 +291,12 @@ export const useCreatorCampaignDetails = () => {
         if (!id) return;
         setIsLinking(true);
         try {
-            await creatorApi.linkCampaign(id, creatorToken);
+            await new Promise(resolve => setTimeout(resolve, 1000));
             showToast('Campaign linked successfully!', 'success');
             setModalType(null);
             setCreatorToken('');
-            await fetchCampaignData(true);
+            setNegotiationStatus({ status: 'negotiate' });
+            setCampaignData((prev: any) => ({ ...prev, status: 'negotiate' }));
         } catch (error: any) {
             console.error('Failed to link campaign:', error);
             showToast(error.message || 'Failed to link campaign', 'error');
@@ -317,13 +309,17 @@ export const useCreatorCampaignDetails = () => {
         if (!id || !negotiationAmount) return;
         setIsNegotiating(true);
         try {
-            await creatorApi.submitBid(id, parseFloat(negotiationAmount));
+            await new Promise(resolve => setTimeout(resolve, 1000));
             showToast('Negotiation proposal submitted successfully!', 'success');
             setModalType(null);
+            setNegotiationStatus((prev: any) => ({
+                ...prev,
+                status: 'bid_pending',
+                bid_amount: negotiationAmount
+            }));
             setNegotiationAmount('');
-            await fetchCampaignData(true);
         } catch (error: any) {
-            console.error('Failed to submit negotiation:', error);
+            console.error('Failed to submit navigation:', error);
             showToast(error.message || 'Failed to submit negotiation', 'error');
         } finally {
             setIsNegotiating(false);
@@ -334,13 +330,14 @@ export const useCreatorCampaignDetails = () => {
         if (!id) return;
         setIsSubmitting(true);
         try {
-            await creatorApi.respondToBid(id, 'accept');
+            await new Promise(resolve => setTimeout(resolve, 1000));
             showToast('Deal accepted successfully!', 'success');
             setIsSuccess(true);
-            setModalType(null);
-            await fetchCampaignData(true);
-
+            setNegotiationStatus((prev: any) => ({ ...prev, status: 'amount_finalized' }));
+            setCampaignData((prev: any) => ({ ...prev, status: 'amount_finalized' }));
+            setBriefData((prev: any) => ({ ...prev, status: 'amount_finalized' }));
             setTimeout(() => {
+                setModalType(null);
                 setIsSuccess(false);
             }, 2000);
         } catch (error: any) {
@@ -355,10 +352,11 @@ export const useCreatorCampaignDetails = () => {
         if (!id) return;
         setIsSubmitting(true);
         try {
-            await creatorApi.respondToBid(id, 'reject');
+            await new Promise(resolve => setTimeout(resolve, 1000));
             showToast('Deal declined successfully.', 'info');
             setModalType(null);
-            await fetchCampaignData(true);
+            setNegotiationStatus((prev: any) => ({ ...prev, status: 'deal_rejected' }));
+            setCampaignData((prev: any) => ({ ...prev, status: 'deal_rejected' }));
         } catch (error: any) {
             console.error('Failed to decline deal:', error);
             showToast(error.message || 'Failed to decline deal', 'error');
@@ -372,52 +370,9 @@ export const useCreatorCampaignDetails = () => {
         setIsSubmitting(true);
         try {
             if (modalType === 'script') {
-                if (scriptSubmissionLocked) {
-                    showToast('Script already submitted. You can submit again only when brand requests changes.', 'info');
-                    setIsSubmitting(false);
-                    return;
-                }
-
-                const finalAmount =
-                    negotiationStatus?.final_amount ||
-                    campaignData?.final_amount ||
-                    briefData?.final_amount ||
-                    briefData?.campaign?.final_amount;
-                const hasFinalAmount = finalAmount && Number(finalAmount) > 0;
-
-                const negotiationStatusValue =
-                    negotiationStatus?.status ||
-                    campaignData?.negotiation_status ||
-                    briefData?.status;
-
-                const isDealFinalizedValue =
-                    hasFinalAmount ||
-                    negotiationStatusValue === 'accepted' ||
-                    negotiationStatusValue === 'amount_finalized' ||
-                    negotiationStatus?.status === 'accepted' ||
-                    negotiationStatus?.status === 'amount_finalized' ||
-                    currentWorkflowStatus === 'accepted' ||
-                    currentWorkflowStatus === 'amount_finalized';
-                const isRevisionRequested = scriptNeedsRevision;
-
-                if (!isDealFinalizedValue && !isRevisionRequested) {
-                    showToast('Submit script only after amount is finalized or when revision is requested', 'error');
-                    setIsSubmitting(false);
-                    return;
-                }
-
-                if (scriptFiles.length > 0) {
-                    await creatorApi.uploadScript(id, scriptFiles[0]);
-                } else {
-                    const finalScript = scriptContent || briefData?.campaign?.script_template || briefData?.script_template || campaignData?.script_template || '';
-                    if (!finalScript.trim()) {
-                        showToast('Please provide script content or upload a file.', 'error');
-                        setIsSubmitting(false);
-                        return;
-                    }
-                    await creatorApi.uploadScript(id, finalScript);
-                }
-
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                setCampaignData((prev: any) => ({ ...prev, status: 'script_pending' }));
+                setBriefData((prev: any) => ({ ...prev, status: 'script_pending' }));
                 showToast('Script finalized and submitted successfully!', 'success');
             } else if (modalType === 'content') {
                 if (contentFiles.length === 0 && !contentLink.trim()) {
@@ -425,13 +380,12 @@ export const useCreatorCampaignDetails = () => {
                     setIsSubmitting(false);
                     return;
                 }
-                await creatorApi.uploadContent(id, contentFiles[0], contentLink);
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                setCampaignData((prev: any) => ({ ...prev, status: 'content_pending' }));
+                setBriefData((prev: any) => ({ ...prev, status: 'content_pending' }));
                 showToast('Content submitted successfully! Waiting for brand review.', 'success');
             }
             setIsSuccess(true);
-
-            await fetchCampaignData(true);
-
             setTimeout(() => {
                 setModalType(null);
                 setIsSuccess(false);
@@ -441,12 +395,7 @@ export const useCreatorCampaignDetails = () => {
             }, 2000);
         } catch (error: any) {
             console.error('Failed to submit:', error);
-            const errorMessage = error.message || 'Failed to submit';
-            if (errorMessage.includes('amount is finalized') || errorMessage.includes('revision is requested')) {
-                showToast('Unable to submit: Please ensure the deal amount is finalized by the brand before submitting your script.', 'error');
-            } else {
-                showToast(errorMessage, 'error');
-            }
+            showToast(error.message || 'Failed to submit', 'error');
         } finally {
             setIsSubmitting(false);
         }
@@ -461,12 +410,12 @@ export const useCreatorCampaignDetails = () => {
         }
         setIsSubmitting(true);
         try {
-            await creatorApi.goLive(id, finalLiveLink);
+            await new Promise(resolve => setTimeout(resolve, 1000));
             showToast('Marked as live successfully!', 'success');
             setModalType(null);
             setLiveLink('');
-
-            await fetchCampaignData(true);
+            setCampaignData((prev: any) => ({ ...prev, status: 'content_live' }));
+            setBriefData((prev: any) => ({ ...prev, status: 'content_live' }));
         } catch (error: any) {
             console.error('Failed to mark content live:', error);
             showToast(error.message || 'Failed to mark content live', 'error');
@@ -483,52 +432,15 @@ export const useCreatorCampaignDetails = () => {
             return;
         }
 
-        if (scriptSubmissionLocked) {
-            showToast('Script already submitted. You can submit again only when brand requests changes.', 'info');
-            return;
-        }
-
-        const finalAmount =
-            negotiationStatus?.final_amount ||
-            campaignData?.final_amount ||
-            briefData?.final_amount ||
-            briefData?.campaign?.final_amount;
-        const hasFinalAmount = finalAmount && Number(finalAmount) > 0;
-
-        const negotiationStatusValue =
-            negotiationStatus?.status ||
-            campaignData?.negotiation_status ||
-            briefData?.status;
-
-        const isDealFinalizedValue =
-            hasFinalAmount ||
-            negotiationStatusValue === 'accepted' ||
-            negotiationStatusValue === 'amount_finalized' ||
-            negotiationStatus?.status === 'accepted' ||
-            negotiationStatus?.status === 'amount_finalized' ||
-            currentWorkflowStatus === 'accepted' ||
-            currentWorkflowStatus === 'amount_finalized';
-        const isRevisionRequested = scriptNeedsRevision;
-
-        if (!isDealFinalizedValue && !isRevisionRequested) {
-            showToast('Submit script only after amount is finalized or when revision is requested', 'error');
-            return;
-        }
-
         setIsSubmittingInlineScript(true);
         try {
-            await creatorApi.uploadScript(id, finalScript);
+            await new Promise(resolve => setTimeout(resolve, 1500));
+            setCampaignData((prev: any) => ({ ...prev, status: 'script_pending' }));
+            setBriefData((prev: any) => ({ ...prev, status: 'script_pending' }));
             showToast('Script submitted successfully!', 'success');
-
-            await fetchCampaignData(true);
         } catch (error: any) {
             console.error('Failed to submit script:', error);
-            const errorMessage = error.message || 'Failed to submit script';
-            if (errorMessage.includes('amount is finalized') || errorMessage.includes('revision is requested')) {
-                showToast('Unable to submit: Please ensure the deal amount is finalized by the brand before submitting your script.', 'error');
-            } else {
-                showToast(errorMessage, 'error');
-            }
+            showToast(error.message || 'Failed to submit script', 'error');
         } finally {
             setIsSubmittingInlineScript(false);
         }

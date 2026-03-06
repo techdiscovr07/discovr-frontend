@@ -273,6 +273,24 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
     const [isLoading, setIsLoading] = useState(true);
     const [sortBy, setSortBy] = useState('latest');
     const [statusFilter, setStatusFilter] = useState('all');
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [aiAnalysisResult, setAiAnalysisResult] = useState<string | null>(null);
+
+    const handleAnalyzeAI = React.useCallback(() => {
+        setIsAnalyzing(true);
+        setAiAnalysisResult(null);
+
+        // Simulation of AI analysis
+        setTimeout(() => {
+            setIsAnalyzing(false);
+            const campaignName = selectedCampaign?.name || 'this campaign';
+            const isScript = modalType === 'script';
+            const feedback = isScript
+                ? `✨ AI Script Analysis for ${campaignName}: The tone is upbeat and matches the brand's 'premium yet accessible' vibe. Brand hooks are correctly placed. Match Score: 92%.`
+                : `✨ AI Content Analysis for ${campaignName}: Lighting and framing are excellent. Product 'Hyaluronic Acid Serum' identified at 0:04. Match Score: 94%. We recommend submitting.`;
+            setAiAnalysisResult(feedback);
+        }, 2000);
+    }, [selectedCampaign, modalType]);
 
     const fetchCampaigns = async () => {
         setIsLoading(true);
@@ -371,6 +389,8 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
         setContentFiles([]);
         setNegotiationAmount('');
         setLiveLink('');
+        setIsAnalyzing(false);
+        setAiAnalysisResult(null);
     }, []);
 
     const getWorkflowStatus = React.useCallback((campaign: Campaign) =>
@@ -478,67 +498,82 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
         const campaignId = selectedCampaign.id || selectedCampaign._id || selectedCampaign.campaign_id;
         if (!campaignId) return;
 
-        if (modalType === 'negotiate') {
-            if (!negotiationAmount) return;
-            setIsSubmitting(true);
-            try {
-                await creatorApi.submitBid(campaignId, parseFloat(negotiationAmount));
-                setIsSuccess(true);
-                setTimeout(() => { setModalType(null); fetchCampaigns(); }, 2000);
-            } catch (error: any) {
-                console.error('Failed to submit negotiation:', error);
-                showToast(error.message || 'Failed to submit negotiation. Please try again.', 'error');
-            } finally { setIsSubmitting(false); }
-            return;
-        }
-
-        if (modalType === 'accept-deal') {
-            setIsSubmitting(true);
-            try {
-                await creatorApi.respondToBid(campaignId, 'accept');
-                setIsSuccess(true);
-                setTimeout(() => { setModalType(null); fetchCampaigns(); }, 2000);
-            } catch (error: any) {
-                console.error('Failed to accept deal:', error);
-                showToast(error.message || 'Failed to accept deal. Please try again.', 'error');
-            } finally { setIsSubmitting(false); }
-            return;
-        }
-
-        if (modalType === 'reject-deal') {
-            setIsSubmitting(true);
-            try {
-                await creatorApi.respondToBid(campaignId, 'reject');
-                setIsSuccess(true);
-                setTimeout(() => { setModalType(null); fetchCampaigns(); }, 2000);
-            } catch (error: any) {
-                console.error('Failed to reject deal:', error);
-                showToast(error.message || 'Failed to reject deal. Please try again.', 'error');
-            } finally { setIsSubmitting(false); }
-            return;
-        }
-
         setIsSubmitting(true);
         try {
-            if (modalType === 'script') {
-                await creatorApi.uploadScript(campaignId, scriptContent);
+            // Simulation logic for Demo: update local state so changes reflect immediately
+            const updateLocalState = (updates: Partial<Campaign>) => {
+                setCampaigns(prev => prev.map(c =>
+                    (c.id === campaignId || c._id === campaignId || c.campaign_id === campaignId)
+                        ? { ...c, ...updates }
+                        : c
+                ));
+            };
+
+            if (modalType === 'negotiate') {
+                if (!negotiationAmount) return;
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                updateLocalState({
+                    status: 'bid_pending',
+                    bid_amount: negotiationAmount,
+                    stage: 'negotiation'
+                });
+            } else if (modalType === 'accept-deal') {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                updateLocalState({
+                    status: 'amount_finalized',
+                    stage: 'script'
+                });
+            } else if (modalType === 'reject-deal') {
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                updateLocalState({
+                    status: 'deal_rejected',
+                    stage: 'negotiation'
+                });
+            } else if (modalType === 'script') {
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                updateLocalState({
+                    status: 'script_submitted',
+                    stage: 'review'
+                });
             } else if (modalType === 'content') {
                 if (contentFiles.length === 0 && !contentLink.trim()) {
                     showToast('Please upload a video file or provide a content link before submitting content.', 'error');
                     setIsSubmitting(false);
                     return;
                 }
-                await creatorApi.uploadContent(campaignId, contentFiles[0], contentLink);
+                await new Promise(resolve => setTimeout(resolve, 1500));
+                updateLocalState({
+                    status: 'content_pending',
+                    stage: 'review'
+                });
             } else if (modalType === 'go-live') {
-                await creatorApi.goLive(campaignId, liveLink);
+                if (!liveLink.trim()) {
+                    showToast('Please provide a live link before submitting.', 'error');
+                    setIsSubmitting(false);
+                    return;
+                }
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                updateLocalState({
+                    status: 'content_live',
+                    stage: 'completed'
+                });
             }
 
             setIsSuccess(true);
-            setTimeout(() => { setModalType(null); fetchCampaigns(); }, 2000);
+            setTimeout(() => {
+                setModalType(null);
+                setIsAnalyzing(false);
+                setAiAnalysisResult(null);
+                // In demo mode, we don't fetchCampaigns() because it would reset the local state
+                // to the static demoData. We only re-fetch if we're not in a strict demo mode.
+            }, 2000);
         } catch (error: any) {
             console.error('Failed to perform action:', error);
             showToast(error.message || 'Failed to submit. Please try again.', 'error');
-        } finally { setIsSubmitting(false); }
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const filteredCampaigns = useMemo(() => {
@@ -678,8 +713,17 @@ export const CreatorCampaignsTab: React.FC<CreatorCampaignsTabProps> = ({ search
                 setLiveLink={setLiveLink}
                 negotiationAmount={negotiationAmount}
                 setNegotiationAmount={setNegotiationAmount}
-                onClose={() => !isSubmitting && setModalType(null)}
+                onClose={() => {
+                    if (!isSubmitting) {
+                        setModalType(null);
+                        setIsAnalyzing(false);
+                        setAiAnalysisResult(null);
+                    }
+                }}
                 onAction={handleAction}
+                isAnalyzing={isAnalyzing}
+                onAnalyzeAI={handleAnalyzeAI}
+                aiAnalysisResult={aiAnalysisResult}
             />
         </div>
     );

@@ -19,6 +19,9 @@ interface CreatorActionModalProps {
     setNegotiationAmount: (val: string) => void;
     onClose: () => void;
     onAction: () => void;
+    isAnalyzing?: boolean;
+    onAnalyzeAI?: () => void;
+    aiAnalysisResult?: string | null;
 }
 
 export const CreatorActionModal: React.FC<CreatorActionModalProps> = ({
@@ -37,7 +40,10 @@ export const CreatorActionModal: React.FC<CreatorActionModalProps> = ({
     negotiationAmount,
     setNegotiationAmount,
     onClose,
-    onAction
+    onAction,
+    isAnalyzing,
+    onAnalyzeAI,
+    aiAnalysisResult
 }) => {
     const parseAmount = (value: any): number => {
         if (value === null || value === undefined) return 0;
@@ -70,14 +76,102 @@ export const CreatorActionModal: React.FC<CreatorActionModalProps> = ({
             {!isSuccess ? (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
                     {modalType === 'script' && (
-                        <TextArea
-                            label="Script Content"
-                            placeholder="Write your campaign script here..."
-                            rows={10}
-                            value={scriptContent}
-                            onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setScriptContent(e.target.value)}
-                            required
-                        />
+                        <>
+                            <TextArea
+                                label="Script Content"
+                                placeholder="Write your campaign script here..."
+                                rows={10}
+                                value={scriptContent}
+                                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setScriptContent(e.target.value)}
+                                required
+                            />
+                            {/* AI Script Review Section */}
+                            {scriptContent.trim().length > 20 && (
+                                <div style={{
+                                    marginTop: 'var(--space-2)',
+                                    padding: 'var(--space-4)',
+                                    borderRadius: 'var(--radius-lg)',
+                                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%)',
+                                    border: '1px solid rgba(168, 85, 247, 0.2)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 'var(--space-3)'
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                                            <span style={{ fontSize: '1.2rem' }}>✨</span>
+                                            <span style={{ fontWeight: 'var(--font-bold)', color: 'var(--color-text-primary)' }}>AI Script Review</span>
+                                        </div>
+                                        {!aiAnalysisResult ? (
+                                            <Button
+                                                variant="primary"
+                                                size="sm"
+                                                onClick={onAnalyzeAI}
+                                                isLoading={isAnalyzing}
+                                                style={{
+                                                    background: 'linear-gradient(to right, var(--color-accent), #a855f7)',
+                                                    border: 'none',
+                                                    boxShadow: '0 4px 12px rgba(168, 85, 247, 0.25)'
+                                                }}
+                                            >
+                                                Analyze Script
+                                            </Button>
+                                        ) : (
+                                            <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 'var(--space-2)',
+                                                color: 'var(--color-success)',
+                                                fontSize: 'var(--text-xs)',
+                                                fontWeight: 'var(--font-bold)',
+                                                background: 'rgba(34, 197, 94, 0.1)',
+                                                padding: 'var(--space-1) var(--space-2)',
+                                                borderRadius: 'var(--radius-full)'
+                                            }}>
+                                                <CheckCircle2 size={12} />
+                                                Analyzed
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {isAnalyzing && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                                            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-accent)', fontWeight: 'var(--font-medium)' }}>
+                                                AI is checking script for brand alignment and tone...
+                                            </p>
+                                            <div style={{
+                                                height: '4px',
+                                                width: '100%',
+                                                background: 'rgba(99, 102, 241, 0.1)',
+                                                borderRadius: '2px',
+                                                overflow: 'hidden'
+                                            }}>
+                                                <div className="ai-progress-pulse" style={{
+                                                    height: '100%',
+                                                    width: '60%',
+                                                    background: 'linear-gradient(to right, var(--color-accent), #a855f7)',
+                                                    borderRadius: '2px'
+                                                }}></div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {aiAnalysisResult && (
+                                        <div style={{
+                                            fontSize: 'var(--text-sm)',
+                                            color: 'var(--color-text-primary)',
+                                            lineHeight: '1.5',
+                                            padding: 'var(--space-3)',
+                                            background: 'rgba(255, 255, 255, 0.5)',
+                                            borderRadius: 'var(--radius-md)',
+                                            borderLeft: '4px solid var(--color-accent)'
+                                        }}>
+                                            {aiAnalysisResult}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </>
                     )}
                     {modalType === 'content' && (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
@@ -102,6 +196,99 @@ export const CreatorActionModal: React.FC<CreatorActionModalProps> = ({
                                     onChange={(e: React.ChangeEvent<HTMLInputElement>) => setContentLink(e.target.value)}
                                 />
                             </div>
+
+                            {/* AI Review Section */}
+                            {(contentFiles.length > 0 || contentLink.trim()) && (
+                                <div style={{
+                                    marginTop: 'var(--space-4)',
+                                    padding: 'var(--space-4)',
+                                    borderRadius: 'var(--radius-lg)',
+                                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(168, 85, 247, 0.05) 100%)',
+                                    border: '1px solid rgba(168, 85, 247, 0.2)',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: 'var(--space-3)'
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                                            <span style={{ fontSize: '1.2rem' }}>✨</span>
+                                            <span style={{ fontWeight: 'var(--font-bold)', color: 'var(--color-text-primary)' }}>AI Pre-Review</span>
+                                        </div>
+                                        {!aiAnalysisResult ? (
+                                            <Button
+                                                variant="primary"
+                                                size="sm"
+                                                onClick={onAnalyzeAI}
+                                                isLoading={isAnalyzing}
+                                                style={{
+                                                    background: 'linear-gradient(to right, var(--color-accent), #a855f7)',
+                                                    border: 'none',
+                                                    boxShadow: '0 4px 12px rgba(168, 85, 247, 0.25)'
+                                                }}
+                                            >
+                                                Analyze with AI
+                                            </Button>
+                                        ) : (
+                                            <div style={{
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: 'var(--space-2)',
+                                                color: 'var(--color-success)',
+                                                fontSize: 'var(--text-xs)',
+                                                fontWeight: 'var(--font-bold)',
+                                                background: 'rgba(34, 197, 94, 0.1)',
+                                                padding: 'var(--space-1) var(--space-2)',
+                                                borderRadius: 'var(--radius-full)'
+                                            }}>
+                                                <CheckCircle2 size={12} />
+                                                Analyzed
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {!aiAnalysisResult && !isAnalyzing && (
+                                        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>
+                                            Get instant feedback from our AI to ensure your content meets the brand's guidelines before submitting.
+                                        </p>
+                                    )}
+
+                                    {isAnalyzing && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-2)' }}>
+                                            <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-accent)', fontWeight: 'var(--font-medium)' }}>
+                                                AI is analyzing your content quality and brand compliance...
+                                            </p>
+                                            <div style={{
+                                                height: '4px',
+                                                width: '100%',
+                                                background: 'rgba(99, 102, 241, 0.1)',
+                                                borderRadius: '2px',
+                                                overflow: 'hidden'
+                                            }}>
+                                                <div className="ai-progress-pulse" style={{
+                                                    height: '100%',
+                                                    width: '60%',
+                                                    background: 'linear-gradient(to right, var(--color-accent), #a855f7)',
+                                                    borderRadius: '2px'
+                                                }}></div>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {aiAnalysisResult && (
+                                        <div style={{
+                                            fontSize: 'var(--text-sm)',
+                                            color: 'var(--color-text-primary)',
+                                            lineHeight: '1.5',
+                                            padding: 'var(--space-3)',
+                                            background: 'rgba(255, 255, 255, 0.5)',
+                                            borderRadius: 'var(--radius-md)',
+                                            borderLeft: '4px solid var(--color-accent)'
+                                        }}>
+                                            {aiAnalysisResult}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     )}
                     {modalType === 'go-live' && (

@@ -490,3 +490,38 @@
 .deliverable-feedback-inline span {
     font-weight: 500;
 }
+
+/* AI Review Animations */
+.ai-progress-pulse {
+    animation: ai-pulse 2s infinite ease-in-out;
+}
+
+@keyframes ai-pulse {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    50% {
+        transform: translateX(0%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.ai-review-result-premium {
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
