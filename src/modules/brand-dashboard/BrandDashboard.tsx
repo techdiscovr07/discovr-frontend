@@ -89,10 +89,10 @@ export const BrandDashboard: React.FC = () => {
 
                 <div className="sidebar-user" onClick={() => navigate('/profile')}>
                     <div className="sidebar-avatar">
-                        {profile?.display_name?.[0] || user?.email?.[0]?.toUpperCase() || 'B'}
+                        {profile?.name?.[0] || user?.email?.[0]?.toUpperCase() || 'B'}
                     </div>
                     <div className="sidebar-user-info">
-                        <span className="sidebar-user-name">{profile?.brand_name || profile?.display_name || 'Brand Partner'}</span>
+                        <span className="sidebar-user-name">{profile?.name || 'Brand Partner'}</span>
                         <span className="sidebar-user-role">Brand Dashboard</span>
                     </div>
                 </div>
