@@ -114,7 +114,7 @@ export const CampaignDetails: React.FC = () => {
                                     <span className={`status-badge ${campaignStatusTone}`} style={{ fontSize: '10px', padding: '2px 8px' }}>{campaignStatusLabel}</span>
                                 </div>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>
-                                    <span>{campaignData.brand || 'Your Brand'}</span>
+                                    <span>{campaignData.brand_name || campaignData.brand || 'Your Brand'}</span>
                                     <span style={{ opacity: 0.3 }}>•</span>
                                     <span style={{ fontFamily: 'var(--font-mono)', letterSpacing: '0.05em' }}>#{id?.slice(-8) || 'SC-2026'}</span>
                                 </div>

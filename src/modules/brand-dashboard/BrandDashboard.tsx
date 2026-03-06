@@ -92,7 +92,7 @@ export const BrandDashboard: React.FC = () => {
                         {profile?.display_name?.[0] || user?.email?.[0]?.toUpperCase() || 'B'}
                     </div>
                     <div className="sidebar-user-info">
-                        <span className="sidebar-user-name">{profile?.display_name || 'Brand Partner'}</span>
+                        <span className="sidebar-user-name">{profile?.brand_name || profile?.display_name || 'Brand Partner'}</span>
                         <span className="sidebar-user-role">Brand Dashboard</span>
                     </div>
                 </div>
