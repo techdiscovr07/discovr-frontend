@@ -40,8 +40,7 @@ export const CreatorDashboard: React.FC = () => {
 
             // Try fetching the auth URL from backend
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-            const redirectUrl = `${window.location.origin}/creator/dashboard`;
-            const response = await fetch(`${apiUrl}/integrations/instagram/connect?redirect=${encodeURIComponent(redirectUrl)}`, {
+            const response = await fetch(`${apiUrl}/integrations/instagram/connect`, {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
