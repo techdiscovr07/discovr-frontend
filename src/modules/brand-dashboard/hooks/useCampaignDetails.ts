@@ -648,8 +648,9 @@ export const useCampaignDetails = () => {
             await brandApi.uploadBrief(formData);
             showToast('Script template uploaded successfully!', 'success');
             setIsScriptTemplateModalOpen(false);
-            const data = await brandApi.getCampaigns() as any[];
-            const updatedCampaign = data.find(c => c.id === id);
+            const data = await brandApi.getCampaigns() as any;
+            const updatedCampaignList = Array.isArray(data) ? data : (data?.campaigns || []);
+            const updatedCampaign = updatedCampaignList.find((c: any) => c.id === id);
             if (updatedCampaign) {
                 setCampaign(updatedCampaign);
                 setBrandScriptTemplate(updatedCampaign.script_template || '');

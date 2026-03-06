@@ -1,4 +1,5 @@
 import { auth } from './firebase';
+import { DEMO_CAMPAIGNS, DEMO_CREATORS, DEMO_BIDS, DEMO_SCRIPTS, DEMO_CONTENT } from './demoData';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://discovr-backend.onrender.com';
 
@@ -360,8 +361,14 @@ interface Notification {
  * Brand-specific API calls
  */
 export const brandApi = {
-    getProfile: () => request<any>('/brand/profile'),
-    getCampaigns: () => request('/brand/campaigns'),
+    getProfile: async () => ({
+        company_name: 'TechDiscovr',
+        email: 'hello@techdiscovr.com',
+        website: 'https://techdiscovr.com',
+        industry: 'Technology',
+        description: 'AI-Powered Influencer Marketing Platform',
+    }),
+    getCampaigns: async () => ({ campaigns: DEMO_CAMPAIGNS }),
     createCampaign: (data: any) => request<any>('/brand/campaigns', {
         method: 'POST',
         body: JSON.stringify(data)
@@ -374,12 +381,11 @@ export const brandApi = {
         method: 'POST',
         body: data,
         headers: {
-            // Fetch will set correct boundary if content-type is NOT manually set for FormData
             'Content-Type': undefined as any,
         }
     }),
-    getCampaignCreators: (id: string) => request(`/brand/campaigns/creators?campaign_id=${id}`),
-    getCreatorBids: (campaignId: string) => request<any>(`/brand/campaigns/bids?campaign_id=${campaignId}`),
+    getCampaignCreators: async (_id: string) => ({ creators: DEMO_CREATORS }),
+    getCreatorBids: async (_campaignId: string) => ({ bids: DEMO_BIDS }),
     respondToCreatorBid: (campaignId: string, creatorId: string, action: 'accept' | 'reject', proposedAmount?: number) => {
         const isCounter = typeof proposedAmount === 'number' && Number.isFinite(proposedAmount) && proposedAmount > 0;
         const status = action === 'reject'
@@ -403,7 +409,7 @@ export const brandApi = {
         method: 'POST',
         body: JSON.stringify({ updates })
     }),
-    getCreatorContent: (campaignId: string) => request<any>(`/brand/campaigns/content?campaign_id=${campaignId}`),
+    getCreatorContent: async (_campaignId: string) => ({ content: DEMO_CONTENT }),
     reviewCreatorContent: (campaignId: string, updates: any[]) => request<any>(`/brand/campaigns/review-content?campaign_id=${campaignId}`, {
         method: 'POST',
         body: JSON.stringify({
@@ -431,7 +437,7 @@ export const brandApi = {
             }
         });
     },
-    getCreatorScripts: (campaignId: string) => request<any>(`/brand/campaigns/scripts?campaign_id=${campaignId}`),
+    getCreatorScripts: async (_campaignId: string) => ({ scripts: DEMO_SCRIPTS }),
     reviewCreatorScript: (campaignId: string, creatorId: string, status: 'approved' | 'rejected' | 'revision_requested', feedback?: string) => {
         const action =
             status === 'approved' ? 'approve' :

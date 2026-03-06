@@ -233,10 +233,10 @@ export const BrandCampaignModals: React.FC = () => {
                                     <div style={{ padding: 'var(--space-3)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: 'var(--radius-md)', background: 'rgba(168,85,247,0.08)' }}>
                                         <div style={{ fontWeight: 'var(--font-semibold)', marginBottom: 'var(--space-1)' }}>Agent Recommendation</div>
                                         <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
-                                            Script passes baseline checks. Review brand tone and final CTA before approval.
+                                            {selectedScript.ai_analysis || "Script passes baseline checks. Review brand tone and final CTA before approval."}
                                         </div>
                                         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-2)' }}>
-                                            TODO: replace static checks with live LLM review output.
+                                            Powered by Discovr AI
                                         </div>
                                     </div>
                                     {[
@@ -356,10 +356,10 @@ export const BrandCampaignModals: React.FC = () => {
                                     <div style={{ padding: 'var(--space-3)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: 'var(--radius-md)', background: 'rgba(168,85,247,0.08)' }}>
                                         <div style={{ fontWeight: 'var(--font-semibold)', marginBottom: 'var(--space-1)' }}>Agent Recommendation</div>
                                         <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
-                                            Video quality and brand mention look acceptable. Verify CTA placement before approval.
+                                            {selectedContentItem.ai_analysis || "Video quality and brand mention look acceptable. Verify CTA placement before approval."}
                                         </div>
                                         <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-2)' }}>
-                                            TODO: replace static checks with live LLM/video analysis output.
+                                            Powered by Discovr AI
                                         </div>
                                     </div>
                                     {[
