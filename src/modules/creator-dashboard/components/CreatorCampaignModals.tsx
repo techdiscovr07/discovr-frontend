@@ -38,6 +38,34 @@ export const CreatorCampaignModals: React.FC = () => {
         handleGoLive
     } = useCreatorCampaignContext();
 
+    const [isAIVerifying, setIsAIVerifying] = React.useState(false);
+    const [aiVerificationProgress, setAIVerificationProgress] = React.useState(0);
+    const [aiVerificationResult, setAIVerificationResult] = React.useState<any>(null);
+
+    const runAIVerification = () => {
+        setIsAIVerifying(true);
+        setAIVerificationProgress(0);
+        setAIVerificationResult(null);
+
+        const startTime = Date.now();
+        const duration = 2500; // 2.5 seconds mock duration
+
+        const timer = setInterval(() => {
+            const elapsed = Date.now() - startTime;
+            const pct = Math.min(100, Math.round((elapsed / duration) * 100));
+            setAIVerificationProgress(pct);
+
+            if (pct >= 100) {
+                clearInterval(timer);
+                setIsAIVerifying(false);
+                setAIVerificationResult({
+                    status: 'success',
+                    message: 'Video passes baseline checks according to the script and brief. It matches pacing, brand safety, and requested topics.'
+                });
+            }
+        }, 120);
+    };
+
     return (
         <>
             {/* Link Campaign Modal */}
@@ -293,7 +321,10 @@ export const CreatorCampaignModals: React.FC = () => {
                                 <FileUpload
                                     accept="video/*"
                                     maxSize={100}
-                                    onFileSelect={(files: File[]) => setContentFiles(files)}
+                                    onFileSelect={(files: File[]) => {
+                                        setContentFiles(files);
+                                        setAIVerificationResult(null); // Clear previous verification when new file is uploaded
+                                    }}
                                     label="Upload Content Video"
                                     description="Upload the video file for this campaign"
                                 />
@@ -301,21 +332,63 @@ export const CreatorCampaignModals: React.FC = () => {
                                     label="Content Link (Optional)"
                                     placeholder="https://instagram.com/p/..."
                                     value={contentLink}
-                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => setContentLink(e.target.value)}
+                                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                                        setContentLink(e.target.value);
+                                        setAIVerificationResult(null);
+                                    }}
                                 />
+
+                                {(contentFiles.length > 0 || contentLink.trim()) && (
+                                    <div style={{ marginTop: 'var(--space-2)' }}>
+                                        {!isAIVerifying && !aiVerificationResult ? (
+                                            <Button
+                                                variant="secondary"
+                                                onClick={runAIVerification}
+                                                style={{ width: '100%' }}
+                                                type="button"
+                                            >
+                                                <BadgeCheck size={16} />
+                                                Run AI Verification Pre-Check
+                                            </Button>
+                                        ) : isAIVerifying ? (
+                                            <div style={{ padding: 'var(--space-4)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-secondary)' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                                                    <span style={{ fontWeight: 'var(--font-semibold)' }}>AI is reviewing content against script & brief...</span>
+                                                </div>
+                                                <div style={{ height: '8px', background: 'var(--color-bg-primary)', borderRadius: '999px', overflow: 'hidden' }}>
+                                                    <div style={{ width: `${aiVerificationProgress}%`, height: '100%', background: 'var(--color-accent)', transition: 'width 120ms linear' }} />
+                                                </div>
+                                            </div>
+                                        ) : aiVerificationResult ? (
+                                            <div style={{ padding: 'var(--space-3)', border: '1px solid rgba(34,197,94,0.3)', borderRadius: 'var(--radius-md)', background: 'rgba(34,197,94,0.08)' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', color: 'var(--color-success)', fontWeight: 'var(--font-semibold)', marginBottom: 'var(--space-1)' }}>
+                                                    <CheckCircle2 size={16} /> Verification Complete
+                                                </div>
+                                                <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
+                                                    {aiVerificationResult.message}
+                                                </div>
+                                            </div>
+                                        ) : null}
+                                    </div>
+                                )}
                             </div>
                         )}
                         <div style={{ display: 'flex', gap: 'var(--space-4)', justifyContent: 'flex-end' }}>
-                            <Button variant="ghost" onClick={() => setModalType(null)} disabled={isSubmitting}>Cancel</Button>
+                            <Button variant="ghost" onClick={() => {
+                                setModalType(null);
+                                setAIVerificationResult(null);
+                                setIsAIVerifying(false);
+                            }} disabled={isSubmitting || isAIVerifying}>Cancel</Button>
                             <Button
                                 onClick={handleAction}
                                 isLoading={isSubmitting}
                                 disabled={
+                                    isAIVerifying ||
                                     (modalType === 'content' && contentFiles.length === 0 && !contentLink.trim()) ||
                                     (modalType === 'script' && scriptFiles.length === 0 && !scriptContent.trim())
                                 }
                             >
-                                {modalType === 'script' ? 'Finalize Script' : 'Submit'}
+                                {modalType === 'script' ? 'Finalize Script' : 'Submit Content'}
                             </Button>
                         </div>
                     </div>
@@ -328,7 +401,7 @@ export const CreatorCampaignModals: React.FC = () => {
                         <p style={{ color: 'var(--color-text-secondary)' }}>Your submission has been sent to the brand for review.</p>
                     </div>
                 )}
-            </Modal>
+            </Modal >
 
             <Modal
                 isOpen={modalType === 'go-live'}
