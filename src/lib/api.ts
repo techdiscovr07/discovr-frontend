@@ -488,7 +488,12 @@ export const brandApi = {
 
 export const creatorApi = {
     getCampaigns: async (_forceRefresh = false) => {
-        return { campaigns: DEMO_CREATOR_CAMPAIGNS };
+        try {
+            return await request<any>('/creator/campaigns');
+        } catch (error) {
+            console.warn('Failed to fetch real creator campaigns, falling back to demo', error);
+            return { campaigns: DEMO_CREATOR_CAMPAIGNS };
+        }
     },
     invalidateCache: () => {
     },
@@ -500,7 +505,14 @@ export const creatorApi = {
         creatorApi.invalidateCache();
         return res;
     },
-    getCampaignBrief: async (_campaignId: string) => ({ brief: DEMO_CAMPAIGNS[0] }),
+    getCampaignBrief: async (campaignId: string) => {
+        try {
+            return await request<any>(`/creator/campaigns/brief?campaign_id=${campaignId}`);
+        } catch (error) {
+            console.warn('Failed to fetch real brief, falling back to demo', error);
+            return { campaign: DEMO_CAMPAIGNS[0] };
+        }
+    },
     submitBid: async (campaignId: string, amount: number) => {
         const res = await request<any>(`/creator/campaigns/bid?campaign_id=${campaignId}`, {
             method: 'POST',
@@ -517,7 +529,14 @@ export const creatorApi = {
         creatorApi.invalidateCache();
         return res;
     },
-    getBidStatus: async (_campaignId: string) => ({ bid: DEMO_CREATOR_BID_STATUS }),
+    getBidStatus: async (campaignId: string) => {
+        try {
+            return await request<any>(`/creator/campaigns/bid-status?campaign_id=${campaignId}`);
+        } catch (error) {
+            console.warn('Failed to fetch real bid status, falling back to demo', error);
+            return { bid: DEMO_CREATOR_BID_STATUS };
+        }
+    },
     uploadScript: async (campaignId: string, scriptData: string | File) => {
         let options: RequestInit;
 

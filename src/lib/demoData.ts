@@ -102,13 +102,17 @@ export const DEMO_CONTENT = [
 export const DEMO_CREATOR_CAMPAIGNS = [
     {
         id: DEMO_CAMPAIGN_ID,
-        title: "L'Oreal Paris - Hyaluronic Acid Serum Launch",
-        brand_name: "L'Oreal Paris",
+        name: "L'Oreal Paris - Hyaluronic Acid Serum Launch",
+        brand: "L'Oreal Paris",
         status: 'content_review',
         amount: 15000,
+        deadline: '2026-04-01T00:00:00Z',
         go_live_date: '2026-04-01T00:00:00Z',
         creator_status: 'accepted',
-        match_score: 95
+        match_score: 95,
+        description: 'Launching our new 1.5% Pure Hyaluronic Acid Serum. We are looking for beauty and skincare creators to showcase authentic, unfiltered results.',
+        requirements: ["3 Instagram Reels", "2 Stories", "1 Post"],
+        stage: 'content'
     }
 ];
 
