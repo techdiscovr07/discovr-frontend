@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Modal, Sidebar, Input, TextArea, FileUpload, Card, CardHeader, CardBody } from '../../../components';
-import { Clock, Check, Sparkles, TrendingUp, MessageSquare, RefreshCw, ExternalLink } from 'lucide-react';
+import { Clock, Check, Sparkles, TrendingUp, MessageSquare, RefreshCw } from 'lucide-react';
 import { useBrandCampaignContext } from '../BrandCampaignContext';
 
 export const BrandCampaignModals: React.FC = () => {
@@ -291,11 +291,7 @@ export const BrandCampaignModals: React.FC = () => {
                                                     width: '100%',
                                                     maxWidth: '320px',
                                                     aspectRatio: '9/16',
-                                                    background: 'var(--color-bg-secondary)',
-                                                    borderRadius: 'var(--radius-lg)',
-                                                    overflow: 'hidden',
-                                                    boxShadow: 'var(--shadow-md)',
-                                                    border: '1px solid var(--color-border-subtle)'
+                                                    overflow: 'hidden'
                                                 }}>
                                                     <iframe
                                                         src={`${url.split('?')[0].replace(/\/$/, '')}/embed/`}
@@ -681,26 +677,20 @@ export const BrandCampaignModals: React.FC = () => {
             <Modal
                 isOpen={isReelModalOpen}
                 onClose={() => setIsReelModalOpen(false)}
-                title="Instagram Reel Preview"
+                title=""
                 size="lg"
             >
                 <div style={{
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
-                    gap: 'var(--space-6)',
-                    minHeight: '650px',
-                    padding: 'var(--space-8)'
+                    padding: 0
                 }}>
                     <div style={{
                         width: '100%',
-                        maxWidth: '400px',
+                        maxWidth: '430px',
                         aspectRatio: '9/16',
-                        background: 'var(--color-bg-secondary)',
-                        borderRadius: 'var(--radius-xl)',
-                        overflow: 'hidden',
-                        boxShadow: 'var(--shadow-lg)',
-                        border: '1px solid var(--color-border-subtle)'
+                        overflow: 'hidden'
                     }}>
                         <iframe
                             key={reelUrl}
@@ -715,22 +705,6 @@ export const BrandCampaignModals: React.FC = () => {
                             style={{ border: 'none' }}
                             referrerPolicy="no-referrer-when-downgrade"
                         />
-                    </div>
-
-                    <div style={{ textAlign: 'center' }}>
-                        <Button
-                            variant="secondary"
-                            onClick={() => window.open(reelUrl, '_blank')}
-                            style={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 'var(--space-2)',
-                                padding: 'var(--space-2) var(--space-6)'
-                            }}
-                        >
-                            <ExternalLink size={18} />
-                            View on Instagram
-                        </Button>
                     </div>
                 </div>
             </Modal>
