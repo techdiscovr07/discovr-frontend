@@ -80,6 +80,12 @@ export const DEMO_CREATORS = [
     { id: 'creator-002', name: 'Skincare Sam', instagram: 'skincarebysam', status: 'active', followers: 89000, avg_views: 22000, final_amount: 8000 },
     { id: 'creator-003', name: 'Bella Beauty', instagram: 'bella.glow', status: 'rejected', followers: 200000, avg_views: 120000, final_amount: 0 },
     { id: 'creator-004', name: 'Review Raj', instagram: 'raj.lifestyle', status: 'pending', followers: 350000, avg_views: 150000, final_amount: 0 },
+    { id: 'creator-005', name: 'Fashion Fiona', instagram: 'fiona.fits', status: 'active', followers: 125000, avg_views: 65000, final_amount: 12000 },
+    { id: 'creator-006', name: 'Tech Tom', instagram: 'tom.tech', status: 'pending', followers: 45000, avg_views: 15000, final_amount: 0 },
+    { id: 'creator-007', name: 'Healthy Hanna', instagram: 'hanna.health', status: 'active', followers: 210000, avg_views: 95000, final_amount: 20000 },
+    { id: 'creator-008', name: 'Travel Tyler', instagram: 'tyler.travels', status: 'active', followers: 95000, avg_views: 40000, final_amount: 10000 },
+    { id: 'creator-009', name: 'Makeup Maya', instagram: 'maya.makeup', status: 'pending', followers: 600000, avg_views: 280000, final_amount: 0 },
+    { id: 'creator-010', name: 'Gamer Gabe', instagram: 'gabe.games', status: 'rejected', followers: 80000, avg_views: 35000, final_amount: 0 },
 ];
 
 export const DEMO_BIDS = [
@@ -87,16 +93,25 @@ export const DEMO_BIDS = [
     { creator_id: 'creator-002', proposed_amount: 8000, status: 'accepted' },
     { creator_id: 'creator-003', proposed_amount: 40000, status: 'rejected' },
     { creator_id: 'creator-004', proposed_amount: 50000, status: 'pending' },
+    { creator_id: 'creator-005', proposed_amount: 12000, status: 'accepted' },
+    { creator_id: 'creator-006', proposed_amount: 5000, status: 'pending' },
+    { creator_id: 'creator-007', proposed_amount: 20000, status: 'accepted' },
+    { creator_id: 'creator-008', proposed_amount: 10000, status: 'accepted' },
+    { creator_id: 'creator-009', proposed_amount: 85000, status: 'pending' },
+    { creator_id: 'creator-010', proposed_amount: 15000, status: 'rejected' },
 ];
 
 export const DEMO_SCRIPTS = [
     { id: 'script-001', creator_id: 'creator-001', creator_name: 'Glamour Grace', script_content: "Hey everyone! Today I'm trying out the new L'Oreal Serum. Look at that instant hydration! It absorbs in seconds. You can get yours from the link in my bio.", status: 'pending', script_feedback: '', ai_analysis: 'High match. The script naturally details the product benefits and has a strong CTA.' },
-    { id: 'script-002', creator_id: 'creator-002', creator_name: 'Skincare Sam', script_content: 'This serum is pretty decent. It helps with dryness. Check it out.', status: 'revision_requested', script_feedback: 'Please make it more energetic and mention the specific 1.5% Hyaluronic Acid formula!', ai_analysis: 'Low energy. Missing key talking point: 1.5% formula and plumping effect.' }
+    { id: 'script-002', creator_id: 'creator-002', creator_name: 'Skincare Sam', script_content: 'This serum is pretty decent. It helps with dryness. Check it out.', status: 'revision_requested', script_feedback: 'Please make it more energetic and mention the specific 1.5% Hyaluronic Acid formula!', ai_analysis: 'Low energy. Missing key talking point: 1.5% formula and plumping effect.' },
+    { id: 'script-003', creator_id: 'creator-005', creator_name: 'Fashion Fiona', script_content: "Style meets skincare! Using the L'Oreal serum as a primer today for that glowy base. #SkincareRoutine #Glow", status: 'approved', script_feedback: '', ai_analysis: 'Creative integration with fashion. Good usage of product benefits for makeup prep.' },
+    { id: 'script-004', creator_id: 'creator-007', creator_name: 'Healthy Hanna', script_content: "Hydration is key for recovery. This L'Oreal serum is a lifesaver after my morning workouts. #HealthySkin", status: 'pending', script_feedback: '', ai_analysis: 'Strong wellness angle. Clear focus on hydration.' },
 ];
 
 export const DEMO_CONTENT = [
     { id: 'content-001', creator_id: 'creator-001', creator_name: 'Glamour Grace', content_url: 'https://youtube.com/shorts/glamour-loreal', status: 'pending', content_feedback: '', ai_analysis: 'Lighting is great. Product texture is clearly shown. The CTA is visible on screen for 4 seconds.' },
-    { id: 'content-002', creator_id: 'creator-002', creator_name: 'Skincare Sam', content_url: 'https://youtube.com/shorts/sam-skincare', status: 'approved', content_feedback: 'Awesome energy, clear skin texture shown. Cleared to post.', ai_analysis: 'Very engaging. High audience retention expected.' }
+    { id: 'content-002', creator_id: 'creator-002', creator_name: 'Skincare Sam', content_url: 'https://youtube.com/shorts/sam-skincare', status: 'approved', content_feedback: 'Awesome energy, clear skin texture shown. Cleared to post.', ai_analysis: 'Very engaging. High audience retention expected.' },
+    { id: 'content-003', creator_id: 'creator-005', creator_name: 'Fashion Fiona', content_url: 'https://youtube.com/shorts/fiona-fashion-loreal', status: 'pending', content_feedback: '', ai_analysis: 'Elegant framing. The product packaging is presented prominently.' },
 ];
 
 export const DEMO_CREATOR_CAMPAIGNS = [
