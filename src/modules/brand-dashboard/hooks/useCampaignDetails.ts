@@ -29,7 +29,8 @@ export const useCampaignDetails = () => {
         cta: '',
         script_template: '',
         sample_video_url: '',
-        brief_document_url: ''
+        brief_document_url: '',
+        deliverables: [] as any[]
     });
     const [brandScriptTemplate, setBrandScriptTemplate] = useState<string>('');
     const [isScriptTemplateModalOpen, setIsScriptTemplateModalOpen] = useState(false);
@@ -215,7 +216,8 @@ export const useCampaignDetails = () => {
                         cta: found.cta || '',
                         script_template: found.script_template || '',
                         sample_video_url: found.sample_video_url || '',
-                        brief_document_url: found.brief_document_url || ''
+                        brief_document_url: found.brief_document_url || '',
+                        deliverables: found.deliverables || []
                     });
                 }
             } else {
@@ -583,6 +585,9 @@ export const useCampaignDetails = () => {
             if (briefData.donts) formData.append('donts', briefData.donts);
             if (briefData.cta) formData.append('cta', briefData.cta);
             if (briefData.script_template) formData.append('script_template', briefData.script_template);
+            if (briefData.deliverables && briefData.deliverables.length > 0) {
+                formData.append('deliverables', JSON.stringify(briefData.deliverables));
+            }
 
             // Append brief document if present
             if (hasFile) {
@@ -618,7 +623,8 @@ export const useCampaignDetails = () => {
                     cta: updatedCampaign.cta || '',
                     script_template: updatedCampaign.script_template || '',
                     sample_video_url: updatedCampaign.sample_video_url || '',
-                    brief_document_url: updatedCampaign.brief_document_url || ''
+                    brief_document_url: updatedCampaign.brief_document_url || '',
+                    deliverables: updatedCampaign.deliverables || []
                 });
             }
         } catch (error: any) {

@@ -473,6 +473,10 @@ export const brandApi = {
         method: 'POST',
         body: JSON.stringify({ profile_url: profileUrl })
     }),
+    trackBrandCreatorInstagramPost: (creatorUID: string, url: string) => request<any>('/brands/creators/instagram/track-post', {
+        method: 'POST',
+        body: JSON.stringify({ creator_uid: creatorUID, url })
+    }),
 };
 
 /**
@@ -575,4 +579,10 @@ export const creatorApi = {
         creatorApi.invalidateCache();
         return res;
     },
+    getInstagramInsights: () => request<any>('/integrations/instagram/insights'),
+    getInstagramData: () => request<any>('/integrations/instagram/data'),
+    trackInstagramPost: (url: string) => request<any>('/integrations/instagram/track-post', {
+        method: 'POST',
+        body: JSON.stringify({ url })
+    }),
 };

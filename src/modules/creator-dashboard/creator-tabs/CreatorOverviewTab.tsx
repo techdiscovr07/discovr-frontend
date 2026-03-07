@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Card, CardHeader, CardBody, Button, LoadingSpinner } from '../../../components';
 import {
-    Megaphone,
-    Clock,
-    CheckCircle,
     IndianRupee,
-    AlertCircle
+    AlertCircle,
+    Users,
+    Heart,
+    MessageCircle,
+    Search,
+    Activity,
+    ExternalLink
 } from 'lucide-react';
 import {
     LineChart,
@@ -33,10 +36,47 @@ export const CreatorOverviewTab: React.FC<CreatorOverviewTabProps> = ({ searchQu
     const { showToast } = useToast();
     const [isLoading, setIsLoading] = useState(true);
     const [campaigns, setCampaigns] = useState<any[]>([]);
-    
+
+    const [instaData, setInstaData] = useState<any>(null);
+    const [isInstaLoading, setIsInstaLoading] = useState(false);
+    const [trackUrl, setTrackUrl] = useState('');
+    const [isTrackLoading, setIsTrackLoading] = useState(false);
+    const [trackedPost, setTrackedPost] = useState<any>(null);
+
     useEffect(() => {
         fetchCampaigns();
+        fetchInstaInsights();
     }, []);
+
+    const handleTrackPost = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!trackUrl.trim()) return;
+
+        setIsTrackLoading(true);
+        try {
+            const data = await creatorApi.trackInstagramPost(trackUrl);
+            setTrackedPost(data);
+            showToast('Real-time data fetched successfully!', 'success');
+        } catch (error: any) {
+            console.error('Failed to track post:', error);
+            showToast(error.message || 'Could not find this post. Please ensure it is a public post from your account.', 'error');
+        } finally {
+            setIsTrackLoading(false);
+        }
+    };
+
+    const fetchInstaInsights = async () => {
+        setIsInstaLoading(true);
+        try {
+            const data = await creatorApi.getInstagramInsights();
+            setInstaData(data);
+        } catch (error: any) {
+            console.warn('Failed to fetch Instagram insights:', error);
+            // Don't show toast for this yet, as it might just mean they haven't connected
+        } finally {
+            setIsInstaLoading(false);
+        }
+    };
 
     const fetchCampaigns = async () => {
         setIsLoading(true);
@@ -59,17 +99,6 @@ export const CreatorOverviewTab: React.FC<CreatorOverviewTabProps> = ({ searchQu
         }
     };
 
-    // Calculate stats from campaigns
-    const activeCampaigns = campaigns.filter(c => 
-        c.status === 'Active' || c.status === 'Negotiate' || c.status === 'Script Pending' || c.status === 'Content Review'
-    ).length;
-    const pendingSubmissions = campaigns.filter(c => 
-        c.status === 'Script Pending' || c.status === 'Content Review'
-    ).length;
-    const completedCampaigns = campaigns.filter(c => 
-        c.status === 'Completed' || c.status === 'Content Approved'
-    ).length;
-    
     // Calculate total earnings (sum of all campaign amounts)
     const totalEarnings = campaigns.reduce((sum, campaign) => {
         const amount = parseFloat(
@@ -81,24 +110,33 @@ export const CreatorOverviewTab: React.FC<CreatorOverviewTabProps> = ({ searchQu
         return sum + amount;
     }, 0);
 
+    const pendingSubmissions = campaigns.filter(c =>
+        c.status === 'Script Pending' || c.status === 'Content Review'
+    ).length;
+
+    // Use real Instagram data for stats if available
+    const followers = instaData?.profile?.followers_count || 0;
+    const engagementRate = instaData?.engagement?.engagement_rate || 0;
+    const avgLikes = instaData?.engagement?.avg_likes_per_post || 0;
+
     const stats = [
         {
-            label: 'Active Campaigns',
-            value: activeCampaigns.toString(),
-            change: `${campaigns.length} total`,
-            icon: Megaphone
+            label: 'Total Followers',
+            value: followers.toLocaleString(),
+            change: 'Instagram Profile',
+            icon: Users
         },
         {
-            label: 'Pending Submissions',
-            value: pendingSubmissions.toString(),
-            change: 'Requires action',
-            icon: Clock
+            label: 'Engagement Rate',
+            value: `${engagementRate}%`,
+            change: 'Last 10 posts',
+            icon: Heart
         },
         {
-            label: 'Completed',
-            value: completedCampaigns.toString(),
-            change: `${campaigns.length > 0 ? Math.round((completedCampaigns / campaigns.length) * 100) : 0}% completion rate`,
-            icon: CheckCircle
+            label: 'Avg. Likes',
+            value: Math.round(avgLikes).toLocaleString(),
+            change: 'Per post',
+            icon: MessageCircle
         },
         {
             label: 'Total Earnings',
@@ -108,10 +146,29 @@ export const CreatorOverviewTab: React.FC<CreatorOverviewTabProps> = ({ searchQu
         }
     ];
 
-    const earningsData: any[] = [];
-    const platformData: any[] = [];
-    const contentData: any[] = [];
-    const engagementData: any[] = [];
+    // Populate charts with real data
+    const earningsData = campaigns.slice().reverse().map((c, i) => ({
+        month: new Date(c.created_at || Date.now()).toLocaleString('default', { month: 'short' }),
+        earnings: parseFloat((c.amount || '0').toString().replace(/[^0-9.]/g, '')),
+        campaigns: i + 1
+    }));
+
+    const platformData = [
+        { name: 'Instagram', value: 100, color: '#E1306C' }
+    ];
+
+    const contentData = instaData?.recent_media?.slice(0, 5).map((m: any) => ({
+        type: m.media_type === 'CAROUSEL_ALBUM' ? 'Carousel' : (m.media_product_type === 'REELS' ? 'Reel' : 'Image'),
+        count: m.like_count,
+        avgEngagement: m.comments_count
+    })) || [];
+
+    const engagementData = instaData?.recent_media?.slice(0, 5).map((m: any, i: number) => ({
+        week: `Post ${5 - i}`,
+        likes: m.like_count,
+        comments: m.comments_count,
+        shares: m.insights?.shares || 0
+    })).reverse() || [];
 
     if (isLoading) {
         return <LoadingSpinner />;
@@ -284,6 +341,128 @@ export const CreatorOverviewTab: React.FC<CreatorOverviewTabProps> = ({ searchQu
                     </CardBody>
                 </Card>
             </div>
+
+            {/* Real-time Post Tracker */}
+            <Card className="analytics-card mt-6" style={{ marginTop: '2rem' }}>
+                <CardHeader>
+                    <div className="card-header-content">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                            <Activity className="text-accent" size={24} color="var(--color-accent)" />
+                            <h3 style={{ margin: 0 }}>Real-time Post Tracker</h3>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardBody>
+                    <div className="post-tracker-container">
+                        <p style={{ color: 'var(--color-text-secondary)', marginBottom: '1.5rem' }}>
+                            Paste any Instagram post or reel link from your connected account to see its live performance metrics.
+                        </p>
+                        <form onSubmit={handleTrackPost} style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+                            <div style={{ flex: 1, position: 'relative' }}>
+                                <div style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--color-text-tertiary)' }}>
+                                    <Search size={18} />
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder="https://www.instagram.com/reels/DAGz-5LSaDk/"
+                                    value={trackUrl}
+                                    onChange={(e) => setTrackUrl(e.target.value)}
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.75rem 1rem 0.75rem 2.75rem',
+                                        background: 'var(--color-bg-secondary)',
+                                        border: '1px solid var(--color-border-subtle)',
+                                        borderRadius: '12px',
+                                        color: 'var(--color-text-primary)',
+                                        fontSize: '0.95rem',
+                                        transition: 'all 0.2s ease',
+                                        outline: 'none'
+                                    }}
+                                    onFocus={(e) => e.target.style.borderColor = 'var(--color-accent)'}
+                                    onBlur={(e) => e.target.style.borderColor = 'var(--color-border-subtle)'}
+                                />
+                            </div>
+                            <Button type="submit" isLoading={isTrackLoading} disabled={!trackUrl.trim()}>
+                                Track Live
+                            </Button>
+                        </form>
+
+                        {trackedPost && (
+                            <div className="tracked-post-result animate-fade-in" style={{
+                                background: 'rgba(255, 255, 255, 0.03)',
+                                padding: '1.5rem',
+                                borderRadius: '16px',
+                                border: '1px solid var(--color-border-subtle)'
+                            }}>
+                                <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+                                    <div style={{ width: '120px', height: '160px', borderRadius: '12px', overflow: 'hidden', background: 'var(--color-bg-tertiary)' }}>
+                                        {trackedPost.media?.thumbnail_url || trackedPost.media?.media_url ? (
+                                            <img
+                                                src={trackedPost.media?.thumbnail_url || trackedPost.media?.media_url}
+                                                alt="Post thumbnail"
+                                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                            />
+                                        ) : (
+                                            <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-tertiary)' }}>
+                                                <Instagram size={32} color="var(--color-text-tertiary)" />
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div style={{ flex: 1, minWidth: '250px' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                            <div>
+                                                <span style={{
+                                                    background: 'rgba(225, 48, 108, 0.15)',
+                                                    color: '#E1306C',
+                                                    padding: '0.25rem 0.75rem',
+                                                    borderRadius: '20px',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: 'bold',
+                                                    marginBottom: '0.5rem',
+                                                    display: 'inline-block'
+                                                }}>
+                                                    {trackedPost.media?.media_product_type || trackedPost.media?.media_type}
+                                                </span>
+                                                <h4 style={{ margin: '0 0 0.5rem 0', fontSize: '1.1rem', color: 'var(--color-text-primary)' }}>
+                                                    {trackedPost.media?.caption?.slice(0, 60)}...
+                                                </h4>
+                                                <p style={{ color: 'var(--color-text-tertiary)', fontSize: '0.85rem' }}>
+                                                    Published on {new Date(trackedPost.media?.timestamp).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                            <a
+                                                href={trackedPost.media?.permalink}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                style={{ color: 'var(--color-accent)', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}
+                                            >
+                                                View on Insta <ExternalLink size={14} />
+                                            </a>
+                                        </div>
+
+                                        <div className="insights-grid-mini" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '1rem' }}>
+                                            <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', textAlign: 'center' }}>
+                                                <div style={{ color: 'var(--color-text-tertiary)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>Likes</div>
+                                                <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--color-text-primary)' }}>{trackedPost.media?.like_count?.toLocaleString()}</div>
+                                            </div>
+                                            <div style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', textAlign: 'center' }}>
+                                                <div style={{ color: 'var(--color-text-tertiary)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>Comments</div>
+                                                <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--color-text-primary)' }}>{trackedPost.media?.comments_count?.toLocaleString()}</div>
+                                            </div>
+                                            {trackedPost.insights && Object.entries(trackedPost.insights).map(([key, val]: [string, any]) => (
+                                                <div key={key} style={{ padding: '1rem', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', textAlign: 'center' }}>
+                                                    <div style={{ color: 'var(--color-text-tertiary)', fontSize: '0.75rem', marginBottom: '0.25rem' }}>{key.replace(/_/g, ' ')}</div>
+                                                    <div style={{ fontWeight: 'bold', fontSize: '1.2rem', color: 'var(--color-text-primary)' }}>{val?.toLocaleString()}</div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </CardBody>
+            </Card>
 
             {/* Important Notice */}
             {pendingSubmissions > 0 && (

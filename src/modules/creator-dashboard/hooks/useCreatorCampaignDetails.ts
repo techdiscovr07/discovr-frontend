@@ -255,7 +255,8 @@ export const useCreatorCampaignDetails = () => {
                         ? (briefCampaign.total_budget !== undefined ? briefCampaign.total_budget : brief.total_budget)
                         : merged.total_budget,
                     creator_categories: briefCampaign.creator_categories || brief.creator_categories || merged.creator_categories,
-                    follower_ranges: briefCampaign.follower_ranges || brief.follower_ranges || merged.follower_ranges
+                    follower_ranges: briefCampaign.follower_ranges || brief.follower_ranges || merged.follower_ranges,
+                    deliverables: briefCampaign.deliverables || brief.deliverables || merged.deliverables || []
                 };
 
                 setCampaignData(finalCampaignData);

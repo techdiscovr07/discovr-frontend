@@ -115,6 +115,27 @@ export const CreatorCampaignLeftColumn: React.FC = () => {
                                 {renderBriefItem(ArrowRight, "Call to Action", briefCta)}
                             </div>
 
+                            {campaignData.deliverables && campaignData.deliverables.length > 0 && (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', padding: 'var(--space-4)', background: 'rgba(var(--color-primary-rgb), 0.03)', borderRadius: 'var(--radius-lg)', border: '1px solid var(--color-border-subtle)' }}>
+                                    <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--color-accent)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                        Required Deliverables
+                                    </span>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '12px' }}>
+                                        {campaignData.deliverables.map((d: any) => (
+                                            <div key={d.type} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px', background: 'var(--color-bg-primary)', borderRadius: '8px', border: '1px solid var(--color-border)' }}>
+                                                <span style={{ fontSize: '20px' }}>
+                                                    {d.type === 'Reels' ? '🎬' : d.type === 'Posts' ? '🖼️' : d.type === 'Stories' ? '📱' : '⚖️'}
+                                                </span>
+                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                    <span style={{ fontWeight: 800, fontSize: '14px', lineHeight: 1 }}>{d.quantity}</span>
+                                                    <span style={{ fontSize: '10px', color: 'var(--color-text-tertiary)', textTransform: 'uppercase', fontWeight: 600 }}>{d.type}</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
                             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 'var(--space-3)' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                     <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--color-success)', textTransform: 'uppercase', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -242,12 +263,20 @@ export const CreatorCampaignLeftColumn: React.FC = () => {
                                 type: 'negotiate',
                                 icon: MessageSquare
                             },
-                            { name: 'Concept & Script Submission', date: 'Mar 15, 2026', status: scriptDeliverableStatus, type: 'script', icon: FileText },
-                            { name: 'Instagram Reel Content', date: 'Mar 18, 2026', status: contentDeliverableStatus, type: 'content', icon: Upload },
+                            { name: 'Concept & Script Submission', date: 'Phase 1', status: scriptDeliverableStatus, type: 'script', icon: FileText },
                             {
-                                name: 'Final Post Submission (Go Live)',
-                                date: 'Mar 22, 2026',
-                                status: canGoLive ? 'Ready' : 'Upcoming',
+                                name: campaignData.deliverables?.length > 0
+                                    ? `Deliverables: ${campaignData.deliverables.map((d: any) => `${d.quantity} ${d.type}`).join(', ')}`
+                                    : 'Content Submission',
+                                date: 'Phase 2',
+                                status: contentDeliverableStatus,
+                                type: 'content',
+                                icon: Upload
+                            },
+                            {
+                                name: 'Final Post & Live URL',
+                                date: campaignData.go_live_date ? new Date(campaignData.go_live_date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }) : 'Phase 3',
+                                status: canGoLive ? 'Ready' : (campaignData.status === 'live' || campaignData.status === 'content_live' ? 'Completed' : 'Upcoming'),
                                 type: 'go-live',
                                 icon: CheckCircle2
                             }

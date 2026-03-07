@@ -149,6 +149,36 @@ export const CampaignBriefTab: React.FC<CampaignBriefTabProps> = ({
                                 </div>
                             </section>
 
+                            {/* Deliverables Section */}
+                            <section>
+                                <h4 style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--color-accent)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                                    <Zap size={14} />
+                                    Deliverables per Creator
+                                </h4>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 'var(--space-4)' }}>
+                                    {campaignData.deliverables?.map((d: any) => (
+                                        <div key={d.type} style={{
+                                            padding: 'var(--space-4)',
+                                            background: 'rgba(255, 255, 255, 0.02)',
+                                            borderRadius: 'var(--radius-lg)',
+                                            border: '1px solid var(--color-border-subtle)',
+                                            textAlign: 'center'
+                                        }}>
+                                            <div style={{ fontSize: '1.5rem', marginBottom: 'var(--space-1)' }}>
+                                                {d.type === 'Reels' ? '🎬' : d.type === 'Posts' ? '🖼️' : d.type === 'Stories' ? '📱' : '⚖️'}
+                                            </div>
+                                            <div style={{ fontWeight: 800, fontSize: 'var(--text-lg)' }}>{d.quantity}</div>
+                                            <div style={{ fontSize: '10px', color: 'var(--color-text-tertiary)', textTransform: 'uppercase' }}>{d.type}</div>
+                                        </div>
+                                    ))}
+                                    {(!campaignData.deliverables || campaignData.deliverables.length === 0) && (
+                                        <div style={{ gridColumn: '1 / -1', color: 'var(--color-text-tertiary)', fontSize: 'var(--text-sm)' }}>
+                                            No explicit deliverables defined.
+                                        </div>
+                                    )}
+                                </div>
+                            </section>
+
                             {/* Guidelines Section */}
                             <section>
                                 <h4 style={{ fontSize: 'var(--text-xs)', fontWeight: 700, color: 'var(--color-accent)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 'var(--space-4)', display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
@@ -326,6 +356,78 @@ export const CampaignBriefTab: React.FC<CampaignBriefTabProps> = ({
                                         onChange={(e: any) => setBriefData({ ...briefData, cta: e.target.value })}
                                         leftIcon={<ArrowRight size={16} />}
                                     />
+                                </div>
+
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>
+                                    <h5 style={{ fontSize: 'var(--text-sm)', fontWeight: 700, marginBottom: '-var(--space-2)', color: 'var(--color-text-secondary)' }}>Campaign Deliverables</h5>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-4)' }}>
+                                        {[
+                                            { type: 'Reels', icon: '🎬' },
+                                            { type: 'Posts', icon: '🖼️' },
+                                            { type: 'Stories', icon: '📱' },
+                                            { type: 'Usage Rights', icon: '⚖️' }
+                                        ].map((option) => {
+                                            const current = briefData.deliverables?.find((d: any) => d.type === option.type);
+                                            const isSelected = !!current;
+
+                                            return (
+                                                <div key={option.type} style={{
+                                                    padding: 'var(--space-4)',
+                                                    background: isSelected ? 'rgba(var(--color-primary-rgb), 0.05)' : 'var(--color-bg-primary)',
+                                                    borderRadius: 'var(--radius-lg)',
+                                                    border: `1px solid ${isSelected ? 'var(--color-primary)' : 'var(--color-border)'}`,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'space-between',
+                                                    transition: 'all 0.2s ease'
+                                                }}>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                                                        <span style={{ fontSize: '20px' }}>{option.icon}</span>
+                                                        <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{option.type}</span>
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isSelected}
+                                                            onChange={(e) => {
+                                                                let next = [...(briefData.deliverables || [])];
+                                                                if (e.target.checked) {
+                                                                    next.push({ type: option.type, quantity: 1 });
+                                                                } else {
+                                                                    next = next.filter(d => d.type !== option.type);
+                                                                }
+                                                                setBriefData({ ...briefData, deliverables: next });
+                                                            }}
+                                                            style={{ cursor: 'pointer' }}
+                                                        />
+                                                        {isSelected && (
+                                                            <input
+                                                                type="number"
+                                                                min="1"
+                                                                value={current.quantity}
+                                                                onChange={(e) => {
+                                                                    const next = briefData.deliverables.map((d: any) =>
+                                                                        d.type === option.type ? { ...d, quantity: parseInt(e.target.value) || 1 } : d
+                                                                    );
+                                                                    setBriefData({ ...briefData, deliverables: next });
+                                                                }}
+                                                                style={{
+                                                                    width: '45px',
+                                                                    padding: '4px 6px',
+                                                                    borderRadius: '4px',
+                                                                    border: '1px solid var(--color-border)',
+                                                                    fontSize: '12px',
+                                                                    textAlign: 'center',
+                                                                    background: 'var(--color-bg-primary)',
+                                                                    color: 'var(--color-text-primary)'
+                                                                }}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)' }}>

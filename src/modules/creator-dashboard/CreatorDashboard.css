@@ -490,3 +490,33 @@
 .deliverable-feedback-inline span {
     font-weight: 500;
 }
+
+/* Post Tracker Styles */
+.post-tracker-container {
+    padding: var(--space-1);
+}
+
+.tracked-post-result {
+    animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.insights-grid-mini>div {
+    transition: transform 0.2s ease, background 0.2s ease;
+}
+
+.insights-grid-mini>div:hover {
+    transform: translateY(-4px);
+    background: rgba(255, 255, 255, 0.08) !important;
+}

@@ -35,6 +35,13 @@ export const NewCampaignModal: React.FC<NewCampaignModalProps> = ({ isOpen, onCl
         { label: '1M+', value: '1000000-10000000', desc: 'Celebrity' }
     ];
 
+    const deliverableOptions = [
+        { label: 'Reels', value: 'Reels', icon: '🎬' },
+        { label: 'Posts', value: 'Posts', icon: '🖼️' },
+        { label: 'Stories', value: 'Stories', icon: '📱' },
+        { label: 'Usage Rights', value: 'Rights', icon: '⚖️' }
+    ];
+
     const [formData, setFormData] = useState({
         name: '',
         description: '',
@@ -46,7 +53,10 @@ export const NewCampaignModal: React.FC<NewCampaignModalProps> = ({ isOpen, onCl
         platform: 'Instagram',
         contentType: 'Posts',
         requirements: '',
-        followerRanges: ['10000-50000'] as string[]
+        followerRanges: ['10000-50000'] as string[],
+        deliverables: [
+            { type: 'Reels', quantity: 1 }
+        ] as { type: string, quantity: number }[]
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -106,7 +116,11 @@ export const NewCampaignModal: React.FC<NewCampaignModalProps> = ({ isOpen, onCl
                 goLiveDate: dateString,
                 cpv: suggestedCPV,
                 creatorCategories: suggestedCategories,
-                followerRanges: suggestedRanges
+                followerRanges: suggestedRanges,
+                deliverables: [
+                    { type: 'Reels', quantity: 2 },
+                    { type: 'Stories', quantity: 3 }
+                ]
             });
 
             setGenerationProgress(100);
@@ -191,7 +205,8 @@ export const NewCampaignModal: React.FC<NewCampaignModalProps> = ({ isOpen, onCl
                 creator_count: parseInt(formData.creatorCount),
                 go_live_date: formData.goLiveDate,
                 cpv: parseFloat(formData.cpv),
-                follower_ranges: formData.followerRanges
+                follower_ranges: formData.followerRanges,
+                deliverables: formData.deliverables
             };
 
             const createdCampaign = await brandApi.createCampaign(campaignData) as any;
@@ -212,7 +227,10 @@ export const NewCampaignModal: React.FC<NewCampaignModalProps> = ({ isOpen, onCl
                 platform: 'Instagram',
                 contentType: 'Posts',
                 requirements: '',
-                followerRanges: ['10000-50000']
+                followerRanges: ['10000-50000'],
+                deliverables: [
+                    { type: 'Reels', quantity: 1 }
+                ]
             });
         } catch (error: any) {
             console.error('Failed to create campaign:', error);
@@ -228,7 +246,7 @@ export const NewCampaignModal: React.FC<NewCampaignModalProps> = ({ isOpen, onCl
                 isOpen={isOpen}
                 onClose={onClose}
                 title={
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', paddingRight: 'var(--space-8)' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', gap: 'var(--space-4)' }}>
                         <span>Create New Campaign</span>
                         <Button
                             size="sm"
@@ -242,7 +260,8 @@ export const NewCampaignModal: React.FC<NewCampaignModalProps> = ({ isOpen, onCl
                                 gap: 'var(--space-2)',
                                 boxShadow: '0 4px 10px rgba(168, 85, 247, 0.2)',
                                 padding: 'var(--space-2) var(--space-4)',
-                                transform: 'scale(0.95)'
+                                transform: 'scale(1)',
+                                marginLeft: 'auto'
                             }}
                         >
                             <Sparkles size={14} />
@@ -419,6 +438,105 @@ export const NewCampaignModal: React.FC<NewCampaignModalProps> = ({ isOpen, onCl
                                 </p>
                             )}
                         </div>
+                    </div>
+
+                    {/* Campaign Deliverables */}
+                    <div className="form-section">
+                        <h3 className="form-section-title">Campaign Deliverables *</h3>
+                        <p style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginBottom: 'var(--space-4)' }}>
+                            Specify what content pieces and rights you expect from each creator.
+                        </p>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 'var(--space-4)' }}>
+                            {deliverableOptions.map(opt => {
+                                const deliverable = formData.deliverables.find(d => d.type === opt.value);
+                                const isActive = !!deliverable;
+                                return (
+                                    <div
+                                        key={opt.value}
+                                        style={{
+                                            padding: 'var(--space-4)',
+                                            background: isActive ? 'rgba(var(--color-primary-rgb), 0.05)' : 'var(--color-bg-secondary)',
+                                            borderRadius: 'var(--radius-lg)',
+                                            border: `1px solid ${isActive ? 'var(--color-primary)' : 'var(--color-border-subtle)'}`,
+                                            transition: 'all 0.2s ease',
+                                            display: 'flex',
+                                            flexDirection: 'column',
+                                            gap: 'var(--space-3)',
+                                            position: 'relative',
+                                            overflow: 'hidden'
+                                        }}
+                                    >
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                                                <span style={{ fontSize: '1.2rem' }}>{opt.icon}</span>
+                                                <span style={{ fontWeight: 600, fontSize: 'var(--text-sm)' }}>{opt.label}</span>
+                                            </div>
+                                            <input
+                                                type="checkbox"
+                                                checked={isActive}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            deliverables: [...prev.deliverables, { type: opt.value, quantity: 1 }]
+                                                        }));
+                                                    } else {
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            deliverables: prev.deliverables.filter(d => d.type !== opt.value)
+                                                        }));
+                                                    }
+                                                }}
+                                                style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: 'var(--color-primary)' }}
+                                            />
+                                        </div>
+
+                                        {isActive && (
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginTop: 'auto', background: 'var(--color-bg-primary)', padding: '4px', borderRadius: '8px' }}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            deliverables: prev.deliverables.map(d =>
+                                                                d.type === opt.value ? { ...d, quantity: Math.max(1, d.quantity - 1) } : d
+                                                            )
+                                                        }));
+                                                    }}
+                                                    style={{ all: 'unset', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-tertiary)', borderRadius: '6px', fontSize: '18px', fontWeight: 'bold' }}
+                                                >
+                                                    -
+                                                </button>
+                                                <div style={{ flex: 1, textAlign: 'center' }}>
+                                                    <span style={{ fontWeight: 'bold', fontSize: 'var(--text-sm)' }}>{deliverable.quantity}</span>
+                                                    <span style={{ fontSize: '10px', color: 'var(--color-text-tertiary)', display: 'block', textTransform: 'uppercase' }}>Qty</span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            deliverables: prev.deliverables.map(d =>
+                                                                d.type === opt.value ? { ...d, quantity: d.quantity + 1 } : d
+                                                            )
+                                                        }));
+                                                    }}
+                                                    style={{ all: 'unset', cursor: 'pointer', width: '28px', height: '28px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--color-bg-tertiary)', borderRadius: '6px', fontSize: '18px', fontWeight: 'bold' }}
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        {formData.deliverables.length === 0 && (
+                            <p style={{ marginTop: 'var(--space-3)', color: 'var(--color-error)', fontSize: 'var(--text-xs)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <AlertCircle size={12} /> Please select at least one deliverable.
+                            </p>
+                        )}
                     </div>
 
                     {/* Budget & Timeline */}
@@ -604,23 +722,46 @@ export const NewCampaignModal: React.FC<NewCampaignModalProps> = ({ isOpen, onCl
                         </div>
                     </div>
                 ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                        <div style={{ padding: 'var(--space-3)', background: 'rgba(168, 85, 247, 0.05)', borderRadius: 'var(--radius-md)', border: '1px dashed var(--color-accent)', display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
-                            <Zap size={14} style={{ color: 'var(--color-warning)' }} />
-                            <p style={{ margin: 0, fontSize: 'var(--text-xs)', color: 'var(--color-text-secondary)' }}>Describe your product and what you want to achieve.</p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-6)', padding: 'var(--space-2) 0' }}>
+                        <div style={{ padding: 'var(--space-4)', background: 'rgba(168, 85, 247, 0.08)', borderRadius: 'var(--radius-lg)', border: '1px dashed var(--color-accent)', display: 'flex', gap: 'var(--space-3)', alignItems: 'center' }}>
+                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--color-bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <Zap size={18} style={{ color: 'var(--color-warning)' }} />
+                            </div>
+                            <p style={{ margin: 0, fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', lineHeight: 1.5 }}>
+                                Describe your product and what you want to achieve. Our AI will build the perfect campaign brief for you.
+                            </p>
                         </div>
-                        <TextArea
-                            label="Your Campaign Idea"
-                            placeholder="e.g., A luxury watch launch for high-income professionals. Focus on precision and status."
-                            value={aiPrompt}
-                            onChange={(e: any) => setAiPrompt(e.target.value)}
-                            rows={4}
-                            autoFocus
-                        />
-                        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
+                        <div style={{ flex: 1 }}>
+                            <TextArea
+                                label="Your Campaign Idea"
+                                placeholder="e.g., A luxury watch launch for high-income professionals. Focus on precision and status."
+                                value={aiPrompt}
+                                onChange={(e: any) => setAiPrompt(e.target.value)}
+                                rows={5}
+                                autoFocus
+                                className="ai-builder-textarea"
+                            />
+                        </div>
+                        <div style={{
+                            display: 'flex',
+                            justifyContent: 'flex-end',
+                            gap: 'var(--space-4)',
+                            marginTop: 'var(--space-2)',
+                            paddingTop: 'var(--space-4)',
+                            borderTop: '1px solid var(--color-border-subtle)'
+                        }}>
                             <Button variant="ghost" onClick={() => setIsAIModalOpen(false)}>Cancel</Button>
-                            <Button onClick={handleAIGenerate} style={{ background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))', border: 'none', color: 'white' }}>
-                                <Rocket size={16} style={{ marginRight: '8px' }} />
+                            <Button
+                                onClick={handleAIGenerate}
+                                style={{
+                                    background: 'linear-gradient(135deg, var(--color-primary), var(--color-accent))',
+                                    border: 'none',
+                                    color: 'white',
+                                    fontWeight: 'bold',
+                                    padding: 'var(--space-2) var(--space-6)'
+                                }}
+                            >
+                                <Rocket size={18} style={{ marginRight: '8px' }} />
                                 Magic Generate
                             </Button>
                         </div>

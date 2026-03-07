@@ -1,6 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { Sparkles, Activity, Instagram, ExternalLink, Loader2 } from 'lucide-react';
+import { brandApi } from '../../../lib/api';
+import { useToast } from '../../../contexts/ToastContext';
 import { Card, CardHeader, CardBody, Button } from '../../../components';
-import { Sparkles } from 'lucide-react';
 
 interface CampaignContentTabProps {
     filteredContent: any[];
@@ -19,6 +21,25 @@ export const CampaignContentTab: React.FC<CampaignContentTabProps> = ({
     getContentStatusMeta,
     handleOpenAIContentReview
 }) => {
+    const { showToast } = useToast();
+    const [trackingPost, setTrackingPost] = useState<any>(null);
+    const [isTracking, setIsTracking] = useState<string | null>(null); // creator_id of currently tracking post
+
+    const handleTrackPerformance = async (creatorId: string, url: string) => {
+        if (!url) return;
+        setIsTracking(creatorId);
+        try {
+            const data = await brandApi.trackBrandCreatorInstagramPost(creatorId, url);
+            setTrackingPost({ ...data, creatorId });
+            showToast('Live performance data updated!', 'success');
+        } catch (error: any) {
+            console.error('Failed to track performance:', error);
+            showToast(error.message || 'Could not fetch live data. Ensure the post is public.', 'error');
+        } finally {
+            setIsTracking(null);
+        }
+    };
+
     return (
         <Card className="content-card">
             <CardHeader>
@@ -88,7 +109,11 @@ export const CampaignContentTab: React.FC<CampaignContentTabProps> = ({
                                         <td>
                                             <div className="creator-cell">
                                                 <div className="creator-avatar">
-                                                    {item.avatar || '👤'}
+                                                    {item.avatar && item.avatar.startsWith('http') ? (
+                                                        <img src={item.avatar} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                                                    ) : (
+                                                        item.avatar || '👤'
+                                                    )}
                                                 </div>
                                                 <span className="creator-name">{item.name || item.creator_name}</span>
                                             </div>
@@ -100,9 +125,35 @@ export const CampaignContentTab: React.FC<CampaignContentTabProps> = ({
                                                     const isLive = contentStatus === 'content_live' || contentStatus === 'live';
                                                     if (isLive && item.live_url) {
                                                         return (
-                                                            <a href={item.live_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent)', fontWeight: 500, fontSize: 'var(--text-sm)' }}>
-                                                                View Live URL
-                                                            </a>
+                                                            <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-1)' }}>
+                                                                <a href={item.live_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent)', fontWeight: 500, fontSize: 'var(--text-sm)' }}>
+                                                                    View Live URL
+                                                                </a>
+                                                                {item.live_url.includes('instagram.com') && (
+                                                                    <button
+                                                                        onClick={() => handleTrackPerformance(item.id || item.creator_id, item.live_url)}
+                                                                        disabled={isTracking === (item.id || item.creator_id)}
+                                                                        style={{
+                                                                            all: 'unset',
+                                                                            cursor: 'pointer',
+                                                                            display: 'flex',
+                                                                            alignItems: 'center',
+                                                                            gap: 'var(--space-1)',
+                                                                            fontSize: '11px',
+                                                                            color: 'var(--color-info)',
+                                                                            fontWeight: 600,
+                                                                            opacity: isTracking === (item.id || item.creator_id) ? 0.5 : 1
+                                                                        }}
+                                                                    >
+                                                                        {isTracking === (item.id || item.creator_id) ? (
+                                                                            <Loader2 className="animate-spin" size={12} />
+                                                                        ) : (
+                                                                            <Activity size={12} />
+                                                                        )}
+                                                                        Track Live Performance
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         );
                                                     }
                                                     if (item.content_url) {
@@ -165,6 +216,71 @@ export const CampaignContentTab: React.FC<CampaignContentTabProps> = ({
                         </tbody>
                     </table>
                 </div>
+
+                {/* Live Tracking Result Area */}
+                {trackingPost && (
+                    <div className="animate-fade-in" style={{
+                        margin: 'var(--space-4)',
+                        padding: '1.5rem',
+                        background: 'rgba(255, 255, 255, 0.03)',
+                        borderRadius: '16px',
+                        border: '1px solid var(--color-border-subtle)',
+                        boxShadow: 'inset 0 0 20px rgba(0,0,0,0.2)'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <Activity size={20} color="var(--color-accent)" />
+                                <h4 style={{ margin: 0, fontSize: 'var(--text-lg)' }}>Live Performance: {filteredContent.find(c => (c.id === trackingPost.creatorId || c.creator_id === trackingPost.creatorId))?.name || 'Creator'}</h4>
+                            </div>
+                            <Button variant="ghost" size="sm" onClick={() => setTrackingPost(null)}>Close Tracker</Button>
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+                            <div style={{ width: '100px', height: '130px', borderRadius: '12px', overflow: 'hidden', background: 'var(--color-bg-tertiary)' }}>
+                                {trackingPost.media?.thumbnail_url || trackingPost.media?.media_url ? (
+                                    <img
+                                        src={trackingPost.media?.thumbnail_url || trackingPost.media?.media_url}
+                                        alt="Post thumbnail"
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    />
+                                ) : (
+                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <Instagram size={28} color="var(--color-text-tertiary)" />
+                                    </div>
+                                )}
+                            </div>
+
+                            <div style={{ flex: 1, minWidth: '300px' }}>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(100px, 1fr))', gap: '1rem' }}>
+                                    <div style={{ padding: '0.75rem', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', textAlign: 'center' }}>
+                                        <div style={{ color: 'var(--color-text-tertiary)', fontSize: '0.7rem', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Likes</div>
+                                        <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{trackingPost.media?.like_count?.toLocaleString()}</div>
+                                    </div>
+                                    <div style={{ padding: '0.75rem', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', textAlign: 'center' }}>
+                                        <div style={{ color: 'var(--color-text-tertiary)', fontSize: '0.7rem', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Comments</div>
+                                        <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{trackingPost.media?.comments_count?.toLocaleString()}</div>
+                                    </div>
+                                    {trackingPost.insights && Object.entries(trackingPost.insights).map(([key, val]: [string, any]) => (
+                                        <div key={key} style={{ padding: '0.75rem', background: 'rgba(255,255,255,0.05)', borderRadius: '12px', textAlign: 'center' }}>
+                                            <div style={{ color: 'var(--color-text-tertiary)', fontSize: '0.7rem', textTransform: 'uppercase', marginBottom: '0.25rem' }}>{key.replace(/_/g, ' ')}</div>
+                                            <div style={{ fontWeight: 'bold', fontSize: '1.1rem' }}>{val?.toLocaleString()}</div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div style={{ marginTop: '1rem', textAlign: 'right' }}>
+                                    <a
+                                        href={trackingPost.media?.permalink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        style={{ color: 'var(--color-accent)', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem' }}
+                                    >
+                                        Verify on Instagram <ExternalLink size={12} />
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </CardBody>
         </Card>
     );

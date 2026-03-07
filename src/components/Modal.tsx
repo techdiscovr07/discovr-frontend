@@ -47,8 +47,12 @@ export const Modal: React.FC<ModalProps> = ({
                 onClick={(e) => e.stopPropagation()}
             >
                 <div className="modal-header">
-                    <div>
-                        <h2 className="modal-title">{title}</h2>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                        {typeof title === 'string' ? (
+                            <h2 className="modal-title">{title}</h2>
+                        ) : (
+                            <div className="modal-title-custom">{title}</div>
+                        )}
                         {subtitle && <p className="modal-subtitle">{subtitle}</p>}
                     </div>
                     <button className="modal-close" onClick={onClose}>

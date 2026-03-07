@@ -57,11 +57,17 @@
     gap: var(--space-4);
 }
 
-.modal-title {
+.modal-title,
+.modal-title-custom {
     font-size: var(--text-2xl);
     font-weight: var(--font-bold);
     color: var(--color-text-primary);
     margin: 0;
+}
+
+.modal-title-custom {
+    display: flex;
+    align-items: center;
 }
 
 .modal-subtitle {

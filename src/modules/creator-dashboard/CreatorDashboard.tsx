@@ -9,7 +9,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { NotificationCenter, Button, LoadingSpinner } from '../../components';
+import { NotificationCenter, Button, Modal, LoadingSpinner } from '../../components';
 import { creatorApi, updateProfile } from '../../lib/api';
 import { auth } from '../../lib/firebase';
 
@@ -31,6 +31,17 @@ export const CreatorDashboard: React.FC = () => {
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     const [isConnectingInsta, setIsConnectingInsta] = useState(false);
+    const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+    useEffect(() => {
+        if (searchParams.get('instagram') === 'connected') {
+            setShowSuccessModal(true);
+            // Clean up the URL
+            const newParams = new URLSearchParams(searchParams);
+            newParams.delete('instagram');
+            setSearchParams(newParams, { replace: true });
+        }
+    }, [searchParams, setSearchParams]);
 
     const handleConnectInstagram = async () => {
         setIsConnectingInsta(true);
@@ -38,9 +49,13 @@ export const CreatorDashboard: React.FC = () => {
             const token = await auth.currentUser?.getIdToken();
             if (!token) throw new Error("Not authenticated");
 
-            // Try fetching the auth URL from backend
+            // Pass current URL as redirect
+            const currentUrl = window.location.origin + window.location.pathname;
             const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8080';
-            const response = await fetch(`${apiUrl}/integrations/instagram/connect`, {
+            const connectUrl = new URL(`${apiUrl}/integrations/instagram/connect`);
+            connectUrl.searchParams.append('redirect', currentUrl);
+
+            const response = await fetch(connectUrl.toString(), {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
@@ -311,6 +326,37 @@ export const CreatorDashboard: React.FC = () => {
                     </Suspense>
                 </div>
             </main>
+
+            {/* Connection Success Modal */}
+            <Modal
+                isOpen={showSuccessModal}
+                onClose={() => setShowSuccessModal(false)}
+                title="Instagram Connected!"
+                size="sm"
+            >
+                <div style={{ textAlign: 'center', padding: 'var(--space-4) 0' }}>
+                    <div style={{
+                        width: '64px',
+                        height: '64px',
+                        background: 'rgba(34, 197, 94, 0.1)',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'var(--color-success)',
+                        margin: '0 auto var(--space-4)'
+                    }}>
+                        <Instagram size={32} />
+                    </div>
+                    <h3 style={{ marginBottom: 'var(--space-2)' }}>Successfully Connected!</h3>
+                    <p style={{ color: 'var(--color-text-secondary)', marginBottom: 'var(--space-6)', fontSize: '14px' }}>
+                        Your Instagram account has been linked successfully. Our team will review your profile for the waitlist.
+                    </p>
+                    <Button onClick={() => setShowSuccessModal(false)} style={{ width: '100%' }}>
+                        Got it, thanks!
+                    </Button>
+                </div>
+            </Modal>
         </div>
     );
 };
