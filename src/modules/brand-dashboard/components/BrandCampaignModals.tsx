@@ -1,6 +1,6 @@
 import React from 'react';
 import { Button, Modal, Sidebar, Input, TextArea, FileUpload, Card, CardHeader, CardBody } from '../../../components';
-import { Clock, Check, Sparkles, TrendingUp, MessageSquare, RefreshCw } from 'lucide-react';
+import { Clock, Check, Sparkles, TrendingUp, MessageSquare, RefreshCw, ExternalLink } from 'lucide-react';
 import { useBrandCampaignContext } from '../BrandCampaignContext';
 
 export const BrandCampaignModals: React.FC = () => {
@@ -289,27 +289,25 @@ export const BrandCampaignModals: React.FC = () => {
                                             return (
                                                 <div style={{
                                                     width: '100%',
-                                                    maxWidth: '240px',
+                                                    maxWidth: '320px',
                                                     aspectRatio: '9/16',
-                                                    background: '#000',
-                                                    borderRadius: '24px',
-                                                    padding: '8px',
-                                                    boxShadow: '0 12px 24px rgba(0,0,0,0.3)',
-                                                    border: '3px solid #333'
+                                                    background: 'var(--color-bg-secondary)',
+                                                    borderRadius: 'var(--radius-lg)',
+                                                    overflow: 'hidden',
+                                                    boxShadow: 'var(--shadow-md)',
+                                                    border: '1px solid var(--color-border-subtle)'
                                                 }}>
-                                                    <div style={{ width: '100%', height: '100%', borderRadius: '14px', overflow: 'hidden' }}>
-                                                        <iframe
-                                                            src={`${url.split('?')[0].replace(/\/$/, '')}/embed/`}
-                                                            width="100%"
-                                                            height="100%"
-                                                            frameBorder="0"
-                                                            scrolling="no"
-                                                            allowTransparency={true}
-                                                            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-                                                            title="Instagram Reel Preview"
-                                                            style={{ border: 'none' }}
-                                                        />
-                                                    </div>
+                                                    <iframe
+                                                        src={`${url.split('?')[0].replace(/\/$/, '')}/embed/`}
+                                                        width="100%"
+                                                        height="100%"
+                                                        frameBorder="0"
+                                                        scrolling="no"
+                                                        allowTransparency={true}
+                                                        allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                                                        title="Instagram Reel Preview"
+                                                        style={{ border: 'none' }}
+                                                    />
                                                 </div>
                                             );
                                         }
@@ -683,24 +681,7 @@ export const BrandCampaignModals: React.FC = () => {
             <Modal
                 isOpen={isReelModalOpen}
                 onClose={() => setIsReelModalOpen(false)}
-                title={
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                        <div style={{
-                            width: '32px',
-                            height: '32px',
-                            background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)',
-                            borderRadius: '8px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'white',
-                            boxShadow: '0 4px 12px rgba(220, 39, 67, 0.3)'
-                        }}>
-                            <Instagram size={18} />
-                        </div>
-                        <span style={{ fontSize: 'var(--text-lg)', fontWeight: 700 }}>Instagram Reel Preview</span>
-                    </div>
-                }
+                title="Instagram Reel Preview"
                 size="lg"
             >
                 <div style={{
@@ -709,94 +690,47 @@ export const BrandCampaignModals: React.FC = () => {
                     alignItems: 'center',
                     gap: 'var(--space-6)',
                     minHeight: '650px',
-                    padding: 'var(--space-4) var(--space-8) var(--space-8)',
-                    background: 'radial-gradient(circle at center, rgba(168, 85, 247, 0.05) 0%, transparent 70%)'
+                    padding: 'var(--space-8)'
                 }}>
                     <div style={{
                         width: '100%',
-                        maxWidth: '350px',
+                        maxWidth: '400px',
                         aspectRatio: '9/16',
-                        background: '#000',
-                        borderRadius: '32px',
-                        padding: '12px',
-                        boxShadow: '0 30px 60px -12px rgba(0,0,0,0.5), 0 18px 36px -18px rgba(0,0,0,0.5)',
-                        position: 'relative',
-                        border: '4px solid #222'
+                        background: 'var(--color-bg-secondary)',
+                        borderRadius: 'var(--radius-xl)',
+                        overflow: 'hidden',
+                        boxShadow: 'var(--shadow-lg)',
+                        border: '1px solid var(--color-border-subtle)'
                     }}>
-                        {/* Notch simulation */}
-                        <div style={{
-                            position: 'absolute',
-                            top: '12px',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            width: '80px',
-                            height: '18px',
-                            background: '#000',
-                            borderRadius: '0 0 12px 12px',
-                            zIndex: 10
-                        }} />
-
-                        <div style={{
-                            width: '100%',
-                            height: '100%',
-                            borderRadius: '20px',
-                            overflow: 'hidden',
-                            background: '#121212'
-                        }}>
-                            <iframe
-                                key={reelUrl}
-                                src={`${reelUrl.split('?')[0].replace(/\/$/, '')}/embed/`}
-                                width="100%"
-                                height="100%"
-                                frameBorder="0"
-                                scrolling="no"
-                                allowTransparency={true}
-                                allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-                                title="Instagram Reel"
-                                style={{ border: 'none' }}
-                                referrerPolicy="no-referrer-when-downgrade"
-                            />
-                        </div>
+                        <iframe
+                            key={reelUrl}
+                            src={`${reelUrl.split('?')[0].replace(/\/$/, '')}/embed/`}
+                            width="100%"
+                            height="100%"
+                            frameBorder="0"
+                            scrolling="no"
+                            allowTransparency={true}
+                            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                            title="Instagram Reel"
+                            style={{ border: 'none' }}
+                            referrerPolicy="no-referrer-when-downgrade"
+                        />
                     </div>
 
-                    <div style={{
-                        textAlign: 'center',
-                        maxWidth: '400px',
-                        background: 'var(--color-bg-secondary)',
-                        padding: 'var(--space-4)',
-                        borderRadius: 'var(--radius-lg)',
-                        border: '1px solid var(--color-border-subtle)',
-                        boxShadow: '0 4px 20px rgba(0,0,0,0.05)'
-                    }}>
-                        <p style={{
-                            fontSize: 'var(--text-sm)',
-                            color: 'var(--color-text-secondary)',
-                            marginBottom: 'var(--space-4)',
-                            lineHeight: 1.5
-                        }}>
-                            Reviewing content is faster when done directly in Discovr. You can also view the original post on Instagram to see comments and engagement.
-                        </p>
-                        <div style={{ display: 'flex', gap: 'var(--space-3)', justifyContent: 'center' }}>
-                            <Button
-                                variant="secondary"
-                                onClick={() => window.open(reelUrl, '_blank')}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 'var(--space-2)',
-                                    padding: 'var(--space-2) var(--space-4)'
-                                }}
-                            >
-                                <ExternalLink size={16} />
-                                View on Instagram
-                            </Button>
-                            <Button
-                                variant="ghost"
-                                onClick={() => setIsReelModalOpen(false)}
-                            >
-                                Close Preview
-                            </Button>
-                        </div>
+                    <div style={{ textAlign: 'center' }}>
+                        <Button
+                            variant="secondary"
+                            onClick={() => window.open(reelUrl, '_blank')}
+                            style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 'var(--space-2)',
+                                padding: 'var(--space-2) var(--space-6)'
+                            }}
+                        >
+                            <ExternalLink size={18} />
+                            View on Instagram
+                        </Button>
                     </div>
                 </div>
             </Modal>
