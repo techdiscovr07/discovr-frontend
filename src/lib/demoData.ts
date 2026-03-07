@@ -129,9 +129,9 @@ export const DEMO_SCRIPTS = [
 ];
 
 export const DEMO_CONTENT = [
-    { id: 'content-001', creator_id: 'creator-001', creator_name: 'Glamour Grace', content_url: 'https://youtube.com/shorts/glamour-loreal', status: 'pending', content_feedback: '', ai_analysis: 'Lighting is great. Product texture is clearly shown. The CTA is visible on screen for 4 seconds.' },
-    { id: 'content-002', creator_id: 'creator-002', creator_name: 'Skincare Sam', content_url: 'https://youtube.com/shorts/sam-skincare', status: 'approved', content_feedback: 'Awesome energy, clear skin texture shown. Cleared to post.', ai_analysis: 'Very engaging. High audience retention expected.' },
-    { id: 'content-003', creator_id: 'creator-005', creator_name: 'Fashion Fiona', content_url: 'https://youtube.com/shorts/fiona-fashion-loreal', status: 'pending', content_feedback: '', ai_analysis: 'Elegant framing. The product packaging is presented prominently.' },
+    { id: 'content-001', creator_id: 'creator-001', creator_name: 'Glamour Grace', content_url: 'https://www.instagram.com/reel/DVfOlemEmP_/?igsh=bXBobTdleTZ1eTRm', status: 'pending', content_feedback: '', ai_analysis: 'Lighting is great. Product texture is clearly shown. The CTA is visible on screen for 4 seconds.' },
+    { id: 'content-002', creator_id: 'creator-002', creator_name: 'Skincare Sam', content_url: 'https://www.instagram.com/reel/DVfOlemEmP_/?igsh=bXBobTdleTZ1eTRm', status: 'approved', content_feedback: 'Awesome energy, clear skin texture shown. Cleared to post.', ai_analysis: 'Very engaging. High audience retention expected.' },
+    { id: 'content-003', creator_id: 'creator-005', creator_name: 'Fashion Fiona', content_url: 'https://www.instagram.com/reel/DVfOlemEmP_/?igsh=bXBobTdleTZ1eTRm', status: 'pending', content_feedback: '', ai_analysis: 'Elegant framing. The product packaging is presented prominently.' },
     { id: 'content-004', creator_id: 'creator-011', creator_name: 'Veggie Val', content_url: 'https://www.instagram.com/reel/DVfOlemEmP_/?igsh=bXBobTdleTZ1eTRm', status: 'pending', content_feedback: '', ai_analysis: 'Great energy and clear product showcase. Reel format is perfect for this campaign.' },
 ];
 
