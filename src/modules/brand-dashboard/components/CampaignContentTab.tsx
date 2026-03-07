@@ -9,6 +9,7 @@ interface CampaignContentTabProps {
     contentReviewStats: any;
     getContentStatusMeta: (status: string) => any;
     handleOpenAIContentReview: (item: any) => void;
+    handleOpenReelModal: (url: string) => void;
 }
 
 export const CampaignContentTab: React.FC<CampaignContentTabProps> = ({
@@ -17,7 +18,8 @@ export const CampaignContentTab: React.FC<CampaignContentTabProps> = ({
     setContentFilterTab,
     contentReviewStats,
     getContentStatusMeta,
-    handleOpenAIContentReview
+    handleOpenAIContentReview,
+    handleOpenReelModal
 }) => {
     return (
         <Card className="content-card">
@@ -106,10 +108,23 @@ export const CampaignContentTab: React.FC<CampaignContentTabProps> = ({
                                                         );
                                                     }
                                                     if (item.content_url) {
+                                                        const isInstagramReel = item.content_url.includes('instagram.com/reel/');
                                                         return (
-                                                            <a href={item.content_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent)', fontWeight: 500, fontSize: 'var(--text-sm)' }}>
-                                                                View Content
-                                                            </a>
+                                                            <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
+                                                                <a href={item.content_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent)', fontWeight: 500, fontSize: 'var(--text-sm)' }}>
+                                                                    View Content
+                                                                </a>
+                                                                {isInstagramReel && (
+                                                                    <Button
+                                                                        variant="ghost"
+                                                                        size="sm"
+                                                                        style={{ padding: '2px 8px', height: 'auto', fontSize: '10px' }}
+                                                                        onClick={() => handleOpenReelModal(item.content_url)}
+                                                                    >
+                                                                        Play Reel
+                                                                    </Button>
+                                                                )}
+                                                            </div>
                                                         );
                                                     }
                                                     if (item.live_url) {

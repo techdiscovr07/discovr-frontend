@@ -84,6 +84,15 @@ export const useCampaignDetails = () => {
     const [selectedProfileCreator, setSelectedProfileCreator] = useState<any | null>(null);
     const [isAnalyzingCreator, setIsAnalyzingCreator] = useState(false);
 
+    // Instagram Reel Modal
+    const [isReelModalOpen, setIsReelModalOpen] = useState(false);
+    const [reelUrl, setReelUrl] = useState('');
+
+    const handleOpenReelModal = (url: string) => {
+        setReelUrl(url);
+        setIsReelModalOpen(true);
+    };
+
     // Refs to track editing state to prevent polling from overwriting local changes
     const isBriefEditingRef = useRef(isBriefEditing);
     const isScriptTemplateModalOpenRef = useRef(isScriptTemplateModalOpen);
@@ -860,7 +869,10 @@ export const useCampaignDetails = () => {
         isCreatorProfileSidebarOpen, setIsCreatorProfileSidebarOpen,
         selectedProfileCreator, setSelectedProfileCreator,
         handleOpenCreatorProfile,
-        isAnalyzingCreator, handleAnalyzeCreator
+        isAnalyzingCreator, handleAnalyzeCreator,
+        isReelModalOpen, setIsReelModalOpen,
+        reelUrl, setReelUrl,
+        handleOpenReelModal
     };
 
     return contextValue;

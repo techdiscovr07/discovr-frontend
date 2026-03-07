@@ -641,6 +641,52 @@ export const BrandCampaignModals: React.FC = () => {
                     </div>
                 )}
             </Sidebar>
+            <Modal
+                isOpen={isReelModalOpen}
+                onClose={() => setIsReelModalOpen(false)}
+                title="Instagram Reel Preview"
+                size="md"
+            >
+                <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    gap: 'var(--space-4)',
+                    minHeight: '400px'
+                }}>
+                    <div style={{
+                        width: '100%',
+                        aspectRatio: '9/16',
+                        background: '#000',
+                        borderRadius: 'var(--radius-md)',
+                        overflow: 'hidden',
+                        position: 'relative'
+                    }}>
+                        <iframe
+                            src={`${reelUrl.split('?')[0]}embed`}
+                            width="100%"
+                            height="100%"
+                            frameBorder="0"
+                            scrolling="no"
+                            allowTransparency={true}
+                            allow="encrypted-media"
+                            title="Instagram Reel"
+                        />
+                    </div>
+                    <div style={{ textAlign: 'center' }}>
+                        <p style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)', marginBottom: 'var(--space-2)' }}>
+                            If the preview doesn't load, you can view it directly on Instagram.
+                        </p>
+                        <Button
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => window.open(reelUrl, '_blank')}
+                        >
+                            Open on Instagram
+                        </Button>
+                    </div>
+                </div>
+            </Modal>
         </>
     );
 };
