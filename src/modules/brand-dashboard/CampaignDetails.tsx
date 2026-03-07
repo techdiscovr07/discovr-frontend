@@ -77,7 +77,8 @@ export const CampaignDetails: React.FC = () => {
         getContentStatusMeta,
         handleOpenAIContentReview,
         handleOpenEditFollowerRanges,
-        handleOpenCreatorProfile
+        handleOpenCreatorProfile,
+        handleOpenReelModal
     } = contextValue;
 
     if (isLoading) return <LoadingSpinner />;
@@ -334,6 +335,7 @@ export const CampaignDetails: React.FC = () => {
                                 contentReviewStats={contentReviewStats}
                                 getContentStatusMeta={getContentStatusMeta}
                                 handleOpenAIContentReview={handleOpenAIContentReview}
+                                handleOpenReelModal={handleOpenReelModal}
                             />
                         )}
                     </Suspense>

@@ -289,7 +289,7 @@ export const BrandCampaignModals: React.FC = () => {
                                             return (
                                                 <div style={{ width: '100%', maxWidth: '240px', aspectRatio: '9/16' }}>
                                                     <iframe
-                                                        src={`${url.split('?')[0]}embed`}
+                                                        src={`${url.replace(/\/$/, '')}/embed/`}
                                                         width="100%"
                                                         height="100%"
                                                         frameBorder="0"
@@ -690,7 +690,7 @@ export const BrandCampaignModals: React.FC = () => {
                         position: 'relative'
                     }}>
                         <iframe
-                            src={`${reelUrl.split('?')[0]}embed`}
+                            src={`${reelUrl.replace(/\/$/, '')}/embed/`}
                             width="100%"
                             height="100%"
                             frameBorder="0"
