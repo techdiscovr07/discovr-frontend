@@ -11,9 +11,9 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
-const BrandOverviewTab = React.lazy(() => import('./brand-tabs').then(m => ({ default: m.BrandOverviewTab })));
-const BrandCampaignsTab = React.lazy(() => import('./brand-tabs').then(m => ({ default: m.BrandCampaignsTab })));
-const BrandCreatorsTab = React.lazy(() => import('./brand-tabs').then(m => ({ default: m.BrandCreatorsTab })));
+const BrandOverviewTab = React.lazy(() => import('./brand-tabs/BrandOverviewTab').then(m => ({ default: m.BrandOverviewTab })));
+const BrandCampaignsTab = React.lazy(() => import('./brand-tabs/BrandCampaignsTab').then(m => ({ default: m.BrandCampaignsTab })));
+const BrandCreatorsTab = React.lazy(() => import('./brand-tabs/BrandCreatorsTab').then(m => ({ default: m.BrandCreatorsTab })));
 import '../../components/DashboardShared.css';
 import './BrandDashboard.css';
 

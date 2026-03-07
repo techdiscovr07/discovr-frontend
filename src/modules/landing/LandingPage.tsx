@@ -534,7 +534,7 @@ export const LandingPage: React.FC = () => {
 
                     <div className="footer-bottom">
                         <p className="footer-text">
-                            © 2026 Discovr. All rights reserved. Built for creators, by creators.
+                            © 2026 Discovr. All rights reserved. Built for creators, by creators. By using our Service you agree to our <Link to="/terms">Terms of Service</Link> and <Link to="/privacy-policy">Privacy Policy</Link>.
                         </p>
                         <div className="footer-legal">
                             <Link to="/privacy-policy">Privacy Policy</Link>

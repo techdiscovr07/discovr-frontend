@@ -269,149 +269,155 @@ export const BrandCampaignModals: React.FC = () => {
                 size="xl"
             >
                 {selectedContentItem && (
-                    <div style={{ display: 'grid', gridTemplateColumns: '1.7fr 1fr', gap: 'var(--space-6)' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                            <div style={{
-                                padding: 'var(--space-4)',
-                                background: 'var(--color-bg-secondary)',
-                                border: '1px solid var(--color-border-subtle)',
-                                borderRadius: 'var(--radius-md)',
-                                minHeight: '320px',
-                                display: 'flex',
-                                justifyContent: 'center',
-                                alignItems: 'center'
-                            }}>
-                                {(selectedContentItem.content_url || selectedContentItem.video_url) ? (
-                                    (() => {
-                                        const url = selectedContentItem.content_url || selectedContentItem.video_url;
-                                        const isInstagramReel = url.includes('instagram.com/reel/');
-                                        if (isInstagramReel) {
-                                            return (
-                                                <div style={{
-                                                    width: '100%',
-                                                    maxWidth: '320px',
-                                                    aspectRatio: '9/16',
-                                                    overflow: 'hidden'
-                                                }}>
-                                                    <iframe
-                                                        src={`${url.split('?')[0].replace(/\/$/, '')}/embed/`}
-                                                        width="100%"
-                                                        height="100%"
-                                                        frameBorder="0"
-                                                        scrolling="no"
-                                                        allowTransparency={true}
-                                                        allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
-                                                        title="Instagram Reel Preview"
-                                                        style={{ border: 'none' }}
-                                                    />
+                    (() => {
+                        const url = selectedContentItem.content_url || selectedContentItem.video_url || '';
+                        const isInstagramReel = url.includes('instagram.com/reel/');
+
+                        return (
+                            <div style={{ display: 'grid', gridTemplateColumns: '1.7fr 1fr', gap: 'var(--space-6)' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
+                                    <div style={{
+                                        padding: isInstagramReel ? 0 : 'var(--space-4)',
+                                        background: isInstagramReel ? 'transparent' : 'var(--color-bg-secondary)',
+                                        border: isInstagramReel ? 'none' : '1px solid var(--color-border-subtle)',
+                                        borderRadius: 'var(--radius-md)',
+                                        minHeight: isInstagramReel ? 0 : '320px',
+                                        display: 'flex',
+                                        justifyContent: 'center',
+                                        alignItems: 'center'
+                                    }}>
+                                        {(selectedContentItem.content_url || selectedContentItem.video_url) ? (
+                                            (() => {
+                                                const url = selectedContentItem.content_url || selectedContentItem.video_url;
+                                                const isInstagramReel = url.includes('instagram.com/reel/');
+                                                if (isInstagramReel) {
+                                                    return (
+                                                        <div style={{
+                                                            width: '100%',
+                                                            maxWidth: '320px',
+                                                            aspectRatio: '9/16',
+                                                            overflow: 'hidden'
+                                                        }}>
+                                                            <iframe
+                                                                src={`${url.split('?')[0].replace(/\/$/, '')}/embed/`}
+                                                                width="100%"
+                                                                height="100%"
+                                                                frameBorder="0"
+                                                                scrolling="no"
+                                                                allowTransparency={true}
+                                                                allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+                                                                title="Instagram Reel Preview"
+                                                                style={{ border: 'none' }}
+                                                            />
+                                                        </div>
+                                                    );
+                                                }
+                                                return (
+                                                    <a
+                                                        href={url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        style={{ color: 'var(--color-accent)', textDecoration: 'none' }}
+                                                    >
+                                                        View uploaded video
+                                                    </a>
+                                                );
+                                            })()
+                                        ) : (
+                                            <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>
+                                                No video URL available in this record.
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 'var(--space-3)' }}>
+                                        <div style={{ padding: 'var(--space-3)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                                            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>Creator</div>
+                                            <div style={{ fontWeight: 'var(--font-semibold)' }}>{selectedContentItem.name || selectedContentItem.creator_name}</div>
+                                        </div>
+                                        <div style={{ padding: 'var(--space-3)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                                            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>Status</div>
+                                            <div style={{ fontWeight: 'var(--font-semibold)' }}>{String(selectedContentItem.status || 'content_pending').replaceAll('_', ' ')}</div>
+                                        </div>
+                                        <div style={{ padding: 'var(--space-3)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)' }}>
+                                            <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>Updated</div>
+                                            <div style={{ fontWeight: 'var(--font-semibold)' }}>
+                                                {selectedContentItem.submitted_at || selectedContentItem.created_at || '-'}
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <TextArea
+                                        label="Brand Comment"
+                                        placeholder="Add feedback for creator..."
+                                        rows={4}
+                                        value={contentAiComment}
+                                        onChange={(e: any) => setContentAiComment(e.target.value)}
+                                    />
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
+                                        <Button
+                                            variant="outline"
+                                            onClick={() => handleSubmitAIContentReview('revision_requested')}
+                                            isLoading={isSubmittingAIContentReview}
+                                            disabled={isAIContentAnalyzing}
+                                        >
+                                            Request Changes
+                                        </Button>
+                                        <Button
+                                            onClick={() => handleSubmitAIContentReview('approved')}
+                                            isLoading={isSubmittingAIContentReview}
+                                            disabled={isAIContentAnalyzing}
+                                        >
+                                            <Check size={16} />
+                                            Approve Video
+                                        </Button>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
+                                    <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                                        <Sparkles size={16} />
+                                        Automated checks
+                                    </h4>
+                                    {isAIContentAnalyzing ? (
+                                        <div style={{ padding: 'var(--space-4)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-secondary)' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
+                                                <Clock size={16} />
+                                                <span style={{ fontWeight: 'var(--font-semibold)' }}>AI is reviewing video...</span>
+                                            </div>
+                                            <div style={{ height: '8px', background: 'var(--color-bg-primary)', borderRadius: '999px', overflow: 'hidden' }}>
+                                                <div style={{ width: `${contentAnalysisProgress}%`, height: '100%', background: 'var(--color-accent)', transition: 'width 120ms linear' }} />
+                                            </div>
+                                            <p style={{ marginTop: 'var(--space-2)', color: 'var(--color-text-tertiary)', fontSize: 'var(--text-xs)' }}>
+                                                Checking clarity, safety, brand mention and CTA visibility...
+                                            </p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div style={{ padding: 'var(--space-3)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: 'var(--radius-md)', background: 'rgba(168,85,247,0.08)' }}>
+                                                <div style={{ fontWeight: 'var(--font-semibold)', marginBottom: 'var(--space-1)' }}>Agent Recommendation</div>
+                                                <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
+                                                    {selectedContentItem.ai_analysis || "Video quality and brand mention look acceptable. Verify CTA placement before approval."}
                                                 </div>
-                                            );
-                                        }
-                                        return (
-                                            <a
-                                                href={url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                style={{ color: 'var(--color-accent)', textDecoration: 'none' }}
-                                            >
-                                                View uploaded video
-                                            </a>
-                                        );
-                                    })()
-                                ) : (
-                                    <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>
-                                        No video URL available in this record.
-                                    </p>
-                                )}
-                            </div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 'var(--space-3)' }}>
-                                <div style={{ padding: 'var(--space-3)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)' }}>
-                                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>Creator</div>
-                                    <div style={{ fontWeight: 'var(--font-semibold)' }}>{selectedContentItem.name || selectedContentItem.creator_name}</div>
-                                </div>
-                                <div style={{ padding: 'var(--space-3)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)' }}>
-                                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>Status</div>
-                                    <div style={{ fontWeight: 'var(--font-semibold)' }}>{String(selectedContentItem.status || 'content_pending').replaceAll('_', ' ')}</div>
-                                </div>
-                                <div style={{ padding: 'var(--space-3)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)' }}>
-                                    <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)' }}>Updated</div>
-                                    <div style={{ fontWeight: 'var(--font-semibold)' }}>
-                                        {selectedContentItem.submitted_at || selectedContentItem.created_at || '-'}
-                                    </div>
+                                                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-2)' }}>
+                                                    Powered by Discovr AI
+                                                </div>
+                                            </div>
+                                            {[
+                                                'Brand safety checks',
+                                                'On-screen CTA visuals',
+                                                'Product placement quality',
+                                                'Audio clarity',
+                                                'No competitor mention'
+                                            ].map((item) => (
+                                                <div key={item} style={{ padding: 'var(--space-3)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                    <span style={{ fontSize: 'var(--text-sm)' }}>{item}</span>
+                                                    <span style={{ color: 'var(--color-success)', fontWeight: 'var(--font-semibold)' }}>OK</span>
+                                                </div>
+                                            ))}
+                                        </>
+                                    )}
                                 </div>
                             </div>
-                            <TextArea
-                                label="Brand Comment"
-                                placeholder="Add feedback for creator..."
-                                rows={4}
-                                value={contentAiComment}
-                                onChange={(e: any) => setContentAiComment(e.target.value)}
-                            />
-                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 'var(--space-3)' }}>
-                                <Button
-                                    variant="outline"
-                                    onClick={() => handleSubmitAIContentReview('revision_requested')}
-                                    isLoading={isSubmittingAIContentReview}
-                                    disabled={isAIContentAnalyzing}
-                                >
-                                    Request Changes
-                                </Button>
-                                <Button
-                                    onClick={() => handleSubmitAIContentReview('approved')}
-                                    isLoading={isSubmittingAIContentReview}
-                                    disabled={isAIContentAnalyzing}
-                                >
-                                    <Check size={16} />
-                                    Approve Video
-                                </Button>
-                            </div>
-                        </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-3)' }}>
-                            <h4 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
-                                <Sparkles size={16} />
-                                Automated checks
-                            </h4>
-                            {isAIContentAnalyzing ? (
-                                <div style={{ padding: 'var(--space-4)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', background: 'var(--color-bg-secondary)' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)', marginBottom: 'var(--space-3)' }}>
-                                        <Clock size={16} />
-                                        <span style={{ fontWeight: 'var(--font-semibold)' }}>AI is reviewing video...</span>
-                                    </div>
-                                    <div style={{ height: '8px', background: 'var(--color-bg-primary)', borderRadius: '999px', overflow: 'hidden' }}>
-                                        <div style={{ width: `${contentAnalysisProgress}%`, height: '100%', background: 'var(--color-accent)', transition: 'width 120ms linear' }} />
-                                    </div>
-                                    <p style={{ marginTop: 'var(--space-2)', color: 'var(--color-text-tertiary)', fontSize: 'var(--text-xs)' }}>
-                                        Checking clarity, safety, brand mention and CTA visibility...
-                                    </p>
-                                </div>
-                            ) : (
-                                <>
-                                    <div style={{ padding: 'var(--space-3)', border: '1px solid rgba(168,85,247,0.3)', borderRadius: 'var(--radius-md)', background: 'rgba(168,85,247,0.08)' }}>
-                                        <div style={{ fontWeight: 'var(--font-semibold)', marginBottom: 'var(--space-1)' }}>Agent Recommendation</div>
-                                        <div style={{ fontSize: 'var(--text-sm)', color: 'var(--color-text-secondary)' }}>
-                                            {selectedContentItem.ai_analysis || "Video quality and brand mention look acceptable. Verify CTA placement before approval."}
-                                        </div>
-                                        <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-tertiary)', marginTop: 'var(--space-2)' }}>
-                                            Powered by Discovr AI
-                                        </div>
-                                    </div>
-                                    {[
-                                        'Brand safety checks',
-                                        'On-screen CTA visuals',
-                                        'Product placement quality',
-                                        'Audio clarity',
-                                        'No competitor mention'
-                                    ].map((item) => (
-                                        <div key={item} style={{ padding: 'var(--space-3)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <span style={{ fontSize: 'var(--text-sm)' }}>{item}</span>
-                                            <span style={{ color: 'var(--color-success)', fontWeight: 'var(--font-semibold)' }}>OK</span>
-                                        </div>
-                                    ))}
-                                </>
-                            )}
-                        </div>
-                    </div>
-                )}
+                        )
+                    }
             </Modal>
 
             {/* Counter Offer Modal */}

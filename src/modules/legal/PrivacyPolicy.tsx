@@ -1,247 +1,129 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Header } from '../../components';
-import { ArrowLeft, Instagram, Users, Mail } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import './PrivacyPolicy.css';
-import '../landing/LandingPage.css'; /* footer styles */
+import '../landing/LandingPage.css';
 
 export const PrivacyPolicy: React.FC = () => {
-    return (
-        <div className="legal-page">
-            <Header transparent />
+  return (
+    <div className="legal-page">
+      <Header transparent />
+      <main className="legal-main">
+        <div className="container legal-container">
+          <Link to="/" className="legal-back">
+            <ArrowLeft size={18} />
+            Back to Home
+          </Link>
+          <div className="legal-content">
+            <header className="legal-header">
+              <p className="legal-brand">getdiscovr.ai</p>
+              <h1 className="legal-title">Privacy Policy</h1>
+              <p className="legal-updated">Last Updated: March 2026</p>
+            </header>
 
-            <main className="legal-main">
-                <div className="container legal-container">
-                    <Link to="/" className="legal-back">
-                        <ArrowLeft size={18} />
-                        Back to Home
-                    </Link>
+            <p className="legal-intro">
+              Welcome to Discovr AI. Discovr AI Private Limited (&quot;Discovr AI,&quot; &quot;we,&quot; or &quot;us&quot;) operates the Discovr AI website and platform. We value your privacy. This Privacy Policy (&quot;Policy&quot;) explains what information we collect, how we use it, when we may share it, and the choices available to you when you use our website at www.getdiscovr.ai, our platform, and any related products, services, or applications (together, the &quot;Service&quot;).
+            </p>
+            <p className="legal-intro">
+              By accessing or using the Service, you agree to this Policy. If you do not agree, please do not use the Service. The version of this Policy in effect at the time you use the Service applies. We encourage you to review this Policy periodically and check the date at the top for updates.
+            </p>
+            <p className="legal-intro">
+              Your use of the Service is also governed by the Discovr AI Terms of Service: <Link to="/terms">https://www.getdiscovr.ai/terms</Link>.
+            </p>
+            <p className="legal-intro">
+              If you have questions about this Policy, contact us at <a href="mailto:support@getdiscovr.ai">support@getdiscovr.ai</a>.
+            </p>
 
-                    <div className="legal-content">
-                        <header className="legal-header">
-                            <p className="legal-brand">getdiscovr.ai</p>
-                            <h1 className="legal-title">Privacy Policy</h1>
-                            <p className="legal-updated">Last Updated: February 23, 2026</p>
-                        </header>
+            <section className="legal-section">
+              <h2>INFORMATION WE COLLECT</h2>
+              <p>Our Service helps brand users (each a &quot;Brand&quot;) plan, manage, and run creator/influencer advertising campaigns, including workflow coordination, approvals, and performance reporting. Campaigns may be delivered by content creators (each a &quot;Creator&quot;) through formats such as videos, posts, ad reads, or other creator-led deliverables, as described in our Terms of Service.</p>
+              <p>In this Policy: &quot;Brand Submissions&quot; means the information and materials a Brand provides for a campaign (for example: campaign details, instructions, text, audio, video, creative assets, and guidelines). &quot;Creator Content&quot; means the content or deliverables a Creator produces or provides in connection with a campaign. &quot;you&quot; or &quot;your&quot; refers to any user of the Service (Brand, Creator, visitor, or otherwise). Some sections may apply differently to Brands and Creators.</p>
+              <p>We collect: &quot;Personal Information&quot;: information that identifies or can reasonably be used to identify you (e.g., name, email address, phone number), and &quot;Aggregate Information&quot;: information that does not identify you (e.g., browser type or general usage patterns). We collect Personal Information and Aggregate Information in the situations described below.</p>
 
-                        <p className="legal-intro">
-                            Welcome to getdiscovr.ai. Discovr, Inc. ("Discovr," "we," and "us") is the owner and operator of the getdiscovr.ai website and platform, and your privacy is important to us. We have developed this Privacy Policy (this "Policy") to describe the information we collect, how that information may be used, with whom it may be shared, and your choices, in connection with your use of our website at www.getdiscovr.ai, the martech ad platform we make available, and/or any related services and apps (collectively referred to in this Policy as our "Service").
-                        </p>
-                        <p className="legal-intro">
-                            By accessing the Service, you agree to be bound by this Policy. If you do not agree to the terms of this Policy, please do not use the Service. Each time you use the Service, the current version of this Policy will apply. Accordingly, when you use the Service, you should check the date of this Policy (which appears at the top) and review any changes since you last reviewed it. Your use of the Service is also subject to the getdiscovr.ai Terms of Service available at <a href="https://getdiscovr.ai/terms" target="_blank" rel="noopener noreferrer">https://getdiscovr.ai/terms</a>.
-                        </p>
-                        <p className="legal-intro">
-                            If you have any questions regarding this Policy, please contact us at <a href="mailto:privacy@getdiscovr.ai">privacy@getdiscovr.ai</a>.
-                        </p>
+              <h3>Information You Provide to Us</h3>
+              <p><strong>Your Account Information</strong> — When you sign up for a Discovr AI account, we may request certain Personal Information and preference details. Depending on your use of the Service, this may include your email address, phone number, and location information (such as city/state/country or postal code) to set up and manage your account and verify access. If you are using the Service on behalf of a business, we may also request details such as company name and job title. If you are a Creator, we may collect information related to how you intend to use the Service, the types of Brands you want to work with, and your content and monetization preferences.</p>
+              <p><strong>Your Content</strong> — We collect information and content you submit through the Service in connection with campaigns and workflows—such as text, photos, videos, scripts, drafts, social media posts, messages, and other Creator Content (if you are a Creator), or campaign details and Brand Submissions (if you are a Brand). Collectively, this is &quot;Your Content.&quot; Your Content remains subject to our Terms of Service and may be accessed, used, and/or shared as described there.</p>
+              <p><strong>Performance Data and Conversion Data</strong> — We may collect campaign performance metrics and related data for Brands, Creators, and campaigns, including conversion and attribution signals where available. This data may be collected through platform analytics or third-party analytics providers. For Brands, you may choose to provide access to your own performance/conversion sources or authorize us to collect such information from your vendors or service providers in connection with the Service. We may combine data obtained from these sources with data collected through the Service to support the purposes described in this Policy.</p>
+              <p><strong>Communications With Us and Other Users</strong> — We collect information when you contact us, and we collect information about communications between users when those communications occur through the Service. For example, if you email us, we collect your email address and the contents of your message. If you message other users via the Service, we may retain logs of those interactions and may create Aggregate Information based on them.</p>
+              <p><strong>Aggregate Information</strong> — Aggregate Information does not identify you. We may collect it automatically through your use of the Service, and we may also transform information containing Personal Information into de-identified or aggregated data. We may use, store, and share Aggregate Information without restriction, where permitted by law.</p>
+              <p><strong>Payment Information</strong> — Payment processing: If you are a Brand or Creator, we may collect payment-related information needed to charge fees, process payouts, or support transactions. Payment details are often handled by third-party payment processors; we recommend reviewing the processor&apos;s policies. Payment issues: We may access limited payment details to help resolve payment or transaction issues. Alternative methods: In some cases, we may allow payment methods such as bank transfers and will share relevant instructions and any additional terms directly.</p>
 
-                        <section className="legal-section">
-                            <h2>INFORMATION WE COLLECT</h2>
-                            <p>Our Service offers brand users (each, a "Brand") the ability to discover, connect with, and launch ad campaigns (each, an "Ad") to promote and/or endorse their products, services, or brand. The Ad is generally fulfilled by content creators (each, a "Creator") via sponsored posts, stories, reels, or other content formats on Instagram, and may be fulfilled through other formats as set forth in getdiscovr.ai's Terms of Service.</p>
-                            <p>In this Policy, we'll refer to anything a Brand provides to a Creator in connection with an Ad bid/request — such as the details of a Brand's ad campaign, text, images, video, or other materials — as "Brand Submissions," and the format/means by which a Creator fulfills an Ad as "Creator Content." The terms "you" or "your" in this Policy will refer generically to any user of our Service, whether a Brand, a Creator, visitor, or otherwise.</p>
-                            <p>We collect two types of information: "personal information," which is information that can be used to identify you (such as your name or email address), and "aggregate information," which is information that cannot be used to identify you (such as frequency of visits to our website and your browser type).</p>
+              <h3>Information We Automatically Collect</h3>
+              <p>Like most websites and apps, the Service may automatically collect information from your device and usage, including: device details (operating system, hardware model, system version, device language); IP address and device identifiers; actions on the Service (pages/screens viewed, searches, clicks, interactions); time, frequency, connection type, and duration of use; network information (carrier, network type, signal strength); engagement with emails or in-app messages (opens/clicks/forwards); cookie or similar technology identifiers (see &quot;Cookies and Analytics&quot;); pages visited before or after our website; device connectivity information such as carrier/SIM-related details (where available).</p>
 
-                            <h3>Information You Provide to Us</h3>
-                            <p><strong>Your Account Information:</strong> When you register for an account with getdiscovr.ai, you will be asked to provide certain personal information, including your email address, phone number, date of birth, and physical location (such as your zip code) to set up your account and verify your identity. If you are a company using our Service, we may ask for additional information such as company name and job title. From a Creator, we will collect information about how the Creator wishes to use the Service, the types of Brands they prefer to work with, and the nature of content they wish to monetize using the Service.</p>
-                            <p><strong>Your Content:</strong> When you use our Service, we collect content you submit in connection with Ad bids/requests, including text, photos, videos, Instagram posts, stories, and other Creator Content, or the details of an Ad campaign and other Brand Submissions (collectively, "Your Content"). Your Content is subject to our Terms of Service at all times.</p>
-                            <p><strong>Performance Data and Conversion Data:</strong> We may collect performance data and metrics related to Creators, Brands, and/or Ad campaigns, as well as conversion data and attribution. We may use third-party analytics providers, including Meta (Instagram's parent company), Google Analytics, and others to collect such information. For Brands, you may also provide getdiscovr.ai access to your own sources of performance and conversion data. Getdiscovr.ai may combine performance and conversion data provided by you and/or your service providers with data collected by the Service.</p>
-                            <p><strong>Your Communications with Us and Other Users:</strong> We collect information when you communicate with us and about your communications with other users through the Service, including log data and aggregated information about those communications.</p>
-                            <p><strong>Payment Information:</strong> If you are a Brand or a Creator, we may collect your payment information through the Service to process bid amounts, fees, and payments. All payment information is stored and processed by our third-party payment processors, such as Stripe. We encourage you to review Stripe's policies (available at stripe.com/privacy). In limited circumstances, Getdiscovr.ai may permit alternative payment methods such as ACH or wire transfer, and will provide relevant payment instructions directly.</p>
+              <h3>Information From Connected Social Accounts / APIs</h3>
+              <p>Creators may choose to connect social/content platform accounts and authorize Discovr AI to access certain data via third-party APIs (for example, Meta/YouTube APIs or other platform APIs) (&quot;Platform APIs&quot;). Our collection, use, storage, and transfer of information obtained via Platform APIs will follow the applicable platform terms and data policies, including any limited-use requirements. Creators connect accounts through the platform&apos;s authorization flow (e.g., OAuth). Discovr AI does not request (and you should not provide) your platform login passwords. A Creator&apos;s platform data (which may include Personal Information) may be shared with Brands in connection with current or past campaigns, or with Brands the Creator is interested in working with, depending on features and settings within the Service.</p>
 
-                            <h3>Information We Automatically Collect</h3>
-                            <p>As with most apps and websites, when you use our Service we automatically receive and collect information from your device. This includes:</p>
-                            <ul>
-                                <li>Device information, such as operating system, hardware, system version, IP address, device ID, and device language.</li>
-                                <li>The specific actions you take when using our Service, including pages and screens you view, search terms you enter, and how you interact with our Service.</li>
-                                <li>The time, frequency, connection type, and duration of your use of our Service.</li>
-                                <li>Information about your wireless and mobile network connections, such as mobile phone number, service provider, and signal strength.</li>
-                                <li>Information regarding your interaction with email messages and in-app communications, such as whether you opened, clicked on, or forwarded them.</li>
-                                <li>Identifiers associated with cookies or other technologies that may uniquely identify your device or browser.</li>
-                                <li>Pages you visited before or after navigating to our website.</li>
-                            </ul>
+              <h3>Employment Opportunities</h3>
+              <p>If you apply for a role at Discovr AI, we (or our service providers) may collect your Personal Information for recruiting purposes, including evaluating your application and communicating with you. This data may be processed by a third-party applicant tracking system and shared with vendors supporting recruitment. Where required or allowed, we may request voluntary self-identification information for lawful reporting purposes.</p>
 
-                            <h3>Information We Collect from Instagram</h3>
-                            <p>In connection with using the Service, a Creator may authorize getdiscovr.ai to access and obtain data from the Creator's Instagram account using application program interfaces provided by Meta (the "Meta APIs"). Getdiscovr.ai's use, storage, and/or transfer of information received from Meta APIs will adhere to Meta's Platform Policy and applicable data use requirements.</p>
-                            <p>Creators will authorize getdiscovr.ai to access Instagram data via Meta APIs by providing consent through Meta's authorization process. Getdiscovr.ai does not receive (and please do not send getdiscovr.ai) your Instagram login credentials.</p>
-                            <p>A Creator's Instagram data (including Personal Information such as follower count, engagement metrics, and public profile details) may be shared with Brands in connection with a current or former Ad campaign, or with Brands the Creator is interested in working with in the future.</p>
+              <h3>Cookies and Analytics</h3>
+              <p>Cookies are small identifiers stored via your browser that help us recognize your device and improve the Service. You can manage cookies through your browser settings (accept, block, or be notified). Blocking cookies may limit certain features. We may use analytics providers to understand traffic and usage. We may also use cookies, pixels, beacons, and similar technologies to measure engagement with the Service and content. Third parties may process this information on our behalf under our instructions and consistent with this Policy. At this time, the Service may not respond to &quot;Do Not Track&quot; signals.</p>
+            </section>
 
-                            <h3>Employment Opportunities</h3>
-                            <p>If we or a third-party service provider have collected your Personal Information in connection with a career opportunity at getdiscovr.ai, you are giving us permission to use and retain your Personal Information for evaluating your application and interacting with you about relevant roles. This information may be processed by a third-party talent tracking solution provider and relevant vendors carrying out recruitment work on our behalf. We or our service providers may ask you to provide self-identifying information (such as veteran status, gender, and ethnicity) in accordance with applicable employment regulations. Providing such self-identifying information is voluntary.</p>
+            <section className="legal-section">
+              <h2>HOW WE USE YOUR INFORMATION</h2>
+              <p>We collect and use information to provide the Service and operate our business, including to: create and manage accounts; help Brands identify and connect with Creators and support campaign execution; run, maintain, improve, and secure the Service; measure performance and conversion signals to support optimization; provide customer support and respond to requests; communicate with you about service-related matters; process payments and payouts; send product updates and, where permitted, marketing communications; conduct analytics, research, and usage trend monitoring; improve safety, fraud prevention, and security; personalize the Service (e.g., tailoring what you see); develop and improve matching, measurement, reporting, and methodology used to improve campaign outcomes; comply with legal obligations and respond to lawful requests; enforce our Terms of Service and investigate possible violations; detect, prevent, and address fraud, security incidents, and technical issues; protect the rights, property, and safety of Discovr AI, our users, and the public; for other purposes disclosed at collection, with your consent, or as otherwise described in this Policy.</p>
+            </section>
 
-                            <h3>Cookies and Analytics</h3>
-                            <p>Cookies are alphanumeric identifiers we transfer to your computer's hard drive through your web browser to help us identify you when you visit our website. You may configure your browser to accept all cookies, be notified when a cookie is set, or reject all cookies. Rejecting all cookies may disable certain features of our Service that require registration.</p>
-                            <p>We may use third parties, such as Google Analytics, to analyze traffic to our website. Google Analytics does not create individual profiles for visitors and only collects aggregate data. To disable Google Analytics, you may download the browser add-on at <a href="http://tools.google.com/dlpage/gaoptout" target="_blank" rel="noopener noreferrer">http://tools.google.com/dlpage/gaoptout</a>. We may also use cookies, pixels, beacons, or other web tracking technologies to track time spent on our Service and content engagement.</p>
-                            <p>At the present time, our Service does not respond to "Do Not Track" signals or similar mechanisms.</p>
-                        </section>
+            <section className="legal-section">
+              <h2>HOW WE SHARE YOUR INFORMATION</h2>
+              <p>We do not sell your Personal Information. We may share information in limited situations to operate the Service.</p>
+              <p><strong>Third-Party Tools and Service Providers</strong> — We may share information with vendors who support our operations and Service delivery (e.g., hosting, analytics, support tools, communications, payment processing). They may access information only as necessary to provide services to us. If we add new third-party tools that receive Personal Information, we will update this Policy accordingly and provide choices where required.</p>
+              <p><strong>Creator Accounts &amp; User Communications</strong> — If you are a Creator, your profile and certain information you choose to provide, along with campaign-relevant data, may be visible to Brands through the Service to support campaign decisions and execution. Brands and Creators may communicate through the Service. We may display your name and relevant identifiers to enable these communications.</p>
+              <p><strong>With Your Direction or Consent</strong> — We may share information outside Discovr AI when you instruct us to do so or give consent.</p>
+              <p><strong>Legal Requirements and Protection</strong> — We may disclose information if we believe in good faith that it is necessary to: comply with law, regulation, subpoena, legal process, or government request; enforce agreements (including our Terms of Service) and investigate potential violations; prevent or address fraud, security issues, or technical problems; protect the rights, property, or safety of Discovr AI, our users, or the public.</p>
+              <p><strong>Business Transactions</strong> — If Discovr AI is involved in a merger, acquisition, asset sale, financing, or similar transaction, information may be transferred as part of that process and will remain subject to applicable privacy protections, unless the law requires otherwise.</p>
+              <p><strong>Conversion Data</strong> — We may share aggregated or anonymized conversion data and benchmarks. We do not share Brand-specific conversion data with another Brand without authorization.</p>
+            </section>
 
-                        <section className="legal-section">
-                            <h2>HOW WE USE YOUR INFORMATION</h2>
-                            <p>In general, we collect information from you so that we can provide our Service, operate our business, and fulfill information you request from us. This includes the following uses and purposes:</p>
-                            <ul>
-                                <li>Create and administer your account.</li>
-                                <li>Fulfill requests from Brands to identify and connect with Creators, and facilitate resulting Ad campaigns.</li>
-                                <li>Provide, operate, improve, maintain, and protect our Service.</li>
-                                <li>Track performance data and conversion metrics to help you optimize use of the Service.</li>
-                                <li>Provide technical and other support.</li>
-                                <li>Communicate with you.</li>
-                                <li>Enable and facilitate acceptance and processing of payments.</li>
-                                <li>Send you Service and company updates, marketing communications (where you have opted in), and information about products and services that may interest you.</li>
-                                <li>Conduct research and analysis, and monitor and analyze trends and usage.</li>
-                                <li>Enhance or improve user experience, our business, and our Service, including safety and security.</li>
-                                <li>Personalize our Service to you by, for example, customizing content that you see.</li>
-                                <li>Create advertising models and other methodologies to improve the performance of Ad campaigns.</li>
-                                <li>Communicate with you and respond to inquiries.</li>
-                                <li>Operate our business and perform any function we believe in good faith is necessary to protect the security or proper functioning of our Service.</li>
-                                <li>Comply with any applicable law, regulation, subpoena, legal process, or governmental request.</li>
-                                <li>Enforce contracts and applicable Terms of Service, including investigation of potential violations.</li>
-                                <li>Detect, prevent, or otherwise address fraud, security, or technical issues.</li>
-                                <li>Protect against harm to the rights, property, or safety of getdiscovr.ai, our users, customers, or the public.</li>
-                            </ul>
-                        </section>
+            <section className="legal-section">
+              <h2>CHOICES ABOUT YOUR INFORMATION</h2>
+              <p>You have options regarding your information. You may choose not to provide certain information, but some details may be required to create an account or access particular features.</p>
+              <p><strong>Access and Updates</strong> — You may be able to view and update certain information in the Service. For other requests, contact support@getdiscovr.ai. We may verify identity before acting on requests and may deny requests where required (for example, to prevent fraud or to comply with legal retention obligations).</p>
+              <p><strong>Deletion</strong> — You may be able to delete certain information through the Service and may request account deletion by contacting support@getdiscovr.ai. In some cases, we may need to retain information for legal, compliance, or record-keeping reasons. We may retain aggregated or de-identified data derived from your information.</p>
+              <p><strong>Marketing</strong> — If you opt in (or where otherwise permitted), we may send marketing communications. You can unsubscribe via the link in emails or by contacting us. If we send SMS, you can opt out by replying STOP (or similar instructions provided).</p>
+            </section>
 
-                        <section className="legal-section">
-                            <h2>HOW WE SHARE YOUR INFORMATION</h2>
-                            <p>We do not sell your personal information. Like most companies, we share information in certain circumstances with third parties through the operation of our Service and business. Below we explain when that happens.</p>
+            <section className="legal-section">
+              <h2>INTERNATIONAL TRANSFERS</h2>
+              <p>Discovr AI is based in India. Our Service may use infrastructure or vendors in India and other countries. If you use the Service from outside India, your information may be transferred, stored, or processed in India or other locations in accordance with applicable law and safeguards.</p>
+            </section>
 
-                            <h3>Third Party Tools and Service Providers</h3>
-                            <p>We do not currently use third party tools as part of the Service and therefore do not share your Personal Information with third party tools. If we decide to use third party tools in the future, we will update this Privacy Policy to identify those tools and what information is shared with them, if any. We will provide you the opportunity to opt out of sharing your data with third party tools if you choose.</p>
-                            <p>We may use third party service providers to assist us with operating our business and providing our Service, such as vendors that help us maintain our Service and partners that assist us with marketing and communication. These service providers will have access to your information in order to provide services to us.</p>
+            <section className="legal-section">
+              <h2>CHILDREN</h2>
+              <p>The Service is not intended for children, and we do not knowingly collect Personal Information from children under the age for valid consent under applicable law. If you believe a child has provided data to us, contact support@getdiscovr.ai.</p>
+            </section>
 
-                            <h3>Creator Accounts & User Communications</h3>
-                            <p>If you have a Creator account, your profile and user information — including but not limited to your demographic information, talent rank, Instagram performance metrics, and Your Content — are accessible by Brands.</p>
-                            <p>Brands and Creators can also message directly through the Service, and getdiscovr.ai will display your name to other users to facilitate these communications.</p>
+            <section className="legal-section">
+              <h2>SECURITY</h2>
+              <p>We use reasonable safeguards intended to protect information against unauthorized access and unlawful processing, and against accidental loss or damage. However, no internet-based system can be guaranteed fully secure. You are responsible for safeguarding your login credentials.</p>
+            </section>
 
-                            <h3>As Directed By You and With Your Consent</h3>
-                            <p>Except as otherwise provided in this Policy, we share information with companies, organizations, or individuals outside of getdiscovr.ai only at your direction or when we have your consent to do so.</p>
+            <section className="legal-section">
+              <h2>THIRD-PARTY WEBSITES AND SERVICES</h2>
+              <p>The Service may include links to third-party websites or services. Those third parties may collect information from you. Your interactions with them are governed by their policies, not this Policy.</p>
+            </section>
 
-                            <h3>Legal Proceedings</h3>
-                            <p>We may share information with third party companies, organizations, governmental authorities, or individuals outside of getdiscovr.ai if we have a good-faith belief that access, use, preservation, or disclosure of the information is reasonably necessary to:</p>
-                            <ul>
-                                <li>Meet any applicable law, regulation, subpoena, legal process, or governmental request.</li>
-                                <li>Enforce a contract, including any applicable Terms of Service, including investigation of potential violations.</li>
-                                <li>Detect, prevent, or otherwise address fraud, security, or technical issues.</li>
-                                <li>Protect against harm to the rights, property, or safety of getdiscovr.ai, our users, customers, or the public as required or permitted by law.</li>
-                            </ul>
+            <section className="legal-section">
+              <h2>CHANGES TO THIS POLICY</h2>
+              <p>We may revise this Policy from time to time. We will post updates and adjust the &quot;Last Updated&quot; date. Continued use of the Service after updates means you accept the revised Policy.</p>
+            </section>
 
-                            <h3>Sale or Merger</h3>
-                            <p>We may share information about you as part of a merger or acquisition. If getdiscovr.ai or any of its affiliates is involved in a merger, asset sale, financing, liquidation, bankruptcy, or acquisition of all or some portion of our business, we may share and/or transfer your information with the relevant company before and after the transaction closes. In such a case, unless permitted or otherwise directed by applicable law, your information would remain subject to the terms of the applicable privacy policy in effect at the time of such transfer.</p>
-
-                            <h3>Conversion Data</h3>
-                            <p>While we may share aggregated anonymized conversion data and metrics (e.g., a Creator is in the top 10% at driving conversions) with third parties (including other Creators and Brands), getdiscovr.ai will not share Brand-specific conversion data with any other Brand or Creator.</p>
-                        </section>
-
-                        <section className="legal-section">
-                            <h2>CHOICES ABOUT YOUR INFORMATION</h2>
-                            <p>We strive to provide you with choices with respect to your information. You can opt not to disclose certain information to us, but keep in mind some information may be needed to create an account or to use some of our Service and features.</p>
-
-                            <h3>Modification and Access to Your Information</h3>
-                            <p>You can access and modify most of your information through the Service. If you would like to modify or access additional information not available through the Service, please contact us at <a href="mailto:privacy@getdiscovr.ai">privacy@getdiscovr.ai</a>. We may ask you to verify your identity or provide additional information before we act on your request.</p>
-
-                            <h3>Deleting Your Information or Your Account</h3>
-                            <p>You can delete most of your information through the Service, and you can delete your account through our desktop and mobile-enabled app. You may also request deletion of your account by contacting us at <a href="mailto:privacy@getdiscovr.ai">privacy@getdiscovr.ai</a>. Please note that in some cases we may be prohibited from deleting certain information, and some information may remain in our records after your deletion. We may use any aggregated or de-identified data derived from or incorporating your information after you update or delete it, but not in a manner that would identify you personally.</p>
-
-                            <h3>Marketing</h3>
-                            <p>If you opt-in, or when you use the Service, we may send you newsletters and other messages, including marketing emails, SMS text messages, and other communications about our products and services. You may unsubscribe from getdiscovr.ai marketing communications at any time by following the "unsubscribe" link at the bottom of any such communication.</p>
-                            <p>If you do not wish to continue receiving SMS/MMS mobile messages from us, reply STOP, END, CANCEL, UNSUBSCRIBE, or QUIT to any mobile message from us. If you sign up to receive text messages from getdiscovr.ai, you agree to receive recurring automated promotional and personalized marketing text messages. Consent to receive automated marketing text messages is not a condition of any purchase. Message and data rates may apply.</p>
-                        </section>
-
-                        <section className="legal-section">
-                            <h2>INTERNATIONAL TRANSFER</h2>
-                            <p>We are based in the United States, and our Service is hosted there. If you are using our Service from another country, the laws governing our collection and use of information may be different from the laws of your country. If you decide to use our Service, or share your information with us, you are agreeing to be governed by the laws of the United States and agree to the transfer of your information to the United States.</p>
-                        </section>
-
-                        <section className="legal-section">
-                            <h2>CHILDREN</h2>
-                            <p>Our Service is not directed at children under 13, and we do not knowingly collect information from children under 13. If you are under 13, please do not attempt to use our Service or send any information about yourself to us. If you are the parent of a child under the age of 13 and you believe they have shared information with us, please contact us at <a href="mailto:privacy@getdiscovr.ai">privacy@getdiscovr.ai</a> so that we can remove such information from our systems.</p>
-                        </section>
-
-                        <section className="legal-section">
-                            <h2>SECURITY OF YOUR INFORMATION</h2>
-                            <p>We use reasonable security measures, including measures designed to protect against unauthorized or unlawful processing and against accidental loss, destruction, or damage to your information. However, since the Internet is not a 100% secure environment, we cannot guarantee the security of any information you transmit to us. It is your responsibility to protect the security of your login information.</p>
-                        </section>
-
-                        <section className="legal-section">
-                            <h2>THIRD PARTY WEBSITES AND SERVICES</h2>
-                            <p>Our Service may contain links to other websites and services operated by third parties, and may include social media features such as buttons or links. These third-party websites and services may collect information about you if you click on a link or visit those websites. Your interactions with these features and third parties are governed by the privacy policy of the third party, not by this Policy.</p>
-                        </section>
-
-                        <section className="legal-section">
-                            <h2>CHANGES TO THIS POLICY</h2>
-                            <p>We may make changes to this Policy from time to time. When we do, we will post the updated version on this page. We encourage you to read this page each time you use our Service so that you will be aware of any changes, and your continued use of our Service shall constitute your acceptance of any such changes. Changes to this Policy take effect from the date of publication unless stated otherwise.</p>
-                        </section>
-
-                        <section className="legal-section">
-                            <h2>CONTACT US</h2>
-                            <p>If you have any comments, questions, concerns, or suggestions about this Policy, or about our privacy practices in general, please contact us at:</p>
-                            <p className="legal-contact">
-                                <strong>getdiscovr.ai (Discovr, Inc.)</strong><br />
-                                Email: <a href="mailto:privacy@getdiscovr.ai">privacy@getdiscovr.ai</a><br />
-                                Website: <a href="https://www.getdiscovr.ai" target="_blank" rel="noopener noreferrer">www.getdiscovr.ai</a>
-                            </p>
-                        </section>
-                    </div>
-                </div>
-            </main>
-
-            {/* Footer - matches LandingPage structure */}
-            <footer className="footer">
-                <div className="container">
-                    <div className="footer-top">
-                        <div className="footer-brand">
-                            <Link to="/" className="header-logo" style={{ marginBottom: 'var(--space-6)', padding: 0 }}>
-                                <img src="/logo.png" alt="Discovr" className="header-logo-img" />
-                                <span className="logo-text">discovr</span>
-                            </Link>
-                            <p className="footer-tagline">
-                                Maximizing Instagram scale for Indian brands. The ultimate bridge between visionaries and creators.
-                            </p>
-                            <div className="footer-social">
-                                <a href="#" className="social-link"><Instagram size={20} /></a>
-                                <a href="#" className="social-link"><Users size={20} /></a>
-                                <a href="#" className="social-link"><Mail size={20} /></a>
-                            </div>
-                        </div>
-                        <div className="footer-links-grid">
-                            <div className="footer-column">
-                                <h4>Product</h4>
-                                <ul>
-                                    <li><a href="#">Features</a></li>
-                                    <li><a href="#">For Brands</a></li>
-                                    <li><a href="#">For Creators</a></li>
-                                    <li><a href="#">Case Studies</a></li>
-                                </ul>
-                            </div>
-                            <div className="footer-column">
-                                <h4>Company</h4>
-                                <ul>
-                                    <li><a href="#">About Us</a></li>
-                                    <li><a href="#">Careers</a></li>
-                                    <li><a href="#">Contact</a></li>
-                                    <li><a href="#">Newsroom</a></li>
-                                </ul>
-                            </div>
-                            <div className="footer-column">
-                                <h4>Resources</h4>
-                                <ul>
-                                    <li><a href="#">Documentation</a></li>
-                                    <li><a href="#">API Reference</a></li>
-                                    <li><Link to="/privacy-policy">Privacy Policy</Link></li>
-                                    <li><Link to="/terms">Terms of Service</Link></li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="footer-bottom">
-                        <p className="footer-text">
-                            © 2026 Discovr. All rights reserved. Built for creators, by creators.
-                        </p>
-                        <div className="footer-legal">
-                            <Link to="/privacy-policy">Privacy Policy</Link>
-                            <Link to="/terms">Terms of Service</Link>
-                            <a href="#">Cookie Policy</a>
-                        </div>
-                    </div>
-                </div>
-            </footer>
+            <section className="legal-section">
+              <h2>CONTACT US</h2>
+              <p>
+                If you have questions, concerns, or requests regarding this Policy, please contact:<br /><br />
+                <strong>Discovr AI Private Limited</strong><br />
+                Website: www.getdiscovr.ai<br />
+                Email: support@getdiscovr.ai<br />
+                Address: B-201, Polaris Business Park, Marol, Andheri East, Mumbai - 400093
+              </p>
+            </section>
+          </div>
         </div>
-    );
+      </main>
+    </div>
+  );
 };

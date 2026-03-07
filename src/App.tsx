@@ -19,11 +19,11 @@ const TermsOfService = React.lazy(() => import('./modules/legal').then(m => ({ d
 
 const Profile = React.lazy(() => import('./modules/shared').then(m => ({ default: m.Profile })));
 const Settings = React.lazy(() => import('./modules/shared').then(m => ({ default: m.Settings })));
-const BrandDashboard = React.lazy(() => import('./modules/brand-dashboard').then(m => ({ default: m.BrandDashboard })));
-const NewCampaign = React.lazy(() => import('./modules/brand-dashboard').then(m => ({ default: m.NewCampaign })));
-const CampaignDetails = React.lazy(() => import('./modules/brand-dashboard').then(m => ({ default: m.CampaignDetails })));
-const CreatorDetails = React.lazy(() => import('./modules/brand-dashboard').then(m => ({ default: m.CreatorDetails })));
-const BrandCreatorInfo = React.lazy(() => import('./modules/brand-dashboard').then(m => ({ default: m.BrandCreatorInfo })));
+const BrandDashboard = React.lazy(() => import('./modules/brand-dashboard/BrandDashboard').then(m => ({ default: m.BrandDashboard })));
+const NewCampaign = React.lazy(() => import('./modules/brand-dashboard/NewCampaign').then(m => ({ default: m.NewCampaign })));
+const CampaignDetails = React.lazy(() => import('./modules/brand-dashboard/CampaignDetails').then(m => ({ default: m.CampaignDetails })));
+const CreatorDetails = React.lazy(() => import('./modules/brand-dashboard/CreatorDetails').then(m => ({ default: m.CreatorDetails })));
+const BrandCreatorInfo = React.lazy(() => import('./modules/brand-dashboard/BrandCreatorInfo').then(m => ({ default: m.BrandCreatorInfo })));
 const CreatorDashboard = React.lazy(() => import('./modules/creator-dashboard').then(m => ({ default: m.CreatorDashboard })));
 const CreatorCampaignDetails = React.lazy(() => import('./modules/creator-dashboard').then(m => ({ default: m.CreatorCampaignDetails })));
 

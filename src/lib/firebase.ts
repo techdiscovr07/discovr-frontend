@@ -53,7 +53,7 @@ try {
     if (import.meta.env.DEV) {
         console.error('Firebase failed to initialize. Check your .env file and Firebase configuration.');
     }
-    throw error;
+    // throw error; // Don't throw to prevent crashing the whole app load
 }
 
 export { app, auth, analytics };
