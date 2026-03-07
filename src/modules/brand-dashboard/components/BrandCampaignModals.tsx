@@ -289,14 +289,15 @@ export const BrandCampaignModals: React.FC = () => {
                                             return (
                                                 <div style={{ width: '100%', maxWidth: '240px', aspectRatio: '9/16' }}>
                                                     <iframe
-                                                        src={`${url.replace(/\/$/, '')}/embed/`}
+                                                        src={`${url.split('?')[0].replace(/\/$/, '')}/embed/`}
                                                         width="100%"
                                                         height="100%"
                                                         frameBorder="0"
                                                         scrolling="no"
                                                         allowTransparency={true}
-                                                        allow="encrypted-media"
+                                                        allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
                                                         title="Instagram Reel Preview"
+                                                        style={{ border: 'none' }}
                                                     />
                                                 </div>
                                             );
@@ -683,21 +684,26 @@ export const BrandCampaignModals: React.FC = () => {
                 }}>
                     <div style={{
                         width: '100%',
+                        maxWidth: '280px',
                         aspectRatio: '9/16',
-                        background: '#000',
-                        borderRadius: 'var(--radius-md)',
+                        background: '#1a1a1a',
+                        borderRadius: 'var(--radius-xl)',
                         overflow: 'hidden',
-                        position: 'relative'
+                        position: 'relative',
+                        boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
                     }}>
                         <iframe
-                            src={`${reelUrl.replace(/\/$/, '')}/embed/`}
+                            key={reelUrl}
+                            src={`${reelUrl.split('?')[0].replace(/\/$/, '')}/embed/`}
                             width="100%"
                             height="100%"
                             frameBorder="0"
                             scrolling="no"
                             allowTransparency={true}
-                            allow="encrypted-media"
+                            allow="autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
                             title="Instagram Reel"
+                            style={{ border: 'none' }}
+                            referrerPolicy="no-referrer-when-downgrade"
                         />
                     </div>
                     <div style={{ textAlign: 'center' }}>
