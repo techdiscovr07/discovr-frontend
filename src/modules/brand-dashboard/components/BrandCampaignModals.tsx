@@ -29,7 +29,8 @@ export const BrandCampaignModals: React.FC = () => {
         selectedFollowerRanges, setSelectedFollowerRanges,
         followerRangeOptions, handleUpdateFollowerRanges, isUpdatingFollowerRanges,
         isCreatorProfileSidebarOpen, setIsCreatorProfileSidebarOpen,
-        selectedProfileCreator, isAnalyzingCreator, handleAnalyzeCreator
+        selectedProfileCreator, isAnalyzingCreator, handleAnalyzeCreator,
+        isReelModalOpen, setIsReelModalOpen, reelUrl
     } = useBrandCampaignContext();
 
     return (
