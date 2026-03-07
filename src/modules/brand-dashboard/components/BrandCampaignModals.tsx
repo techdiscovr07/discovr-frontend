@@ -677,8 +677,9 @@ export const BrandCampaignModals: React.FC = () => {
             <Modal
                 isOpen={isReelModalOpen}
                 onClose={() => setIsReelModalOpen(false)}
-                title=""
-                size="lg"
+                title="Instagram Reel Preview"
+                size="sm"
+                minimal={true}
             >
                 <div style={{
                     display: 'flex',
@@ -690,7 +691,9 @@ export const BrandCampaignModals: React.FC = () => {
                         width: '100%',
                         maxWidth: '430px',
                         aspectRatio: '9/16',
-                        overflow: 'hidden'
+                        overflow: 'hidden',
+                        borderRadius: 'var(--radius-xl)',
+                        boxShadow: '0 20px 50px rgba(0,0,0,0.5)'
                     }}>
                         <iframe
                             key={reelUrl}

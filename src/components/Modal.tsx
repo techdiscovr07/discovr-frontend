@@ -9,6 +9,7 @@ interface ModalProps {
     subtitle?: string;
     children: React.ReactNode;
     size?: 'sm' | 'md' | 'lg' | 'xl';
+    minimal?: boolean;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -17,7 +18,8 @@ export const Modal: React.FC<ModalProps> = ({
     title,
     subtitle,
     children,
-    size = 'lg'
+    size = 'lg',
+    minimal = false
 }) => {
     // Close on Escape key
     useEffect(() => {
@@ -43,19 +45,29 @@ export const Modal: React.FC<ModalProps> = ({
     return (
         <div className="modal-overlay" onClick={onClose}>
             <div
-                className={`modal-container modal-${size}`}
+                className={`modal-container modal-${size} ${minimal ? 'modal-minimal' : ''}`}
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="modal-header">
-                    <div>
-                        <h2 className="modal-title">{title}</h2>
-                        {subtitle && <p className="modal-subtitle">{subtitle}</p>}
+                {!minimal && (
+                    <div className="modal-header">
+                        <div>
+                            <h2 className="modal-title">{title}</h2>
+                            {subtitle && <p className="modal-subtitle">{subtitle}</p>}
+                        </div>
+                        <button className="modal-close" onClick={onClose}>
+                            <X size={24} />
+                        </button>
                     </div>
-                    <button className="modal-close" onClick={onClose}>
+                )}
+                {minimal && (
+                    <button
+                        className="modal-close-minimal"
+                        onClick={onClose}
+                    >
                         <X size={24} />
                     </button>
-                </div>
-                <div className="modal-body">
+                )}
+                <div className={`modal-body ${minimal ? 'modal-body-minimal' : ''}`}>
                     {children}
                 </div>
             </div>
