@@ -271,24 +271,50 @@ export const BrandCampaignModals: React.FC = () => {
                 {selectedContentItem && (
                     <div style={{ display: 'grid', gridTemplateColumns: '1.7fr 1fr', gap: 'var(--space-6)' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--space-4)' }}>
-                            <div style={{ padding: 'var(--space-4)', background: 'var(--color-bg-secondary)', border: '1px solid var(--color-border-subtle)', borderRadius: 'var(--radius-md)', minHeight: '220px' }}>
+                            <div style={{
+                                padding: 'var(--space-4)',
+                                background: 'var(--color-bg-secondary)',
+                                border: '1px solid var(--color-border-subtle)',
+                                borderRadius: 'var(--radius-md)',
+                                minHeight: '320px',
+                                display: 'flex',
+                                justifyContent: 'center',
+                                alignItems: 'center'
+                            }}>
                                 {(selectedContentItem.content_url || selectedContentItem.video_url) ? (
-                                    <a
-                                        href={selectedContentItem.content_url || selectedContentItem.video_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        style={{ color: 'var(--color-accent)', textDecoration: 'none' }}
-                                    >
-                                        View uploaded video
-                                    </a>
+                                    (() => {
+                                        const url = selectedContentItem.content_url || selectedContentItem.video_url;
+                                        const isInstagramReel = url.includes('instagram.com/reel/');
+                                        if (isInstagramReel) {
+                                            return (
+                                                <div style={{ width: '100%', maxWidth: '240px', aspectRatio: '9/16' }}>
+                                                    <iframe
+                                                        src={`${url.split('?')[0]}embed`}
+                                                        width="100%"
+                                                        height="100%"
+                                                        frameBorder="0"
+                                                        scrolling="no"
+                                                        allowTransparency={true}
+                                                        allow="encrypted-media"
+                                                        title="Instagram Reel Preview"
+                                                    />
+                                                </div>
+                                            );
+                                        }
+                                        return (
+                                            <a
+                                                href={url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                style={{ color: 'var(--color-accent)', textDecoration: 'none' }}
+                                            >
+                                                View uploaded video
+                                            </a>
+                                        );
+                                    })()
                                 ) : (
                                     <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>
                                         No video URL available in this record.
-                                    </p>
-                                )}
-                                {selectedContentItem.live_url && (
-                                    <p style={{ marginTop: 'var(--space-3)', marginBottom: 0, fontSize: 'var(--text-sm)' }}>
-                                        Live link: <a href={selectedContentItem.live_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent)' }}>{selectedContentItem.live_url}</a>
                                     </p>
                                 )}
                             </div>

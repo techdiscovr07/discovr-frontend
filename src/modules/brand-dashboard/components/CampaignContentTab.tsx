@@ -1,6 +1,6 @@
 import React from 'react';
 import { Card, CardHeader, CardBody, Button } from '../../../components';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Play } from 'lucide-react';
 
 interface CampaignContentTabProps {
     filteredContent: any[];
@@ -111,19 +111,34 @@ export const CampaignContentTab: React.FC<CampaignContentTabProps> = ({
                                                         const isInstagramReel = item.content_url.includes('instagram.com/reel/');
                                                         return (
                                                             <div style={{ display: 'flex', gap: 'var(--space-2)', alignItems: 'center' }}>
-                                                                <a href={item.content_url} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--color-accent)', fontWeight: 500, fontSize: 'var(--text-sm)' }}>
-                                                                    View Content
-                                                                </a>
-                                                                {isInstagramReel && (
-                                                                    <Button
-                                                                        variant="ghost"
-                                                                        size="sm"
-                                                                        style={{ padding: '2px 8px', height: 'auto', fontSize: '10px' }}
-                                                                        onClick={() => handleOpenReelModal(item.content_url)}
-                                                                    >
-                                                                        Play Reel
-                                                                    </Button>
-                                                                )}
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="sm"
+                                                                    style={{
+                                                                        color: 'var(--color-accent)',
+                                                                        fontWeight: 600,
+                                                                        fontSize: 'var(--text-sm)',
+                                                                        padding: '4px 0px',
+                                                                        height: 'auto',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: 'var(--space-2)'
+                                                                    }}
+                                                                    onClick={() => isInstagramReel ? handleOpenReelModal(item.content_url) : window.open(item.content_url, '_blank')}
+                                                                >
+                                                                    <div style={{
+                                                                        width: '24px',
+                                                                        height: '24px',
+                                                                        borderRadius: '50%',
+                                                                        background: 'rgba(168, 85, 247, 0.1)',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        justifyContent: 'center'
+                                                                    }}>
+                                                                        <Play size={12} fill="currentColor" />
+                                                                    </div>
+                                                                    {isInstagramReel ? 'Preview Reel' : 'View Content'}
+                                                                </Button>
                                                             </div>
                                                         );
                                                     }
