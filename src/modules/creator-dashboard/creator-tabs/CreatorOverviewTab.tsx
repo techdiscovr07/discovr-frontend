@@ -8,7 +8,8 @@ import {
     MessageCircle,
     Search,
     Activity,
-    ExternalLink
+    ExternalLink,
+    Instagram
 } from 'lucide-react';
 import {
     LineChart,
@@ -38,7 +39,6 @@ export const CreatorOverviewTab: React.FC<CreatorOverviewTabProps> = ({ searchQu
     const [campaigns, setCampaigns] = useState<any[]>([]);
 
     const [instaData, setInstaData] = useState<any>(null);
-    const [isInstaLoading, setIsInstaLoading] = useState(false);
     const [trackUrl, setTrackUrl] = useState('');
     const [isTrackLoading, setIsTrackLoading] = useState(false);
     const [trackedPost, setTrackedPost] = useState<any>(null);
@@ -66,15 +66,12 @@ export const CreatorOverviewTab: React.FC<CreatorOverviewTabProps> = ({ searchQu
     };
 
     const fetchInstaInsights = async () => {
-        setIsInstaLoading(true);
         try {
             const data = await creatorApi.getInstagramInsights();
             setInstaData(data);
         } catch (error: any) {
             console.warn('Failed to fetch Instagram insights:', error);
             // Don't show toast for this yet, as it might just mean they haven't connected
-        } finally {
-            setIsInstaLoading(false);
         }
     };
 
