@@ -416,8 +416,8 @@ export const BrandCampaignModals: React.FC = () => {
                                     )}
                                 </div>
                             </div>
-                        )
-                    }
+                        );
+                    })() )}
             </Modal>
 
             {/* Counter Offer Modal */}
