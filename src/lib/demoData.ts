@@ -86,6 +86,16 @@ export const DEMO_CREATORS = [
     { id: 'creator-008', name: 'Travel Tyler', instagram: 'tyler.travels', status: 'active', followers: 95000, avg_views: 40000, final_amount: 10000 },
     { id: 'creator-009', name: 'Makeup Maya', instagram: 'maya.makeup', status: 'pending', followers: 600000, avg_views: 280000, final_amount: 0 },
     { id: 'creator-010', name: 'Gamer Gabe', instagram: 'gabe.games', status: 'rejected', followers: 80000, avg_views: 35000, final_amount: 0 },
+    { id: 'creator-011', name: 'Veggie Val', instagram: 'val.veggie', status: 'active', followers: 110000, avg_views: 50000, final_amount: 11000 },
+    { id: 'creator-012', name: 'Power Pete', instagram: 'pete.power', status: 'active', followers: 230000, avg_views: 110000, final_amount: 25000 },
+    { id: 'creator-013', name: 'Style Stella', instagram: 'stella.style', status: 'active', followers: 165000, avg_views: 75000, final_amount: 18000 },
+    { id: 'creator-014', name: 'Yoga Yuvraj', instagram: 'yuvi.yoga', status: 'pending', followers: 90000, avg_views: 30000, final_amount: 0 },
+    { id: 'creator-015', name: 'Chef Chirag', instagram: 'chirag.cooks', status: 'active', followers: 420000, avg_views: 190000, final_amount: 35000 },
+    { id: 'creator-016', name: 'Design Divya', instagram: 'divya.designs', status: 'active', followers: 75000, avg_views: 25000, final_amount: 9000 },
+    { id: 'creator-017', name: 'Music Mani', instagram: 'mani.music', status: 'pending', followers: 1.2 * 1000000, avg_views: 500000, final_amount: 0 },
+    { id: 'creator-018', name: 'Art Ananya', instagram: 'ananya.art', status: 'active', followers: 180000, avg_views: 85000, final_amount: 16000 },
+    { id: 'creator-019', name: 'Bookish Bani', instagram: 'bani.books', status: 'active', followers: 55000, avg_views: 18000, final_amount: 6000 },
+    { id: 'creator-020', name: 'Gadget Guru', instagram: 'guru.gadgets', status: 'pending', followers: 300000, avg_views: 130000, final_amount: 0 },
 ];
 
 export const DEMO_BIDS = [
@@ -99,6 +109,16 @@ export const DEMO_BIDS = [
     { creator_id: 'creator-008', proposed_amount: 10000, status: 'accepted' },
     { creator_id: 'creator-009', proposed_amount: 85000, status: 'pending' },
     { creator_id: 'creator-010', proposed_amount: 15000, status: 'rejected' },
+    { creator_id: 'creator-011', proposed_amount: 11000, status: 'accepted' },
+    { creator_id: 'creator-012', proposed_amount: 25000, status: 'accepted' },
+    { creator_id: 'creator-013', proposed_amount: 18000, status: 'accepted' },
+    { creator_id: 'creator-014', proposed_amount: 12000, status: 'pending' },
+    { creator_id: 'creator-015', proposed_amount: 35000, status: 'accepted' },
+    { creator_id: 'creator-016', proposed_amount: 9000, status: 'accepted' },
+    { creator_id: 'creator-017', proposed_amount: 150000, status: 'pending' },
+    { creator_id: 'creator-018', proposed_amount: 16000, status: 'accepted' },
+    { creator_id: 'creator-019', proposed_amount: 6000, status: 'accepted' },
+    { creator_id: 'creator-020', proposed_amount: 35000, status: 'pending' },
 ];
 
 export const DEMO_SCRIPTS = [
